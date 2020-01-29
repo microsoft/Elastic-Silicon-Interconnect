@@ -22,7 +22,7 @@ Any type, named or anonymous, may be used as a port declaration.
 The default semantics are that the data-type in an interface is
 presented atomically (single-cycle) to or from the module, except for
 lists. Fine-grained control of presentation scheduling for large
-data-types is described below in the [data windows](#Data_Windows)
+data-types is described below in the [data windows](#data-windows)
 section.
 
 Parameter types used in port declarations must have parameters fully
@@ -87,10 +87,11 @@ proper hardware to narrow or widen the data path.
 ### Data Window Examples
 
 ```c++
+typedef list uint8 DataList; // A variably-sized list of bytes
+window(DataList) TenPerCycle { 10 } // 10 bytes / cycle (80-bit wide channel)
+
 // A module that reads up to 10 bytes / cycle and writes up to
 // 7 bytes / cycle
-typedef list uint8 DataList;
-window(DataList) TenPerCycle { 10 }
 module Compressor {
     input TenPerCycle dataIn;
     output window(DataList) { 7 } dataOut;
@@ -99,6 +100,8 @@ module Compressor {
 
 ```c++
 // An example of breaking up a large struct with data windows
+
+// A large struct
 struct DataRecord {
     uint64 ID;
     uint512 CryptoHash;
@@ -107,6 +110,7 @@ struct DataRecord {
     list uint8 Blob;
 }
 
+// Windows break up structs as well
 window (DataRecord) DataRecordParts {
     Part1 {
         ID, DisplayName // Accept ID and DisplayName
@@ -119,6 +123,7 @@ window (DataRecord) DataRecordParts {
     }
 }
 
+// Use the window as the data type on the port
 module RecordProcessor {
     input DataRecordParts in;
 }

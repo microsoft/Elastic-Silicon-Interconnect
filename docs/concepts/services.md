@@ -58,7 +58,7 @@ like Avalon-MM or AXI AMBA in many cases.
 ## Examples
 
 ```c++
-service HostMemory single { // Specify a bus with one server
+service HostMemory single { // Specify a service with one server
     ToServer MMIO<any> Memory; // An untyped MMIO wherein the server
                                  // is the 'slave'
     ToServer DMA_Request DmaReq; // DMA access
@@ -66,14 +66,14 @@ service HostMemory single { // Specify a bus with one server
 }
 
 module NiosProcessor { // A NIOS core allowing memory access
-    server HostMemory Mem; // A single master bus can be implicitly
+    server HostMemory Mem; // A single master server can be implicitly
                            // instantiated and referred to be the
                            // module's instance name
 }
 ```
 
 ```c++
-service Telemetry multi { // Specify a bus with multiple servers
+service Telemetry multi { // Specify a service with multiple servers
     ToClients void RequestStatus; // Any server can request a status update
                                   // from every client
     ToServers Event<AllStatusesUnion> Events; // Clients can respond to all
@@ -84,7 +84,7 @@ Telemetry GlobalBroadcastTelemetry;
 ```
 
 ```c++
-service RoutedNetwork multi { // A bus with multiple masters
+service RoutedNetwork multi { // A service with multiple servers
     ToServer NetworkPacket Send; // Clients must select a server
     ToClient NetworkPacket Recv; // Servers must select a particular client
     ToServer MMIO<RoutingConfig> Config; // A per-server configuration interface

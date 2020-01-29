@@ -18,7 +18,7 @@ fixed\<2, 10\>.
 
 ### Examples
 
-| | |
+| Name | Description |
 | :--- | :--- |
 | float\<10, 21\> | Signed floating point number -- 1 sign bit, 10 bits magnitude, and 21 bits mantissa |
 | uint9 | Unsigned integer -- 9 bits |
@@ -56,16 +56,16 @@ Any type can be made into an array of itself. Arrays must be statically
 sized. Multidimensional arrays are supported but must be statically
 sized in all dimensions. Note: in most languages by default, arrays will
 be presented in one clock cycle so users are advised to use [Data
-Windows](#_Data_Windows) on large arrays.
+Windows](streaming.md#data-windows) on large arrays.
 
 ### Array Examples
 
-| | | |
+| Name | Description | Total Size |
 | - | - | - |
-| float\<9, 22\>\[10\] | 10 x float\<9, 22\> | 320 bits total |
-| uint9\[12\] | 12 x uint9 | 108 bits total |
-| byte\[9\]\[4\] | 4 x 9 x byte | 288 bits total |
-| ufixed\<0, 10\>\[215\] | 215 x ufixed\<0, 10\> | 2150 bits total |
+| float\<9, 22\>\[10\] | 10 x float\<9, 22\> | 320 bits |
+| uint9\[12\] | 12 x uint9 | 108 bits |
+| byte\[9\]\[4\] | 4 x 9 x byte | 288 bits |
+| ufixed\<0, 10\>\[215\] | 215 x ufixed\<0, 10\> | 2150 bits |
 
 ## Structs
 

@@ -1,6 +1,6 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# Misc. Notes
+# Miscellaneous Notes
 
 ## ABI
 
