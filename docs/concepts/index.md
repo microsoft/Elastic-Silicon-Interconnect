@@ -34,7 +34,8 @@ semantics to be identical.
 ## Table of contents
 
 1) [Base Type System](types.md)
-2) [Streaming Channels](streaming.md)
-3) [Memory-Mapped Interfaces](mmio.md)
-4) [Services](services.md)
-5) [Misc. Notes](notes.md)
+1) [Streaming Channels](streaming.md)
+1) [Memory-Mapped Interfaces](mmio.md)
+1) [Software APIs](software_api.md)
+1) [Services](services.md)
+1) [Misc. Notes](notes.md)
