@@ -8,10 +8,11 @@ The ABI specifies how an HLI "API" is translated to hardware,
 specifically RTL. This involves both the wire-level signaling between
 modules and how data is arranged on those wires.
 
-This section is underspecified in this proposal. The main things to
-figure out are how lists and data windows are lowered and presented to
-RTL modules. Lowering of fixed-size, default-presentation semantics
-ports is mostly straight forward, so is not discussed here.
+This section is purposely underspecified in this proposal as it should be an
+implementation detail which only advanced users need know. The main issues
+discussed here are how lists and data windows are lowered and presented to
+RTL modules. Lowering of fixed-size, default-presentation semantics ports is
+mostly straight forward, so is not discussed here.
 
 ### Wire-level signaling
 
@@ -19,7 +20,7 @@ Since HLI connections are elastic (latency-insensitive), the signaling
 scheme must include some notion of validity and some notion of
 backpressure. This rules out interfaces which inherently cannot be
 back-pressured, though future HLI specs may support non-backpressure
-(feed-forward) interfaces.[^1] For now, a buffering gasket which
+(feed-forward) interfaces. For now, a buffering gasket which
 converts between HLI and the non-backpressure-able interface is
 necessary, perhaps implementing backpressure in a higher-level protocol
 (e.g. not initiating DMA transfers until space exists to buffer them).
@@ -36,6 +37,7 @@ There are several existing standards which we should consider
 implementing:
 
 - AXI Stream/AMBA
+- Avalon-MM/Avalon-ST
 - Simple valid/ready-ack semantics (this should be the default) for
   streaming
 - Simple RW RAM-style interface (this should be the default) for MMIO
@@ -56,7 +58,7 @@ would be made to support all of the HLI constructs. That's fine -- not
 all HDLs are suited to all the HLI constructs. For instance, some
 languages are only designed for data stream processing so only the data
 channel (streaming) parts of HLI make sense. Maybe a compiler for said
-language would also generate some bus clients (to access DRAM, PCIe,
+language would also generate some MMIO regions/clients (to access DRAM, PCIe,
 network, et cetera).
 
 An HDL compiler which supports HLI is not required to implement the
@@ -64,7 +66,7 @@ entire HLI spec. Rather, it is encouraged to only implement the parts of
 HLI that make sense; however, it is also encouraged that the compiler
 authors think long and hard about which constructs make sense. For
 example, for an RTL compiler it may not be immediately obvious how to
-support **lists**, the variable length data type. After further
+support **`lists`**, the variable length data type. After further
 consideration, however, one may realize that RTL can accept variable
 length data over multiple cycles. In fact, this is the intention as
 variable length data in hardware is generally reasoned about and

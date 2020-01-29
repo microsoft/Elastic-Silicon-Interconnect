@@ -27,23 +27,23 @@ Whether a module implements a server or client must be explicitly declared in
 the module declaration. Directions (out/in) of data channels/MMIO are
 determined by that explicit declaration and the direction specified in the
 service definition. Four different directions are allowed in the service
-definition: ToServer, ToServers, ToClient, ToClients. The plurals indicate
-the messages sent should be broadcast to all servers or client. The singular
-form indicates that a specific server or client must be addressed when
-sending a message unless the server is single server and the sender is a
+definition: `ToServer`, `ToServers`, `ToClient`, `ToClients`. The plurals
+indicate the messages sent should be broadcast to all servers or client. The
+singular form indicates that a specific server or client must be addressed
+when sending a message unless the server is single server and the sender is a
 client.
 
 ## Service Definitions
 
 An HLI service is essentially an interface which modules are required to
 implement to connect to a given service. The first attribute which must be
-specified is whether multiple masters are allowed via the single or
-multi keywords. The second is a list of MMIO and/or data channels and
+specified is whether multiple masters are allowed via the `single` or
+`multi` keywords. The second is a list of MMIO and/or data channels and
 associated directions.
 
 ## Message Sizes
 
-A ToServer(s) data channel is free to block (backpressure) other clients
+A `ToServer` data channel is free to block (backpressure) other clients
 while one is sending a message. As such, in most cases it is best to
 keep messages short. While the **list** type is allowed, it is easy to
 abuse.

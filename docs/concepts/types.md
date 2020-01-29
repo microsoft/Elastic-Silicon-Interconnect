@@ -7,35 +7,35 @@ support streaming or MMIO are described in those sections.
 
 ## Booleans, Integers, Fixed & Floating Point Numbers
 
-**Keywords**: bool, byte, bit, uint, int, fixed, float, ufixed, ufloat
+**Keywords**: `bool`, `byte`, `bit`, `uint`, `int`, `fixed`, `float`, `ufixed`, `ufloat`
 
 These types are all **parameterized** ([discussed
 later](#parameterized-types)) by the number of bits they consume. For
-instance, to get a 7-bit unsigned integer, use uint\<7\> or the uint7
+instance, to get a 7-bit unsigned integer, use `uint<7>` or the `uint7`
 alias. For a signed fixed point number with 2 bits of whole part and 10
 bits of fraction (for a total of 13 bits, including the sign bit), use
-fixed\<2, 10\>.
+`fixed<2, 10>`.
 
 ### Examples
 
 | Name | Description |
 | :--- | :--- |
-| float\<10, 21\> | Signed floating point number -- 1 sign bit, 10 bits magnitude, and 21 bits mantissa |
-| uint9 | Unsigned integer -- 9 bits |
-| ufixed\<0, 10\> | Unsigned fixed point -- 0 sign bits, 0 whole bits, 10 fraction bits |
-| int\<100\> | Signed integer -- 1 sign bit, 100 whole bits |
-| fixed\<0, 32\> | Signed fixed point -- 1 sign bit, 0 whole bits, 32 fraction bits |
+| `float<10, 21>` | Signed floating point number -- 1 sign bit, 10 bits magnitude, and 21 bits mantissa |
+| `uint9` | Unsigned integer -- 9 bits |
+| `ufixed<0, 10>` | Unsigned fixed point -- 0 sign bits, 0 whole bits, 10 fraction bits |
+| `int<100>` | Signed integer -- 1 sign bit, 100 whole bits |
+| `fixed<0, 32>` | Signed fixed point -- 1 sign bit, 0 whole bits, 32 fraction bits |
 
-Parameterized floating point types do not have a natural mapping into
-Verilog's type system. Language mappings (not described here) define how
-non-native types are mapped.
+Parameterized floating point and fixed point types do not have a natural
+mapping into Verilog's type system. Language mappings (not described here)
+define how non-native types are mapped.
 
 ## Enums
 
-**Keyword**: enum
+**Keyword**: `enum`
 
-Enums specify a list of symbols which are automatically mapped to an
-appropriately-sized uint, optionally, the specific numeric value of the
+`Enums` specify a list of symbols which are automatically mapped to an
+appropriately-sized `uint`, optionally, the specific numeric value of the
 options. If specific values are not specified, the compiler assigns
 values in-order, starting at 0 and skipping any values which have been
 explicitly assigned. This is consistent with most software languages.
@@ -62,18 +62,18 @@ Windows](streaming.md#data-windows) on large arrays.
 
 | Name | Description | Total Size |
 | - | - | - |
-| float\<9, 22\>\[10\] | 10 x float\<9, 22\> | 320 bits |
-| uint9\[12\] | 12 x uint9 | 108 bits |
-| byte\[9\]\[4\] | 4 x 9 x byte | 288 bits |
-| ufixed\<0, 10\>\[215\] | 215 x ufixed\<0, 10\> | 2150 bits |
+| `float<9, 22>[10]` | 10 x `float<9, 22>` | 320 bits |
+| `uint9[12]` | 12 x `uint9` | 108 bits |
+| `byte[9][4]` | 4 x 9 x `byte` | 288 bits |
+| `ufixed<0, 10>[215]` | 215 x `ufixed<0, 10>` | 2150 bits |
 
 ## Structs
 
-**Keyword**: struct
+**Keyword**: `struct`
 
 Structs are just like in C.
 
-Elements in structs are expected to follow natural alignment in FPGA
+Elements in `structs` are expected to follow natural alignment in FPGA
 memories and logic, and ABI alignment in CPU-memories. Alignment may be
 specified for elements but will be respected only on CPUs and in [HLI
 MMIO](mmio.md) regions. Alignment has no meaning on [streaming
@@ -82,16 +82,13 @@ adjacent elements).
 
 ## Unions
 
-**Keyword**: union, c\_union
+**Keyword**: `union`, `c_union`
 
-**C\_unions** are like C unions, meaning that unions can be **any one**
-of the types they contain. Discriminated unions are also supported via
-**union** -- instances of unions that implicitly include a tag specifying
-which of the members the instance should be interpreted as.
-
-Nested discriminated unions are considered flattened with respect to the
-tag. Implementations are not required to maintain multiple levels of
-tags for embedded unions.
+**`C_unions`** are like C unions, meaning that unions can be **any one**
+of the types they contain but the type system does not know which.
+Discriminated unions are also supported via **`union`** -- instances of unions
+that implicitly include a tag specifying which of the members the instance
+should be interpreted as.
 
 ### Union Examples
 
@@ -126,16 +123,17 @@ c_union DataStreamWithUnions {
 
 **Keyword**: list, fixed\_list
 
-Lists are used to reason about variably-sized data and do not have a
-direct C analog. There are two types of lists: those for which the size
-is known before transmission begins (a fixed size list, or
-**fixed\_list**), and those for which it isn't (a variably sized list,
-or just **list**).
+Lists are used to reason about variably-sized data. There are two types of
+lists: those for which the size is known before transmission begins (a fixed
+size list, or **fixed\_list**), and those for which it isn't (a variably
+sized list, or just **list**). `Fixed_lists` are **very** roughly similar to
+C++'s `std::vector` whereas `lists` are roughly similar to C++ `std::list`, a
+linked list.
 
-When lists are members of other data types (e.g. structs), they must be
-completely read in the order in which they appear. A list is not
+When lists are members of other data types (e.g. `structs`), they must be
+completely read in the order in which they appear. A `list` is not
 considered to be completely read until all items have been completely
-read and the next members can be read. All lists must be completely read
+read and the next members can be read. All `lists` must be completely read
 before the outer (containing) message is considered read and the port
 can move on to the next message.
 
@@ -163,9 +161,9 @@ struct EthernetFrame {
 
 ## Parameterized Types
 
-Any struct or union can include **parameters**. Parameters can be either
-constant (compile time computable) integers or type names. These are
-like a very simple version of C++ templates or C\# generics.
+Any `struct` or `union` can include **parameters**. Parameters can be either
+constant (compile time computable) integers or type names. These are like a
+very simple version of C++ templates or C\# generics.
 
 ### Parameterized Types Examples
 

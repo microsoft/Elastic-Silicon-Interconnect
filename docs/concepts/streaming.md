@@ -13,10 +13,10 @@ HLI types may be declared and named at the global and local scope.
 
 ## Ports
 
-**Keywords:** input, output
+**Keywords:** `input`, `output`
 
 Verilog-style ports are extended to support an HLI data-type as the port
-type. Port directions (input, output) are required and work as expected.
+type. Port directions (`input`, `output`) are required and work as expected.
 Any type, named or anonymous, may be used as a port declaration.
 
 The default semantics are that the data-type in an interface is
@@ -53,10 +53,10 @@ module RAM <uint64 depth> {
 
 ## Data Windows
 
-**Keyword**: window
+**Keyword**: `window`
 
 By default, an entire message is guaranteed to be presented to the
-receiving module in one clock cycle (excepting lists). For particularly
+receiving module in one clock cycle (excepting `lists`). For particularly
 large messages, this is not ideal as it requires a data path equal to
 the size of the message. Data windows specify which parts of a message a
 module can accept on each clock cycle for immediate consumption. For
@@ -71,16 +71,16 @@ different modules with different bandwidths. A data window merely
 specifies the logical "gasket" used to connect two differently sized
 ports.
 
-Reordering of struct members (except lists and between list boundaries)
+<!-- Reordering of struct members (except lists and between list boundaries)
 is allowed but may have performance/area side-effects. For example,
 re-ordering large arrays creates the need for large amounts of memory
-and is likely to introduce bubbles and -- later -- backpressure.
+and is likely to introduce bubbles and -- later -- backpressure. -->
 
 For example, while the Compressor example below may appear to have a
 bandwidth of 1 byte/cycle, this need not be the case. That same message
 data type can be used by compression blocks with any bandwidth. The
 compiler just has to be smart enough to know that the module can accept
-up to N packets per cycle, then design a wire-level interface to suite.
+up to N items per cycle, then design a wire-level interface to suit.
 When components have different bandwidths, the compiler can design the
 proper hardware to narrow or widen the data path.
 
