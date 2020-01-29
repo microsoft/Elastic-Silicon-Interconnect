@@ -34,3 +34,4 @@ semantics to be identical.
 ## Table of contents
 
 1) [Base Type System](types.md)
+2) [Streaming Channels](streaming.md)

@@ -105,7 +105,9 @@ union GenericUnion {
 
     struct {} end; // "end" is the tag symbol
 }
+```
 
+```c++
 c_union DataStreamWithUnions {
     // Non-discriminated unions cannot be queried for tags, so that
     // information should be tracked separately
@@ -144,7 +146,9 @@ list struct {
     fixed<4, 12> x;
     fixed<4, 12> y;
 } CoordinateList;
+```
 
+```c++
 struct EthernetFrame {
     uint64 Dst; // Absent a window, these fields are available
     uint64 Src; // until both lists are read
@@ -170,7 +174,9 @@ struct PrefixedList<type T> {
     uint10 header;
     fixed_list T data;
 }
+```
 
+```c++
 struct ArrayOf<type T, int N> {
     T[N] data;
 }
