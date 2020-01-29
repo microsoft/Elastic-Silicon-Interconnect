@@ -35,3 +35,4 @@ semantics to be identical.
 
 1) [Base Type System](types.md)
 2) [Streaming Channels](streaming.md)
+3) [Memory-Mapped Interfaces](mmio.md)
