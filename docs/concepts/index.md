@@ -37,3 +37,4 @@ semantics to be identical.
 2) [Streaming Channels](streaming.md)
 3) [Memory-Mapped Interfaces](mmio.md)
 4) [Services](services.md)
+5) [Misc. Notes](notes.md)
