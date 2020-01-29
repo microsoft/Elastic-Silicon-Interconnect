@@ -1,7 +1,31 @@
 # High Level Interfaces: Concepts
 
-This set of documents provides a draft of the fundamental HLI concepts. Early
-implementations may not have all the functionality discussed herein.
+## Overview
+
+The High Level Interfaces project is fundamentally an advanced silicon
+(FPGA/ASIC) interconnect generator which raises the level of abstraction for
+inter/intra/CPU communication. A hardware-centric type system enables strong
+type safety. Latency insensitive (elastic) connections by default allows the
+compiler to make optimization decisions. Essentially, the intent is to
+separate/abstract the wire signaling layer from the message layer and allow
+designers to not worry about the wire signaling layer. These traits enable
+high-level reasoning which includes -- but is not limited to -- the following
+features:
+
+- Inter-language communication
+- Type checking to reduce bugs at interface boundaries
+- Correct-by-construction building of communication fabric (including clock domain crossings)
+- Automated decision making about the physical signaling between modules
+- Automated, typed software API generation which bridges over PCIe, network, or simulation
+- Automated endianness conversions
+- Automatic pipelining and floor planning to reduce timing closure pressure
+- Compatibility between modules with different bandwidths (automatic gearboxing)
+- Type and signal aware debuggers/monitors in communication fabric
+- Common interface for board support packages
+- Extensible services to support global resources (e.g. telemetry)
+
+This set of rough documents provides a draft of the fundamental HLI concepts.
+Early implementations may not have all the functionality discussed herein.
 
 ## Terminology
 
