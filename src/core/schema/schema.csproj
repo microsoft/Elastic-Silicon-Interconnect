@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <CapnpFiles Include="EsiCoreAnnotations.capnp">
-      <WorkingDirectory>$(IntermediateOutputPath)</WorkingDirectory>
       <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
     </CapnpFiles>
   </ItemGroup>
