@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <CapnpPackageReferenceVersion>1.2.138</CapnpPackageReferenceVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Capnp.Net.Runtime" Version="$(CapnpPackageReferenceVersion)" />
+    <PackageReference Include="CapnpC.CSharp.MsBuild.Generation" Version="$(CapnpPackageReferenceVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CapnpFiles Include="EsiCoreAnnotations.capnp">
+      <WorkingDirectory>$(IntermediateOutputPath)</WorkingDirectory>
+      <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
+    </CapnpFiles>
+  </ItemGroup>
+
+</Project>
