@@ -15,7 +15,8 @@ jobs:
       with:
         dotnet-version: 3.1.101
     - name: Setup build environment
-      run: $GITHUB_WORKSPACE/setup_dev_env_windows.ps1
+      run: ./setup_dev_env_windows.ps1
+      shell: pwsh
     - name: Build with dotnet
       run: dotnet build --configuration Release
-      working-directory: $GITHUB_WORKSPACE/src/core
+      working-directory: src/core

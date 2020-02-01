@@ -4,7 +4,7 @@
 
 # Change to "tools" dir
 $origDir = Get-Location
-mkdir "$PSScriptRoot/tools" tools -ErrorAction Ignore
+mkdir "$PSScriptRoot/tools" -ErrorAction Ignore
 Set-Location "$PSScriptRoot/tools"
 
 # Install CapnProto
