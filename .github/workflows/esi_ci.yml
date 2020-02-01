@@ -15,7 +15,8 @@ jobs:
       with:
         dotnet-version: 3.1.101
     - name: Setup build environment
-      run: ./setup_dev_env_windows.ps1
+      # run: ./setup_dev_env_windows.ps1
+      run: pwd
       shell: pwsh
     - name: Build with dotnet
       run: dotnet build --configuration Release
