@@ -35,8 +35,8 @@ Module interfaces are defined by a set of **typed ports** over which
 **arrays**, **enum**s, **union**s, **structs**, and variably-sized **lists**.
 Additionally, **data windows** can be specified on messages, allowing modules
 to specify a narrower port than the message type. Streaming connections
-between **ESI ports** are called **channels**. Modules with only High-Level
-Interface (ESI) ports are called **ESI modules**. Modules with mixed
+between **ESI ports** are called **channels**. Modules with only Elastic Silicon
+Interconnect (ESI) ports are called **ESI modules**. Modules with mixed
 wire-level ports and ESI ports are allowed, but functionality which requires
 ESI ports may not function on these modules. Modules can expose **ESI MMIO**
 regions for memory-mapped I/O.
