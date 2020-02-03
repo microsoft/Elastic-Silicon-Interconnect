@@ -1,8 +1,8 @@
-# High Level Interfaces: Concepts
+# Elastic Silicon Interconnect: Concepts
 
 ## Overview
 
-The High Level Interfaces project is fundamentally an advanced silicon
+The Elastic Silicon Interconnect project is fundamentally an advanced silicon
 (FPGA/ASIC) interconnect generator which raises the level of abstraction for
 inter/intra/CPU communication. A hardware-centric type system enables strong
 type safety. Latency insensitive (elastic) connections by default allows the
@@ -24,7 +24,7 @@ features:
 - Common interface for board support packages
 - Extensible services to support global resources (e.g. telemetry)
 
-This set of rough documents provides a draft of the fundamental HLI concepts.
+This set of rough documents provides a draft of the fundamental ESI concepts.
 Early implementations may not have all the functionality discussed herein.
 
 ## Terminology
@@ -35,10 +35,10 @@ Module interfaces are defined by a set of **typed ports** over which
 **arrays**, **enum**s, **union**s, **structs**, and variably-sized **lists**.
 Additionally, **data windows** can be specified on messages, allowing modules
 to specify a narrower port than the message type. Streaming connections
-between **HLI ports** are called **channels**. Modules with only High-Level
-Interface (HLI) ports are called **HLI modules**. Modules with mixed
-wire-level ports and HLI ports are allowed, but functionality which requires
-HLI ports may not function on these modules. Modules can expose **HLI MMIO**
+between **ESI ports** are called **channels**. Modules with only Elastic Silicon
+Interconnect (ESI) ports are called **ESI modules**. Modules with mixed
+wire-level ports and ESI ports are allowed, but functionality which requires
+ESI ports may not function on these modules. Modules can expose **ESI MMIO**
 regions for memory-mapped I/O.
 
 It is important to note that the message type does not specify anything
@@ -51,7 +51,7 @@ guaranteed to be complete before they are handed to receivers.
 
 This document contains pseudocode examples mostly written in a C-style. The
 examples are intended to be demonstrative of concepts, and thus the syntax is
-irrelevant. When we go about describing HLI as an extension to SystemVerilog
+irrelevant. When we go about describing ESI as an extension to SystemVerilog
 and other languages, we expect the syntax to be quite different, but the
 semantics to be identical.
 

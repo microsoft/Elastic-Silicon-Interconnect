@@ -1,13 +1,13 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# HLI Software APIs
+# ESI Software APIs
 
 *More on this to be written.*
 
-Thanks to HLI's types, typed, design-dependent software APIs can be
+Thanks to ESI's types, typed, design-dependent software APIs can be
 automatically generated. Said APIs would be mostly independent of the
 transport mechanism (PCIe, network, etc.) used to communicate with the
-silicon. The same API could even drive a simulation of the HLI system.
+silicon. The same API could even drive a simulation of the ESI system.
 
 Said APIs would need to ensure that the software is talking to the correct
 hardware. There are several possible approaches:
