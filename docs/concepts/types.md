@@ -1,6 +1,6 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# HLI Type System: Basic Types
+# ESI Type System: Basic Types
 
 Here we present an overview of the base type system. Extensions to this to
 support streaming or MMIO are described in those sections.
@@ -75,7 +75,7 @@ Structs are just like in C.
 
 Elements in `structs` are expected to follow natural alignment in FPGA
 memories and logic, and ABI alignment in CPU-memories. Alignment may be
-specified for elements but will be respected only on CPUs and in [HLI
+specified for elements but will be respected only on CPUs and in [ESI
 MMIO](mmio.md) regions. Alignment has no meaning on [streaming
 channels](streaming.md). Packing is dependent on the context (size of
 adjacent elements).

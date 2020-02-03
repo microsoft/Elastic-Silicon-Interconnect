@@ -1,12 +1,12 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# HLI Global Services
+# ESI Global Services
 
 *This section not fully fleshed out.*
 
-HLI also provides access to global resource via **HLI Services**. These
+ESI also provides access to global resource via **ESI Services**. These
 buses define a typed interface and instances are instantiated globally
--- they should be accessible at all levels of the design hierarchy. HLI
+-- they should be accessible at all levels of the design hierarchy. ESI
 services are intended to provide access to truly global resources like
 PCIe, shared DMA engines, DRAM, network interfaces, etc. They are
 generic enough to be extended to non-physical interfaces like telemetry
@@ -16,7 +16,7 @@ report to it.
 
 ## Service/Client & Directions
 
-HLI services have servers and clients which are roughly analogous to
+ESI services have servers and clients which are roughly analogous to
 masters and slaves in traditional buses, but with slightly different
 meanings. Whereas master/slave denote who can initiate a transaction,
 servers/clients denote the many-to-many or one-to-many relationship.
@@ -35,7 +35,7 @@ client.
 
 ## Service Definitions
 
-An HLI service is essentially an interface which modules are required to
+An ESI service is essentially an interface which modules are required to
 implement to connect to a given service. The first attribute which must be
 specified is whether multiple masters are allowed via the `single` or
 `multi` keywords. The second is a list of MMIO and/or data channels and
@@ -50,9 +50,9 @@ abuse.
 
 ## Wire Level Signaling
 
-The HLI compiler is free to choose any communication substrate which
+The ESI compiler is free to choose any communication substrate which
 implements the required functionality. A traditional bus is not
-guaranteed, though the HLI compiler will likely select a traditional bus
+guaranteed, though the ESI compiler will likely select a traditional bus
 like Avalon-MM or AXI AMBA in many cases.
 
 ## Examples
