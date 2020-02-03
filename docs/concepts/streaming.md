@@ -1,21 +1,21 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# HLI Streaming (Send/Receive) Interfaces
+# ESI Streaming (Send/Receive) Interfaces
 
-This section describes the use of the HLI type system to provide an API
+This section describes the use of the ESI type system to provide an API
 abstraction for streaming hardware modules. We will describe memory
 mapped interfaces later. We continue to use C-style pseudocode here,
 though it may or may not be appropriate for the target language.
 
 ## Type declarations
 
-HLI types may be declared and named at the global and local scope.
+ESI types may be declared and named at the global and local scope.
 
 ## Ports
 
 **Keywords:** `input`, `output`
 
-Verilog-style ports are extended to support an HLI data-type as the port
+Verilog-style ports are extended to support an ESI data-type as the port
 type. Port directions (`input`, `output`) are required and work as expected.
 Any type, named or anonymous, may be used as a port declaration.
 

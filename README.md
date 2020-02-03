@@ -1,13 +1,13 @@
 
-# The High-Level Interfaces Project
+# The Elastic Silicon Interconnect Project
 
 Long ago, software function calling conventions were ad-hoc. This led to
-issues, particularly with register clobbering and stack corruption. This is –
-in large part – the state of FPGA/ASIC design today: wire signaling protocols
+issues, particularly with register clobbering and stack corruption. This is --
+in large part -- the state of FPGA/ASIC design today: wire signaling protocols
 are often ad-hoc, which also leads to major issues. Though there are efforts
 to standardize the signaling protocols there are many minor and major
 variants, both of which lead to confusion which can cause real problems when
-one is listening to and twiddling the wires manually. HLI solves this by
+one is listening to and twiddling the wires manually. ESI solves this by
 providing a standardized interface to developers then figures out the
 signaling details and conversions between then.
 
@@ -21,7 +21,7 @@ across interconnects it is still common for the data types to be informally
 specified in a data sheet. This indicates a total failure of the basic type
 system which RTL supports.
 
-The High-Level Interfaces (HLI) project raises the bar on both fronts. On the
+The Elastic Silicon Interconnect (ESI) project raises the bar on both fronts. On the
 data type front, it defines a rich, hardware-centric type system to allow
 more formal data type definitions and strong static type safety. On the
 ABI/signaling front, it can build simple, latency-insensitive interfaces and
@@ -47,7 +47,7 @@ gearboxing)
 
 # Project Status
 
-The HLI project is in its infancy -- it is not complete by any means. We are
+The ESI project is in its infancy -- it is not complete by any means. We are
 always looking for people to experiment with it and contribute!
 
 # Contributing

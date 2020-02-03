@@ -1,16 +1,16 @@
 [Back to table of contents](index.md#Table-of-contents)
 
-# HLI Memory Mapped (Read/Write) Interfaces
+# ESI Memory Mapped (Read/Write) Interfaces
 
 *This section is not fully thought out or written about.*
 
 ## MMIO Regions
 
-The basic idea is to present HLI memory mapped **regions** exposed by
+The basic idea is to present ESI memory mapped **regions** exposed by
 modules. There could be any number of these regions exposed and they
 would work somewhat like input (request) / output (response) port pairs,
 but with implicit request-response signaling and structure. The MMIO
-space itself would be defined by a statically sized HLI struct (so lists
+space itself would be defined by a statically sized ESI struct (so lists
 would be disallowed), with address offsets implicitly or explicitly
 defined. The method for base address assignment is yet to be decided.
 These regions can support atomic reads or writes of arbitrary size or
