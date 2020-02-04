@@ -14,4 +14,4 @@ jobs:
       run: dotnet build --configuration Release
       working-directory: src/core
     container:
-      image: Dockerfile
+      image: teqdruid/esi-build:0.1-dev.1
