@@ -6,17 +6,12 @@ on:
       - master
 
 jobs:
-  windows_build:
-    runs-on: windows-latest
+  linux_docker_build:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.101
-    - name: Setup build environment
-      run: ./setup_dev_env_win.ps1
-      shell: pwsh
     - name: Build with dotnet
       run: dotnet build --configuration Release
       working-directory: src/core
+    container:
+      image: Dockerfile
