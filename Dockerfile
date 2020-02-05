@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
-MAINTAINER John Demme (me@teqdruid.com)
+LABEL maintainer="John Demme (me@teqdruid.com)"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
