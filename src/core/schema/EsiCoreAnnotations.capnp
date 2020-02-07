@@ -23,8 +23,8 @@ annotation fixedList (field) :Void;
 annotation fixed (field) :FixedPoint; 
 struct FixedPoint { 
     signed @0 :Bool;
-    whole @0 :UInt64; # Number of bits of whole
-    fraction @1 :UInt64; # Number of bits of fraction
+    whole @1 :UInt64; # Number of bits of whole
+    fraction @2 :UInt64; # Number of bits of fraction
 }
 
 # Flexible floating point number
