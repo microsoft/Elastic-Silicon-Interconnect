@@ -1,42 +1,42 @@
-@0x811a447312a70322;
+@0x811a447312a70000;
 
 ##############
 ## Elastic Silicon Interconnect hardware annotations
 ##############
 
 # Customize the number of bits used in hardware
-annotation bits(struct, union, field, enum) :UInt64; 
+annotation bits @0xac112269228ad38c (struct, union, field, enum) :UInt64; 
 
 # Mark field as inline in hardware
-annotation inline (field) :Void;
+annotation inline @0x83f1b26b0188c1bb (field) :Void;
 
 # A fixed-size array of certain length (inline implied)
-annotation array (field) :UInt64;
+annotation array @0x93ce43d5fd6478ee (field) :UInt64;
 
 # A non-discriminated union
-annotation cUnion (union) :Void;
+annotation cUnion @0xed2e4e8a596d00a5 (union) :Void;
 
 # A variably sized list wherein the length is know before transmission
-annotation fixedList (field) :Void;
+annotation fixedList @0x8e0d4f6349687e9b (field) :Void;
 
 # Fixed point type
-annotation fixed (field) :FixedPoint; 
-struct FixedPoint { 
+annotation fixed @0xb0aef92d8eed92a5 (field) :FixedPoint; 
+struct FixedPoint @0x82adb6b7cba4ca97 { 
     signed @0 :Bool;
     whole @1 :UInt64; # Number of bits of whole
     fraction @2 :UInt64; # Number of bits of fraction
 }
 
 # Flexible floating point number
-annotation float (field) :Float;
-struct Float { 
+annotation float @0xc06dd6e3ee4392de (field) :Float;
+struct Float @0xa9e717a24fd51f71 { 
     signed @0 :Bool;
     exp @1 :UInt64; # Number of bits of exponent
     mant @2 :UInt64; # Number of bits mantissa
 }
 
 # Make field accessible with this offset in MMap'ed structs
-annotation offset (field) :HWOffset;
+annotation offset @0xcdbc3408a9217752 (field) :HWOffset;
 struct HWOffset @0xf7afdfd9eb5a7d15 {
     union {
         bytes @0 :UInt64;
