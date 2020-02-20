@@ -14,7 +14,7 @@
     <CapnpFiles Include="EsiCoreAnnotations.capnp">
       <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
     </CapnpFiles>
-    <CapnpFiles Include="/usr/include/capnp/schema.capnp">
+    <CapnpFiles Include="CapnpSchema.capnp">
       <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
     </CapnpFiles>
   </ItemGroup>
