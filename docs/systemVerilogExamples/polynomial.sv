@@ -10,6 +10,7 @@ module Polynomial3Compute (
 
     // ESI connection
     IPolynomial3ValidReady.Sink abc,
+    // input Polynomial3 abc,
 
     // Legacy wires
     input logic[9:0] x,
@@ -33,44 +34,32 @@ module Polynomial3Compute (
 
 endmodule 
 
-//synthesis translate_off
 
-module Polynomial3Compute_tb ();
 
-    logic clk;
+///
+/// Verilator cannot handle a top-level module which has a modport.
+/// This wrapper will be necessary for simulations.
+///
+module Polynomial3Compute_WireWrapper (
+    input logic clk,
+    input logic rstn,
+
+    input Polynomial3 abcData,
+    input logic[9:0] x,
+    output logic[45:0] y
+);
 
     IPolynomial3ValidReady inputAbc (.clk(clk), .rstn(1'b1));
-    logic [9:0] inputX;
-    logic [45:0] outputY;
+    assign inputAbc.data = abcData;
 
     Polynomial3Compute dut (
         .clk(clk),
         .rstn(1'b1),
 
-        .abc(inputAbc.Sink),
-        .x(inputX),
+        .abc(inputAbc.Source),
+        .x(x),
 
-        .y(outputY)
+        .y(y)
     );
 
-    initial begin
-        clk = 0;
-        #10
-        for (int i=0; i<10; i++) begin
-            #5;
-            clk = !clk;
-        end
-    end
-
-    initial begin
-        #17
-        inputAbc.valid = 1;
-        inputAbc.data.a = 42;
-        inputAbc.data.b = 184;
-        inputAbc.data.c = 2;
-        inputX = 1;
-    end
-
 endmodule
-
-//synthesis translate_on

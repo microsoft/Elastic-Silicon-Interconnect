@@ -10,6 +10,5 @@ RUN apt-get install verilator -y
 RUN apt-get install capnproto -y
 RUN apt-get install g++ -y
 RUN apt-get install clang -y
-RUN apt-get install iverilog -y
 
 CMD /bin/bash
