@@ -15,4 +15,4 @@ jobs:
       run: dotnet build --configuration Release
       working-directory: src/core
     container:
-      image: teqdruid/esi:devenv-0.1
+      image: teqdruid/esi:devenv-0.2
