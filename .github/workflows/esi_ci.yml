@@ -9,10 +9,15 @@ on:
 jobs:
   linux_docker_build:
     runs-on: ubuntu-latest
+    container:
+      image: teqdruid/esi:devenv-0.3
     steps:
     - uses: actions/checkout@v2
     - name: Build with dotnet
       run: dotnet build --configuration Release
       working-directory: src/core
-    container:
-      image: teqdruid/esi:devenv-0.1
+    - name: Integration tests
+      uses: fylein/python-pytest-github-action@v1
+      with:
+        # args: pip3 install -r requirements.txt && pytest test/unit
+        args: pytest src/core/tests
