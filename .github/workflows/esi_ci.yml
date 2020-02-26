@@ -16,5 +16,5 @@ jobs:
     - name: Build with dotnet
       run: dotnet build --configuration Release
       working-directory: src/core
-    - name: Integration tests
-      uses: cclauss/GitHub-Action-for-pytest@0.5.0
+    - name: Core integration tests
+      run: pytest src/core
