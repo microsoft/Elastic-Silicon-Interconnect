@@ -9,10 +9,12 @@ on:
 jobs:
   linux_docker_build:
     runs-on: ubuntu-latest
+    container:
+      image: teqdruid/esi:devenv-0.3
     steps:
     - uses: actions/checkout@v2
     - name: Build with dotnet
       run: dotnet build --configuration Release
       working-directory: src/core
-    container:
-      image: teqdruid/esi:devenv-0.2
+    - name: Core integration tests
+      run: pytest src/core
