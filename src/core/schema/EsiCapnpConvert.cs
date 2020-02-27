@@ -33,7 +33,7 @@ namespace Esi.Schema
         public static IReadOnlyList<EsiType> ConvertTextSchema(FileInfo file)
         {
             var capnpResult = Cli.Wrap("capnp")
-                .SetArguments($"compile -I../../schema/ -o- {file.FullName}")
+                .SetArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
                 .Execute();
             var bytes = Encoding.ASCII.GetBytes(capnpResult.StandardOutput);
             using (var stream = new MemoryStream(bytes) )
