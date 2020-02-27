@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Capnp.Net.Runtime" Version="$(CapnpPackageReferenceVersion)" />
     <PackageReference Include="CapnpC.CSharp.MsBuild.Generation" Version="$(CapnpPackageReferenceVersion)" />
-    <PackageReference Include="CliWrap" Version="2.5.0" />
+    <PackageReference Include="CliWrap" Version="3.0.0-alpha3" />
 
     <ProjectReference Include="../utils/utils.csproj"/>
   </ItemGroup>

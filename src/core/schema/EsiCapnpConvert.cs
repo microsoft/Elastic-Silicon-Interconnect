@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Text;
 using System;
 using System.Collections.Generic;
@@ -32,21 +34,26 @@ namespace Esi.Schema
 
         public static IReadOnlyList<EsiType> ConvertTextSchema(FileInfo file)
         {
-            var capnpResult = Cli.Wrap("capnp")
-                .SetArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
-                .Execute();
-            var bytes = Encoding.ASCII.GetBytes(capnpResult.StandardOutput);
-            using (var stream = new MemoryStream(bytes) )
+            using (var memstream = new MemoryStream() )
             {
-                return ConvertFromCGRMessage(stream);
+                var capnpCmd = Cli.Wrap("capnp")
+                    .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
+                    .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
+                    .WithValidation(CommandResultValidation.ZeroExitCode);
+
+                Task.Run(async () => await capnpCmd.ExecuteAsync()).Wait();
+                Debug.Assert(memstream.Length > 0);
+
+                memstream.Seek(0, SeekOrigin.Begin);
+                return ConvertFromCGRMessage(memstream);
             }
         }
 
 
         protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest cgr)
         {
-            var ret = cgr.Nodes.Select(ConvertNode).Where(t => t != null);
-            return null;
+            var ret = cgr.Nodes.Select(ConvertNode).Where(t => t != null).ToList();
+            return ret;
         }
 
         protected EsiType ConvertNode(Node node)
