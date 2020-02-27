@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Esi.Schema;
 
 namespace SVCodeGen
 {
@@ -19,6 +20,7 @@ namespace SVCodeGen
                 Console.WriteLine("expecting binary-encoded code generation request from standard input");
 
                 input = Console.OpenStandardInput();
+                var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(input);
             }
 
             return 0;

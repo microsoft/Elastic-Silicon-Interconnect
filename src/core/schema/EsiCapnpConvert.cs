@@ -1,9 +1,11 @@
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Capnp;
 using CapnpGen;
+using CliWrap;
 
 namespace Esi.Schema 
 {
@@ -15,7 +17,7 @@ namespace Esi.Schema
             return convert.GoConvert(request);
         }
 
-        public static IReadOnlyList<EsiType> Convert(Stream stream)
+        public static IReadOnlyList<EsiType> ConvertFromCGRMessage(Stream stream)
         {
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
@@ -27,6 +29,19 @@ namespace Esi.Schema
             cgr.applyDefaults();
             return Convert(cgr);
         }
+
+        public static IReadOnlyList<EsiType> ConvertTextSchema(FileInfo file)
+        {
+            var capnpResult = Cli.Wrap("capnp")
+                .SetArguments($"compile -I../../schema/ -o- {file.FullName}")
+                .Execute();
+            var bytes = Encoding.ASCII.GetBytes(capnpResult.StandardOutput);
+            using (var stream = new MemoryStream(bytes) )
+            {
+                return ConvertFromCGRMessage(stream);
+            }
+        }
+
 
         protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest cgr)
         {
