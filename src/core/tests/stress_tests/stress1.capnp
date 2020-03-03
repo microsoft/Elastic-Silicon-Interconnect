@@ -11,12 +11,12 @@ struct Polynomial3 { # ax^2 + bx + c
 struct Example {
     poly @0 :Polynomial3;
 
-    # exampleGroup :group {
-        # houseNumber @1 :UInt32;
-        # street @2 :Text;
-        # city @3 :Text;
-        # country @4 :Text;
-    # }
+    exampleGroup :group {
+        houseNumber @1 :UInt32;
+        street @2 :Text;
+        city @3 :Text;
+        country @4 :Text;
+    }
 
-    subExample @1 :Example;
+    subExample @5 :Example;
 }

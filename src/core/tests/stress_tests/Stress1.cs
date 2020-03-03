@@ -22,9 +22,15 @@ namespace Esi.Core.Tests
             Assert.AreEqual(1, examples.Count());
 
             var example = examples.First();
+
             var subExamples = example.Fields.Where(f => f.Name == "subExample");
             Assert.AreEqual(1, subExamples.Count());
             Assert.AreSame(example, subExamples.First().Type);
+
+            var exampleGroups = example.Fields.Where(f => f.Name == "exampleGroup");
+            Assert.AreEqual(1, exampleGroups.Count());
+            var exampleGroup = exampleGroups.First();
+            Assert.IsInstanceOf(typeof(EsiStruct), exampleGroup.Type);
         }
     }
 }

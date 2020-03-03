@@ -15,6 +15,11 @@ namespace Esi.Schema
 {
     public class EsiCapnpConvert
     {
+        public struct AnnotationIDs
+        {
+            public const ulong BITS = 0xac112269228ad38c;
+        }
+
         public static IReadOnlyList<EsiType> Convert(CodeGeneratorRequest request)
         {
             var convert = new EsiCapnpConvert();
@@ -127,7 +132,9 @@ namespace Esi.Schema
             switch (field.which)
             {
                 case Field.WHICH.Group:
-                    throw new NotImplementedException();
+                    return new EsiStruct.StructField(
+                        Name: field.Name,
+                        Type: ConvertStruct(field.Group.TypeId));
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
                         Name: field.Name,

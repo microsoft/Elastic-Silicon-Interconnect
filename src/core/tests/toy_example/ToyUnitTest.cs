@@ -23,6 +23,7 @@ namespace Esi.Core.Tests
 
             var poly3 = poly3s.First();
             Assert.AreEqual(1, poly3.Fields.Where(f => f.Name == "a").Count());
+            Assert.IsInstanceOf(typeof(EsiStruct), poly3);
         }
     }
 }
