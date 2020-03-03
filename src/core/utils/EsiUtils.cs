@@ -1,3 +1,6 @@
+using System.Linq;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -38,6 +41,12 @@ namespace Esi
         public static FileInfo ResolveResource(string resource)
         {
             return new FileInfo(Path.Combine(RootDir.FullName, resource));
+        }
+
+        // ------ More LINQ methods
+        public static IList<R> Iterate<T, R>(this IEnumerable<T> collection, Func<T, R> F)
+        {
+            return collection.Select(F).ToList();
         }
     }
 }

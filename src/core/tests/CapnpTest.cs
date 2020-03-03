@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using NUnit.Framework;
@@ -13,9 +14,9 @@ namespace  Esi.Core.Tests
             return Esi.Utils.ResolveResource(Path.Combine("tests", resource));
         }
 
-        public void ReadSchema(string resource)
+        public IReadOnlyList<EsiType> ReadSchema(string resource)
         {
-            EsiCapnpConvert.ConvertTextSchema(ResolveResource(resource));
+            return EsiCapnpConvert.ConvertTextSchema(ResolveResource(resource));
         }
 
     }

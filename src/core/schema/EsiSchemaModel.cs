@@ -1,36 +1,41 @@
+using System.Linq;
+using System;
 using System.Collections.Generic;
 
 #nullable enable
 namespace Esi.Schema
 {
     public abstract class EsiType
-    {
-        public int? VersionOrder { get; }
-
-        public EsiType(int? VersionOrder)
-        {
-            this.VersionOrder = VersionOrder;
-        }
-    }
+    {    }
 
     public class EsiPrimitive : EsiType
     {
         public enum PrimitiveType {
+            EsiVoid,
             EsiBool,
             EsiByte,
             EsiBit,
-            EsiUInt,
-            EsiInt
         }
 
         public PrimitiveType Type { get; }
-        public int Bits { get; }
 
-        public EsiPrimitive(PrimitiveType Type, int Bits, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiPrimitive(PrimitiveType Type)
+            : base()
         {
             this.Type = Type;
+        }
+    }
+
+    public class EsiInt : EsiType
+    {
+        public bool Signed { get; }
+        public int Bits { get; }
+
+        public EsiInt(int Bits, bool Signed)
+            : base()
+        {
             this.Bits = Bits;
+            this.Signed = Signed;
         }
     }
 
@@ -50,8 +55,8 @@ namespace Esi.Schema
 
         public IReadOnlyList<EnumMember> Members { get; }
 
-        public EsiEnum(IReadOnlyList<EnumMember> Members, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiEnum(IReadOnlyList<EnumMember> Members)
+            : base()
         {
             this.Members = Members;
         }
@@ -62,17 +67,16 @@ namespace Esi.Schema
         public enum CompoundType
         {
             EsiFixed,
-            EsiFloat,
-            EsiUFixed,
-            EsiUFloat
+            EsiFloat
         }
 
         public CompoundType Type { get; }
+        public bool Signed { get; }
         public int Whole { get; }
         public int Fractional { get; }
 
-        public EsiCompound(CompoundType Type, int Whole, int Fractional, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiCompound(CompoundType Type, bool Signed, int Whole, int Fractional)
+            : base()
         {
             this.Type = Type;
             this.Whole = Whole;
@@ -85,10 +89,17 @@ namespace Esi.Schema
         public EsiType Inner { get; }
         public int Length { get; }
 
-        public EsiArray(EsiType Inner, int Length, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiArray(EsiType Inner, int Length)
+            : base()
         {
             this.Inner = Inner;
+            this.Length = Length;
+        }
+
+        public EsiArray(Func<EsiType> Inner, int Length)
+            : base()
+        {
+            this.Inner = Inner();
             this.Length = Length;
         }
     }
@@ -98,26 +109,44 @@ namespace Esi.Schema
         public struct StructField
         {
             public string Name { get; }
+            // This is used for versioning in CapnProto
+            public ulong? CodeOrder { get; }
             public EsiType Type { get; }
             // BitOffset is into the _entire_ struct.
             public int? BitOffset { get; }
 
-            public StructField(string Name, EsiType Type, int? BitOffset)
+            public StructField(string Name, EsiType Type, ulong? CodeOrder = null, int? BitOffset = null)
             {
                 this.Name = Name;
                 this.Type = Type;
+                this.CodeOrder = CodeOrder;
+                this.BitOffset = BitOffset;
+            }
+
+            public StructField(string Name, Func<EsiType> Type, ulong? CodeOrder = null, int? BitOffset = null)
+            {
+                this.Name = Name;
+                this.Type = Type();
+                this.CodeOrder = CodeOrder;
                 this.BitOffset = BitOffset;
             }
         }
 
         public string? Name { get; }
-        public IReadOnlyList<StructField> Fields { get; }
+        public StructField[] Fields { get; }
 
-        public EsiStruct(string? Name, IReadOnlyList<StructField> Fields, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiStruct(string? Name, IEnumerable<StructField> Fields)
+            : base()
         {
             this.Name = Name;
-            this.Fields = Fields;
+            this.Fields = Fields.ToArray();
+        }
+
+        public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
+            : base()
+        {
+            this.Name = Name;
+            this.Fields = Fields(this).ToArray();
         }
     }
 
@@ -127,15 +156,27 @@ namespace Esi.Schema
         {
             public string Name { get; }
             public EsiType Type { get; }
+
+            public UnionEntry(string Name, EsiType Type)
+            {
+                this.Name = Name;
+                this.Type = Type;
+            }
+
+            public UnionEntry(string Name, Func<EsiType> Type)
+            {
+                this.Name = Name;
+                this.Type = Type();
+            }
         }
 
-        public IReadOnlyList<UnionEntry> Entries { get; }
+        public UnionEntry[] Entries { get; }
         public bool IsDiscriminated { get; }
 
-        public EsiUnion(IReadOnlyList<UnionEntry> Entries, bool IsDiscriminated = true, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiUnion(IEnumerable<UnionEntry> Entries, bool IsDiscriminated = true)
+            : base()
         {
-            this.Entries = Entries;
+            this.Entries = Entries.ToArray();
             this.IsDiscriminated = IsDiscriminated;
         }
     }
@@ -145,10 +186,17 @@ namespace Esi.Schema
         public EsiType Inner { get; }
         public bool IsFixed { get; }
 
-        public EsiList(EsiType Inner, bool IsFixed = true, int? VersionOrder = null)
-            : base(VersionOrder)
+        public EsiList(EsiType Inner, bool IsFixed = true)
+            : base()
         {
             this.Inner = Inner;
+            this.IsFixed = IsFixed;
+        }
+
+        public EsiList(Func<EsiType> Inner, bool IsFixed = true)
+            : base()
+        {
+            this.Inner = Inner();
             this.IsFixed = IsFixed;
         }
     }
