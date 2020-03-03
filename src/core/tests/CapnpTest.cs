@@ -9,12 +9,12 @@ namespace  Esi.Core.Tests
 {
     public class CapnpTest
     {
-        private FileInfo ResolveResource(string resource)
+        private static FileInfo ResolveResource(string resource)
         {
             return Esi.Utils.ResolveResource(Path.Combine("tests", resource));
         }
 
-        public IReadOnlyList<EsiType> ReadSchema(string resource)
+        public static IReadOnlyList<EsiType> ReadSchema(string resource)
         {
             return EsiCapnpConvert.ConvertTextSchema(ResolveResource(resource));
         }
