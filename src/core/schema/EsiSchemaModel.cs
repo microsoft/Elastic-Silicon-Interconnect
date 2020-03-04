@@ -29,9 +29,9 @@ namespace Esi.Schema
     public class EsiInt : EsiType
     {
         public bool Signed { get; }
-        public int Bits { get; }
+        public ulong Bits { get; }
 
-        public EsiInt(int Bits, bool Signed)
+        public EsiInt(ulong Bits, bool Signed)
             : base()
         {
             this.Bits = Bits;

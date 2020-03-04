@@ -10,6 +10,7 @@ using Capnp;
 using CapnpGen;
 using CliWrap;
 using Esi;
+using System.Runtime.ExceptionServices;
 
 namespace Esi.Schema 
 {
@@ -18,6 +19,16 @@ namespace Esi.Schema
         public struct AnnotationIDs
         {
             public const ulong BITS = 0xac112269228ad38c;
+            public const ulong INLINE = 0x83f1b26b0188c1bb;
+            public const ulong ARRAY = 0x93ce43d5fd6478ee;
+            public const ulong C_UNION = 0xed2e4e8a596d00a5;
+            public const ulong FIXED_LIST = 0x8e0d4f6349687e9b;
+            public const ulong FIXED = 0xb0aef92d8eed92a5;
+            public const ulong FIXED_POINT = 0x82adb6b7cba4ca97;
+            public const ulong FLOAT = 0xc06dd6e3ee4392de;
+            public const ulong FLOATING_POINT = 0xa9e717a24fd51f71;
+            public const ulong OFFSET = 0xcdbc3408a9217752;
+            public const ulong HWOFFSET = 0xf7afdfd9eb5a7d15;
         }
 
         public static IReadOnlyList<EsiType> Convert(CodeGeneratorRequest request)
@@ -48,7 +59,14 @@ namespace Esi.Schema
                     .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
                     .WithValidation(CommandResultValidation.ZeroExitCode);
 
-                Task.Run(async () => await capnpCmd.ExecuteAsync()).Wait();
+                try
+                {
+                    Task.Run(async () => await capnpCmd.ExecuteAsync()).Wait();
+                }
+                catch (AggregateException ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
                 Debug.Assert(memstream.Length > 0);
 
                 memstream.Seek(0, SeekOrigin.Begin);
@@ -138,7 +156,7 @@ namespace Esi.Schema
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
                         Name: field.Name,
-                        Type: ConvertType(field.Slot.Type));
+                        Type: ConvertType(field.Slot.Type, field.Annotations));
                 default:
                     throw new EsiCapnpConvertException("Field type undefined is not a valid capnp schema");
             }
@@ -163,10 +181,29 @@ namespace Esi.Schema
 
             };
 
-        private Func<EsiType> ConvertType(CapnpGen.Type type)
+        private Func<EsiType> ConvertType(CapnpGen.Type type, IReadOnlyList<Annotation> annotations)
         {
             if (SimpleTypeMappings.TryGetValue(type.which, out var esiType))
             {
+                if (annotations?.Count() > 0)
+                {
+                    foreach (var a in annotations)
+                    {
+                        switch (a.Id)
+                        {
+                            case AnnotationIDs.BITS:
+                                if (esiType is EsiInt ei)
+                                {
+                                    if (ei.Bits < a.Value.Uint64.Value)
+                                    {
+
+                                    }
+
+                                }
+                                break;
+                        }
+                    }
+                }
                 return () => esiType;
             }
 

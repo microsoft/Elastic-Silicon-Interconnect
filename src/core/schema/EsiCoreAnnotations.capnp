@@ -21,15 +21,15 @@ annotation fixedList @0x8e0d4f6349687e9b (field) :Void;
 
 # Fixed point type
 annotation fixed @0xb0aef92d8eed92a5 (field) :FixedPoint; 
-struct FixedPoint @0x82adb6b7cba4ca97 { 
+struct FixedPoint @0x82adb6b7cba4ca97 {
     signed @0 :Bool;
     whole @1 :UInt64; # Number of bits of whole
     fraction @2 :UInt64; # Number of bits of fraction
 }
 
 # Flexible floating point number
-annotation float @0xc06dd6e3ee4392de (field) :Float;
-struct Float @0xa9e717a24fd51f71 { 
+annotation float @0xc06dd6e3ee4392de (field) :FloatingPoint;
+struct FloatingPoint @0xa9e717a24fd51f71 { 
     signed @0 :Bool;
     exp @1 :UInt64; # Number of bits of exponent
     mant @2 :UInt64; # Number of bits mantissa
