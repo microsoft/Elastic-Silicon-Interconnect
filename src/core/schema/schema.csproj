@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <CapnpPackageReferenceVersion>1.2.138</CapnpPackageReferenceVersion>
+    <!-- <CapnpPackageReferenceVersion>1.2.189</CapnpPackageReferenceVersion> -->
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Capnp.Net.Runtime" Version="$(CapnpPackageReferenceVersion)" />
-    <PackageReference Include="CapnpC.CSharp.MsBuild.Generation" Version="$(CapnpPackageReferenceVersion)" />
+    <PackageReference Include="Capnp.Net.Runtime" Version="1.2.189" />
+    <PackageReference Include="CapnpC.CSharp.MsBuild.Generation" Version="1.2.138" />
     <PackageReference Include="CliWrap" Version="3.0.0-alpha3" />
 
     <ProjectReference Include="../core/core.csproj"/>

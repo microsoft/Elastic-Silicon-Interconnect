@@ -23,9 +23,12 @@ namespace SVCodeGen
                 input = Console.OpenStandardInput();
             }
 
-            var esiCtxt = new EsiContext();
-            var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
-            esiCtxt.Log.Information("Completed reading capnp message");
+            using (var esiCtxt = new EsiContext())
+            {
+                esiCtxt.Log.Information("Starting conversion to EsiTypes");
+                var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
+                esiCtxt.Log.Information("Completed reading capnp message");
+            }
 
             return 0;
         }

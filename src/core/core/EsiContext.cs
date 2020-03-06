@@ -1,11 +1,13 @@
 using Serilog;
 using Serilog.Core;
 
+using System;
+
 namespace Esi
 {
-    public class EsiContext
+    public class EsiContext : IDisposable
     {
-        public Logger Log { get; protected set; }
+        public Logger? Log { get; protected set; }
 
         public EsiContext(LoggerConfiguration? loggerConfiguration = null)
         {
@@ -16,6 +18,12 @@ namespace Esi
                     .WriteTo.Console();
             }
             Log = loggerConfiguration.CreateLogger();
+        }
+
+        public void Dispose()
+        {
+            Log?.Dispose();
+            Log = null;
         }
     }
 }
