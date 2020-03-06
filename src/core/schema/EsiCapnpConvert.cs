@@ -78,8 +78,8 @@ namespace Esi.Schema
 
         protected Dictionary<UInt64, string> IDtoFile
             = new Dictionary<ulong, string>();
-        protected Dictionary<UInt64, (string name, string file)> IDtoNames
-            = new Dictionary<ulong, (string name, string file)>();
+        protected Dictionary<UInt64, EsiCapnpLocation> IDtoNames
+            = new Dictionary<ulong, EsiCapnpLocation>();
         
         protected Dictionary<UInt64, Func<EsiStruct>> IDtoStructFuture
             = new Dictionary<ulong, Func<EsiStruct>>();
@@ -104,7 +104,10 @@ namespace Esi.Schema
                 .SelectMany(fileNode => fileNode.NestedNodes.Select(nested => (nested, fileNode)))
                 .Iterate(n => 
                     IDtoNames[n.nested.Id] =
-                        (name: n.nested.Name, file: IDtoFile.GetValueOrDefault(n.fileNode.Id)));
+                        new EsiCapnpLocation {
+                            StructName = n.nested.Name,
+                            File = IDtoFile.GetValueOrDefault(n.fileNode.Id)
+                        });
             var unresolvedStructs = cgr.Nodes.Select(ConvertNode).Where(t => t != null).ToList();
             var esiTypes = unresolvedStructs.Select(f => f()).ToList();
             return esiTypes;
@@ -123,21 +126,22 @@ namespace Esi.Schema
         private Func<EsiStruct> ConvertStruct(Node s)
         {
 
-            Func<EsiStruct, IEnumerable<EsiStruct.StructField>> GetStructFieldsFuture()
+            Func<EsiStruct, IEnumerable<EsiStruct.StructField>> GetStructFieldsFuture(EsiCapnpLocation structNameFile)
             {
                 return (esiStruct) => {
                     Debug.Assert(!IDtoStruct.ContainsKey(s.Id) ||
                         IDtoStruct[s.Id] == esiStruct );
                     IDtoStruct[s.Id] = esiStruct;
-                    return s.Struct.Fields.Select(ConvertField);
+                    return s.Struct.Fields.Select(f => ConvertField(structNameFile, f));
                 };
             }
             Func<EsiStruct> stFuture = () => {
                 if (!IDtoStruct.TryGetValue(s.Id, out var esiStruct))
                 {
+                    var structNameFile = IDtoNames.GetValueOrDefault(s.Id);
                     esiStruct = new EsiStruct (
-                        Name: IDtoNames.GetValueOrDefault(s.Id).name,
-                        Fields: GetStructFieldsFuture());
+                        Name: structNameFile.StructName,
+                        Fields: GetStructFieldsFuture(structNameFile));
                 }
                 return esiStruct;
             };
@@ -155,7 +159,7 @@ namespace Esi.Schema
 
         }
         
-        private EsiStruct.StructField ConvertField(Field field)
+        private EsiStruct.StructField ConvertField(EsiCapnpLocation structNameFile, Field field)
         {
             switch (field.which)
             {
@@ -166,9 +170,12 @@ namespace Esi.Schema
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
                         Name: field.Name,
-                        Type: ConvertType(field.Slot.Type, field.Annotations));
+                        Type: ConvertType(
+                            structNameFile.WithField(field.Name),
+                            field.Slot.Type,
+                            field.Annotations));
                 default:
-                    throw new EsiCapnpConvertException("Field type undefined is not a valid capnp schema");
+                    throw new EsiCapnpConvertException($"Field type undefined is not a valid capnp schema ({loc})");
             }
         }
 
@@ -191,7 +198,10 @@ namespace Esi.Schema
 
             };
 
-        private Func<EsiType> ConvertType(CapnpGen.Type type, IReadOnlyList<Annotation> annotations)
+        private Func<EsiType> ConvertType(
+            EsiCapnpLocation loc,
+            CapnpGen.Type type,
+            IReadOnlyList<Annotation> annotations)
         {
             if (SimpleTypeMappings.TryGetValue(type.which, out var esiType))
             {
@@ -207,29 +217,41 @@ namespace Esi.Schema
                                     if (ei.Bits < a.Value.Uint64)
                                     {
                                         C.Log.Warning(
-                                            "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})!",
+                                            "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
                                             a.Value.Uint64.Value,
-                                            ei.Bits);
+                                            ei.Bits,
+                                            loc);
                                     }
                                     return () => new EsiInt(a.Value.Uint64.Value, ei.Signed);
                                 }
                                 else
                                 {
-                                    C.Log.Error("$ESI.bits() can only be applied to integer types!");
+                                    C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
                                 }
+                                break;
+                            case AnnotationIDs.INLINE:
+                                C.Log.Warning("$inline on primitive or list types have no effect ({loc})", loc);
                                 break;
                         }
                     }
                 }
+
                 return () => esiType;
             }
 
+            bool inline = annotations.Where(a => a.Id == AnnotationIDs.INLINE).Count() > 0;
             switch (type.which)
             {
                 case CapnpGen.Type.WHICH.Struct:
+                    if (!inline)
+                    {
+                        C.Log.Error(
+                            "ESI doesn't currently support non-inline struct fields ({loc})",
+                            loc);
+                    }
                     return ConvertStruct(type.Struct.TypeId);
                 default:
-                    throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented");
+                    throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})");
             }
         }
     }
@@ -237,6 +259,27 @@ namespace Esi.Schema
     public class EsiCapnpConvertException : Exception
     {
         public EsiCapnpConvertException(string msg) : base (msg) { }
+    }
+
+    public struct EsiCapnpLocation
+    {
+        public string File;
+        public string StructName;
+        public string FieldName;
+
+        public EsiCapnpLocation WithField(string field)
+        {
+            FieldName = field;
+            return this;
+        }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(FieldName))
+                return $"{File}/{StructName}";
+            else
+                return $"{File}/{StructName}/{FieldName}";
+        }
     }
 
 }
