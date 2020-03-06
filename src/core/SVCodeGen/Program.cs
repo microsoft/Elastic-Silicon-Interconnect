@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Esi;
 using Esi.Schema;
 
 namespace SVCodeGen
@@ -20,8 +21,11 @@ namespace SVCodeGen
                 Console.WriteLine("expecting binary-encoded code generation request from standard input");
 
                 input = Console.OpenStandardInput();
-                var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(input);
             }
+
+            var esiCtxt = new EsiContext();
+            var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
+            esiCtxt.Log.Information("Completed reading capnp message");
 
             return 0;
         }

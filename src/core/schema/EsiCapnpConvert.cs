@@ -31,13 +31,13 @@ namespace Esi.Schema
             public const ulong HWOFFSET = 0xf7afdfd9eb5a7d15;
         }
 
-        public static IReadOnlyList<EsiType> Convert(CodeGeneratorRequest request)
+        public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest request)
         {
-            var convert = new EsiCapnpConvert();
+            var convert = new EsiCapnpConvert(ctxt);
             return convert.GoConvert(request);
         }
 
-        public static IReadOnlyList<EsiType> ConvertFromCGRMessage(Stream stream)
+        public static IReadOnlyList<EsiType> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
         {
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
@@ -47,10 +47,10 @@ namespace Esi.Schema
             cgr.RequestedFiles = reader.RequestedFiles.ToReadOnlyList(_ => CapnpSerializable.Create<CapnpGen.CodeGeneratorRequest.RequestedFile>(_));
             cgr.CapnpVersion = CapnpSerializable.Create<CapnpGen.CapnpVersion>(reader.CapnpVersion);
             cgr.applyDefaults();
-            return Convert(cgr);
+            return Convert(ctxt, cgr);
         }
 
-        public static IReadOnlyList<EsiType> ConvertTextSchema(FileInfo file)
+        public static IReadOnlyList<EsiType> ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
             using (var memstream = new MemoryStream() )
             {
@@ -70,7 +70,8 @@ namespace Esi.Schema
                 Debug.Assert(memstream.Length > 0);
 
                 memstream.Seek(0, SeekOrigin.Begin);
-                return ConvertFromCGRMessage(memstream);
+                var msg = System.Text.Encoding.UTF8.GetString(memstream.ToArray());
+                return ConvertFromCGRMessage(ctxt, memstream);
             }
         }
 
@@ -85,6 +86,15 @@ namespace Esi.Schema
         protected Dictionary<UInt64, EsiStruct> IDtoStruct
             = new Dictionary<ulong, EsiStruct>();
 
+        /// <summary>
+        /// ESI context member variables are generally called 'C' so it's easier to log stuff
+        /// </summary>
+        protected EsiContext C;
+
+        public EsiCapnpConvert(EsiContext ctxt)
+        {
+            this.C = ctxt;
+        }
         
         protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest cgr)
         {
@@ -194,11 +204,18 @@ namespace Esi.Schema
                             case AnnotationIDs.BITS:
                                 if (esiType is EsiInt ei)
                                 {
-                                    if (ei.Bits < a.Value.Uint64.Value)
+                                    if (ei.Bits < a.Value.Uint64)
                                     {
-
+                                        C.Log.Warning(
+                                            "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})!",
+                                            a.Value.Uint64.Value,
+                                            ei.Bits);
                                     }
-
+                                    return () => new EsiInt(a.Value.Uint64.Value, ei.Signed);
+                                }
+                                else
+                                {
+                                    C.Log.Error("$ESI.bits() can only be applied to integer types!");
                                 }
                                 break;
                         }

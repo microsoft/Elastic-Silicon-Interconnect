@@ -12,7 +12,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0"/>
 
     <ProjectReference Include="../schema/schema.csproj"/>
-    <ProjectReference Include="../utils/utils.csproj"/>
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using Esi.Schema;
+using System.IO;
 
 namespace Esi.Core.Tests 
 {
@@ -14,7 +15,10 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1a()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            // var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = EsiCapnpConvert.ConvertFromCGRMessage(
+                new EsiContext(),
+                File.OpenRead(ResolveResource("stress_tests/stress1.capnp.CodeGeneratorRequest.bin").FullName));
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
             Assert.Greater(structs.Count(), 0);
