@@ -1,4 +1,3 @@
-using System.Net.WebSockets;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -16,20 +15,22 @@ namespace Esi.Schema
 {
     public class EsiCapnpConvert
     {
-        public struct AnnotationIDs
+        public enum AnnotationIDs : ulong
         {
-            public const ulong BITS = 0xac112269228ad38c;
-            public const ulong INLINE = 0x83f1b26b0188c1bb;
-            public const ulong ARRAY = 0x93ce43d5fd6478ee;
-            public const ulong C_UNION = 0xed2e4e8a596d00a5;
-            public const ulong FIXED_LIST = 0x8e0d4f6349687e9b;
-            public const ulong FIXED = 0xb0aef92d8eed92a5;
-            public const ulong FIXED_POINT = 0x82adb6b7cba4ca97;
-            public const ulong FLOAT = 0xc06dd6e3ee4392de;
-            public const ulong FLOATING_POINT = 0xa9e717a24fd51f71;
-            public const ulong OFFSET = 0xcdbc3408a9217752;
-            public const ulong HWOFFSET = 0xf7afdfd9eb5a7d15;
+            BITS = 0xac112269228ad38c,
+            INLINE = 0x83f1b26b0188c1bb,
+            ARRAY = 0x93ce43d5fd6478ee,
+            C_UNION = 0xed2e4e8a596d00a5,
+            FIXED_LIST = 0x8e0d4f6349687e9b,
+            FIXED = 0xb0aef92d8eed92a5,
+            FIXED_POINT = 0x82adb6b7cba4ca97,
+            FLOAT = 0xc06dd6e3ee4392de,
+            FLOATING_POINT = 0xa9e717a24fd51f71,
+            OFFSET = 0xcdbc3408a9217752,
+            HWOFFSET = 0xf7afdfd9eb5a7d15,
         }
+        public readonly static ISet<ulong> ESIAnnotations = new HashSet<ulong>(
+            Enum.GetValues(typeof(AnnotationIDs)).Cast<ulong>());
 
         public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
         {
@@ -151,7 +152,6 @@ namespace Esi.Schema
                 return esiStructFuture;
             }
             throw new EsiCapnpConvertException($"Future func for struct id {structId} doesn't exist in table!");
-
         }
         
         private EsiStruct.StructField ConvertField(EsiCapnpLocation structNameFile, Field.READER field)
@@ -166,7 +166,7 @@ namespace Esi.Schema
                     return new EsiStruct.StructField(
                         Name: field.Name,
                         Type: ConvertType(
-                            structNameFile.WithField(field.Name),
+                            structNameFile.AppendField(field.Name),
                             field.Slot.Type,
                             field.Annotations));
                 default:
@@ -174,82 +174,95 @@ namespace Esi.Schema
             }
         }
 
-        public IReadOnlyDictionary<CapnpGen.Type.WHICH, EsiType> SimpleTypeMappings =
-            new Dictionary<CapnpGen.Type.WHICH, EsiType> {
-                [CapnpGen.Type.WHICH.Void] = new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiVoid),
-                [CapnpGen.Type.WHICH.Bool] = new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool),
-                [CapnpGen.Type.WHICH.Int8] = new EsiInt(8, true),
-                [CapnpGen.Type.WHICH.Int16] = new EsiInt(16, true),
-                [CapnpGen.Type.WHICH.Int32] = new EsiInt(32, true),
-                [CapnpGen.Type.WHICH.Int64] = new EsiInt(64, true),
-                [CapnpGen.Type.WHICH.Uint8] = new EsiInt(8, false),
-                [CapnpGen.Type.WHICH.Uint16] = new EsiInt(16, false),
-                [CapnpGen.Type.WHICH.Uint32] = new EsiInt(32, false),
-                [CapnpGen.Type.WHICH.Uint64] = new EsiInt(64, false),
-                [CapnpGen.Type.WHICH.Float32] = new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
-                [CapnpGen.Type.WHICH.Float64] = new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-                [CapnpGen.Type.WHICH.Text] = new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
-                [CapnpGen.Type.WHICH.Data] = new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
-            };
-
         private Func<EsiType> ConvertType(
             EsiCapnpLocation loc,
             CapnpGen.Type.READER type,
             IReadOnlyList<Annotation.READER> annotations)
         {
-            if (SimpleTypeMappings.TryGetValue(type.which, out var esiType))
-            {
-                if (annotations?.Count() > 0)
+            return () => {
+                var esiType = type.which switch {
+                    CapnpGen.Type.WHICH.Void => (EsiType) new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiVoid),
+                    CapnpGen.Type.WHICH.Bool => new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool),
+                    CapnpGen.Type.WHICH.Int8 => new EsiInt(8, true),
+                    CapnpGen.Type.WHICH.Int16 => new EsiInt(16, true),
+                    CapnpGen.Type.WHICH.Int32 => new EsiInt(32, true),
+                    CapnpGen.Type.WHICH.Int64 => new EsiInt(64, true),
+                    CapnpGen.Type.WHICH.Uint8 => new EsiInt(8, false),
+                    CapnpGen.Type.WHICH.Uint16 => new EsiInt(16, false),
+                    CapnpGen.Type.WHICH.Uint32 => new EsiInt(32, false),
+                    CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
+                    CapnpGen.Type.WHICH.Float32 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
+                    CapnpGen.Type.WHICH.Float64 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
+                    CapnpGen.Type.WHICH.Text => new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
+                    CapnpGen.Type.WHICH.Data => new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
+
+                    CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
+                    CapnpGen.Type.WHICH.Enum => ConvertEnum(loc, type.Enum.TypeId),
+                    CapnpGen.Type.WHICH.Struct => new EsiStructReference(ConvertStruct(type.Struct.TypeId)()),
+
+                    CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
+                    CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
+
+                    _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
+                };
+                return AddAnnotations(esiType, loc, annotations);
+            };
+        }
+
+        private EsiType ConvertEnum(EsiCapnpLocation loc, ulong typeId)
+        {
+            throw new NotImplementedException();
+        }
+
+        private EsiType AddAnnotations(EsiType esiType, EsiCapnpLocation loc, IReadOnlyList<Annotation.READER> annotations)
+        {
+            annotations?.ForEach(a => {
+                if (!ESIAnnotations.Contains( a.Id ))
+                    // No-op if we don't recognize the annotation ID
+                    return;
+
+                switch (esiType, (AnnotationIDs) a.Id)
                 {
-                    foreach (var a in annotations)
-                    {
-                        switch (a.Id)
+                    case (EsiInt ei, AnnotationIDs.BITS):
+                        if (ei.Bits < a.Value.Uint64)
                         {
-                            case AnnotationIDs.BITS:
-                                if (esiType is EsiInt ei)
-                                {
-                                    if (ei.Bits < a.Value.Uint64)
-                                    {
-                                        C.Log.Warning(
-                                            "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
-                                            a.Value.Uint64,
-                                            ei.Bits,
-                                            loc);
-                                    }
-                                    return () => new EsiInt(a.Value.Uint64, ei.Signed);
-                                }
-                                else
-                                {
-                                    C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
-                                }
-                                break;
-                            case AnnotationIDs.INLINE:
-                                C.Log.Warning("$inline on primitive or list types have no effect ({loc})", loc);
-                                break;
+                            C.Log.Warning(
+                                "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
+                                a.Value.Uint64,
+                                ei.Bits,
+                                loc);
                         }
-                    }
+                        esiType = new EsiInt(a.Value.Uint64, ei.Signed);
+                        break;
+                    case (_, AnnotationIDs.BITS):
+                        C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
+                        break;
+
+                    case (EsiStructReference stRef, AnnotationIDs.INLINE):
+                        esiType = stRef.Struct;
+                        break;
+                    case (EsiListReference lstRef, AnnotationIDs.INLINE):
+                        esiType = lstRef.List;
+                        break;
+                    case (EsiValueType _, AnnotationIDs.INLINE):
+                        C.Log.Warning("$inline on value types have no effect ({loc})", loc);
+                        break;
                 }
-
-                return () => esiType;
-            }
-
-            bool inline = annotations.Where(a => a.Id == AnnotationIDs.INLINE).Count() > 0;
-            switch (type.which)
-            {
-                case CapnpGen.Type.WHICH.Struct:
-                    if (!inline)
-                    {
-                        C.Log.Error(
-                            "ESI doesn't currently support non-inline struct fields ({loc})",
-                            loc);
-                    }
-                    return ConvertStruct(type.Struct.TypeId);
-                default:
-                    throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})");
-            }
+            });
+            return esiType;
         }
     }
     
+    public class CapnpEsiErrorType : EsiType
+    {
+        public Action A { get; }
+
+        public CapnpEsiErrorType(Action A)
+        {
+            this.A = A;
+        }
+    }
+
     public class EsiCapnpConvertException : Exception
     {
         public EsiCapnpConvertException(string msg) : base (msg) { }
@@ -259,20 +272,22 @@ namespace Esi.Schema
     {
         public string File;
         public string StructName;
-        public string FieldName;
+        public IReadOnlyList<string> Path;
 
-        public EsiCapnpLocation WithField(string field)
+        public EsiCapnpLocation AppendField(string field)
         {
-            FieldName = field;
-            return this;
+            return new EsiCapnpLocation {
+                File = File,
+                Path = Path
+            };
         }
 
         public override string ToString()
         {
-            if (string.IsNullOrEmpty(FieldName))
-                return $"{File}/{StructName}";
+            if (Path?.Count() > 0)
+                return $"{File}/{StructName}/{string.Join('/', Path)}";
             else
-                return $"{File}/{StructName}/{FieldName}";
+                return $"{File}/{StructName}";
         }
     }
 

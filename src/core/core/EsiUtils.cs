@@ -48,5 +48,10 @@ namespace Esi
         {
             return collection.Select(F).ToList();
         }
+
+        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> F)
+        {
+            collection.Select(i => { F(i); return true; }).ToList();
+        }
     }
 }

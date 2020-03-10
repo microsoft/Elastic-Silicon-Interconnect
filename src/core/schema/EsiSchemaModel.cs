@@ -1,3 +1,4 @@
+using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,10 @@ namespace Esi.Schema
     public abstract class EsiType
     {    }
 
-    public class EsiPrimitive : EsiType
+    public abstract class EsiValueType : EsiType
+    {    }
+
+    public class EsiPrimitive : EsiValueType
     {
         public enum PrimitiveType {
             EsiVoid,
@@ -26,7 +30,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiInt : EsiType
+    public class EsiInt : EsiValueType
     {
         public bool Signed { get; }
         public ulong Bits { get; }
@@ -39,7 +43,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiEnum : EsiType
+    public class EsiEnum : EsiValueType
     {
         public struct EnumMember
         {
@@ -62,7 +66,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiCompound : EsiType
+    public class EsiCompound : EsiValueType
     {
         public enum CompoundType
         {
@@ -84,7 +88,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiArray : EsiType
+    public class EsiArray : EsiValueType
     {
         public EsiType Inner { get; }
         public int Length { get; }
@@ -104,7 +108,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiStruct : EsiType
+    public class EsiStruct : EsiValueType
     {
         public struct StructField
         {
@@ -134,12 +138,14 @@ namespace Esi.Schema
 
         public string? Name { get; }
         public StructField[] Fields { get; }
+        protected IReadOnlyDictionary<string, StructField> FieldLookup { get; }
 
         public EsiStruct(string? Name, IEnumerable<StructField> Fields)
             : base()
         {
             this.Name = Name;
             this.Fields = Fields.ToArray();
+            FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         }
 
         public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
@@ -147,10 +153,21 @@ namespace Esi.Schema
         {
             this.Name = Name;
             this.Fields = Fields(this).ToArray();
+            FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         }
     }
 
-    public class EsiUnion : EsiType
+    public class EsiStructReference : EsiType 
+    {
+        public EsiStruct Struct { get; }
+
+        public EsiStructReference (EsiStruct Struct)
+        {
+            this.Struct = Struct;
+        }
+    }
+
+    public class EsiUnion : EsiValueType
     {
         public struct UnionEntry
         {
@@ -181,7 +198,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiList : EsiType
+    public class EsiList : EsiValueType
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
@@ -198,6 +215,15 @@ namespace Esi.Schema
         {
             this.Inner = Inner();
             this.IsFixed = IsFixed;
+        }
+    }
+
+    public class EsiListReference : EsiType
+    {
+        public EsiList List { get; }
+        public EsiListReference(EsiList List)
+        {
+            this.List = List;
         }
     }
 }
