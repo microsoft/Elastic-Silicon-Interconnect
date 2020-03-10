@@ -31,7 +31,7 @@ namespace Esi.Schema
             public const ulong HWOFFSET = 0xf7afdfd9eb5a7d15;
         }
 
-        public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest request)
+        public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
         {
             var convert = new EsiCapnpConvert(ctxt);
             return convert.GoConvert(request);
@@ -42,12 +42,7 @@ namespace Esi.Schema
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
             var reader = CodeGeneratorRequest.READER.create(deserializer);
-            var cgr = new CodeGeneratorRequest();
-            cgr.Nodes = reader.Nodes.ToReadOnlyList(_ => CapnpSerializable.Create<CapnpGen.Node>(_));
-            cgr.RequestedFiles = reader.RequestedFiles.ToReadOnlyList(_ => CapnpSerializable.Create<CapnpGen.CodeGeneratorRequest.RequestedFile>(_));
-            cgr.CapnpVersion = CapnpSerializable.Create<CapnpGen.CapnpVersion>(reader.CapnpVersion);
-            cgr.applyDefaults();
-            return Convert(ctxt, cgr);
+            return Convert(ctxt, reader);
         }
 
         public static IReadOnlyList<EsiType> ConvertTextSchema(EsiContext ctxt, FileInfo file)
@@ -96,7 +91,7 @@ namespace Esi.Schema
             this.C = ctxt;
         }
         
-        protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest cgr)
+        protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest.READER cgr)
         {
             cgr.RequestedFiles.Iterate(file => IDtoFile[file.Id] = file.Filename);
             cgr.Nodes
@@ -113,7 +108,7 @@ namespace Esi.Schema
             return esiTypes;
         }
 
-        protected Func<EsiType> ConvertNode(Node node)
+        protected Func<EsiType> ConvertNode(Node.READER node)
         {
             switch (node.which)
             {
@@ -123,7 +118,7 @@ namespace Esi.Schema
             return null;
         }
 
-        private Func<EsiStruct> ConvertStruct(Node s)
+        private Func<EsiStruct> ConvertStruct(Node.READER s)
         {
 
             Func<EsiStruct, IEnumerable<EsiStruct.StructField>> GetStructFieldsFuture(EsiCapnpLocation structNameFile)
@@ -159,7 +154,7 @@ namespace Esi.Schema
 
         }
         
-        private EsiStruct.StructField ConvertField(EsiCapnpLocation structNameFile, Field field)
+        private EsiStruct.StructField ConvertField(EsiCapnpLocation structNameFile, Field.READER field)
         {
             switch (field.which)
             {
@@ -175,7 +170,7 @@ namespace Esi.Schema
                             field.Slot.Type,
                             field.Annotations));
                 default:
-                    throw new EsiCapnpConvertException($"Field type undefined is not a valid capnp schema ({loc})");
+                    throw new EsiCapnpConvertException($"Field type undefined is not a valid capnp schema ({structNameFile})");
             }
         }
 
@@ -195,13 +190,12 @@ namespace Esi.Schema
                 [CapnpGen.Type.WHICH.Float64] = new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
                 [CapnpGen.Type.WHICH.Text] = new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
                 [CapnpGen.Type.WHICH.Data] = new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
-
             };
 
         private Func<EsiType> ConvertType(
             EsiCapnpLocation loc,
-            CapnpGen.Type type,
-            IReadOnlyList<Annotation> annotations)
+            CapnpGen.Type.READER type,
+            IReadOnlyList<Annotation.READER> annotations)
         {
             if (SimpleTypeMappings.TryGetValue(type.which, out var esiType))
             {
@@ -218,11 +212,11 @@ namespace Esi.Schema
                                     {
                                         C.Log.Warning(
                                             "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
-                                            a.Value.Uint64.Value,
+                                            a.Value.Uint64,
                                             ei.Bits,
                                             loc);
                                     }
-                                    return () => new EsiInt(a.Value.Uint64.Value, ei.Signed);
+                                    return () => new EsiInt(a.Value.Uint64, ei.Signed);
                                 }
                                 else
                                 {
