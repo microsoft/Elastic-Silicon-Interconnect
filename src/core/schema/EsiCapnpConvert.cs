@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -24,8 +25,10 @@ namespace Esi.Schema
             FIXED_LIST = 0x8e0d4f6349687e9b,
             FIXED = 0xb0aef92d8eed92a5,
             FIXED_POINT = 0x82adb6b7cba4ca97,
+            FIXED_POINT_VALUE = 0x81eebdd3a9e24c9d,
             FLOAT = 0xc06dd6e3ee4392de,
             FLOATING_POINT = 0xa9e717a24fd51f71,
+            FLOATING_POINT_VALUE = 0xaf862f0ea103797c,
             OFFSET = 0xcdbc3408a9217752,
             HWOFFSET = 0xf7afdfd9eb5a7d15,
         }
@@ -202,7 +205,18 @@ namespace Esi.Schema
 
                     CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
                     CapnpGen.Type.WHICH.Enum => ConvertEnum(loc, type.Enum.TypeId),
-                    CapnpGen.Type.WHICH.Struct => new EsiStructReference(ConvertStruct(type.Struct.TypeId)()),
+                    CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
+                        // ---
+                        // "Special", known structs
+                        (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
+                            new EsiCompound(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
+                        (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
+                            new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
+
+                        // ---
+                        // User-specified structs
+                        _ => new EsiStructReference(ConvertStruct(type.Struct.TypeId)())
+                    },
 
                     CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
                     CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
@@ -227,6 +241,8 @@ namespace Esi.Schema
 
                 switch (esiType, (AnnotationIDs) a.Id)
                 {
+                    // ---
+                    // BITS annotation
                     case (EsiInt ei, AnnotationIDs.BITS):
                         if (ei.Bits < a.Value.Uint64)
                         {
@@ -242,6 +258,8 @@ namespace Esi.Schema
                         C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
                         break;
 
+                    // ---
+                    // INLINE annotation
                     case (EsiStructReference stRef, AnnotationIDs.INLINE):
                         esiType = stRef.Struct;
                         break;
@@ -250,6 +268,69 @@ namespace Esi.Schema
                         break;
                     case (EsiValueType _, AnnotationIDs.INLINE):
                         C.Log.Warning("$inline on value types have no effect ({loc})", loc);
+                        break;
+                    case (_, AnnotationIDs.INLINE):
+                        C.Log.Error("$Inline on '{type}' not expected ({loc})", esiType.GetType(), loc);
+                        break;
+
+                    // ---
+                    // ARRAY annotation
+                    case (EsiListReference listRef, AnnotationIDs.ARRAY):
+                        esiType = new EsiArray(listRef.List.Inner, a.Value.Uint64);
+                        break;
+                    case (EsiList list, AnnotationIDs.ARRAY):
+                        esiType = new EsiArray(list.Inner, a.Value.Uint64);
+                        break;
+                    case (_, AnnotationIDs.ARRAY):
+                        C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                        break;
+
+                    // ---
+                    // C_UNION annotation
+                    case (_, AnnotationIDs.C_UNION):
+                        C.Log.Error("$cUnion not yet supported");
+                        break;
+
+                    // ---
+                    // FIXED_LIST annotation
+                    case (EsiListReference listRef, AnnotationIDs.FIXED_LIST):
+                        esiType = new EsiListReference(new EsiList(listRef.List.Inner, true));
+                        break;
+                    case (EsiList list, AnnotationIDs.FIXED_LIST):
+                        esiType = new EsiList(list.Inner, true);
+                        break;
+                    case (_, AnnotationIDs.FIXED_LIST):
+                        C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                        break;
+
+                    // ---
+                    // FIXED annotation
+                    case (EsiCompound esiCompound, AnnotationIDs.FIXED):
+                        var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
+                        esiType = new EsiCompound(
+                            EsiCompound.CompoundType.EsiFixed,
+                            cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
+                        break;
+                    case (_, AnnotationIDs.FIXED):
+                        C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                        break;
+
+                    // ---
+                    // FLOAT annotation
+                    case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
+                        var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
+                        esiType = new EsiCompound(
+                            EsiCompound.CompoundType.EsiFloat,
+                            cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
+                        break;
+                    case (_, AnnotationIDs.FLOAT):
+                        C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                        break;
+
+                    // ---
+                    // HWOffset annotation
+                    case (_, AnnotationIDs.HWOFFSET):
+                        C.Log.Error("$hwoffset not yet supported");
                         break;
                 }
             });
