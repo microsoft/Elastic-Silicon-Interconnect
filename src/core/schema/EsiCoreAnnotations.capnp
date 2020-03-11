@@ -29,7 +29,7 @@ struct FixedPointSpec @0x82adb6b7cba4ca97 {
 
 # If desired, a user can instantiate this struct to obtain a lossless value
 # To customize the bitwidth in hardware, use the $fixed attribute
-struct FixedPointValue {
+struct FixedPointValue @0x81eebdd3a9e24c9d {
     whole @0 :Int64; # The whole part of the value
     fraction @1 :UInt64; # The fractional part of the value
 }
@@ -44,7 +44,7 @@ struct FloatingPointSpec @0xa9e717a24fd51f71 {
 
 # If desired, a user can instantiate this struct to obtain a lossless value
 # To customize the bitwidth in hardware, use the $float attribute
-struct FloatingPointValue {
+struct FloatingPointValue @0xaf862f0ea103797c {
     exp @0 :Int64; # The exponent and sign bit
     mant @1 :UInt64; # The mantissa
 }

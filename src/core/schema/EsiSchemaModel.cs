@@ -77,10 +77,10 @@ namespace Esi.Schema
 
         public CompoundType Type { get; }
         public bool Signed { get; }
-        public int Whole { get; }
-        public int Fractional { get; }
+        public ulong Whole { get; }
+        public ulong Fractional { get; }
 
-        public EsiCompound(CompoundType Type, bool Signed, int Whole, int Fractional)
+        public EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
             this.Type = Type;
@@ -92,16 +92,16 @@ namespace Esi.Schema
     public class EsiArray : EsiValueType
     {
         public EsiType Inner { get; }
-        public int Length { get; }
+        public ulong Length { get; }
 
-        public EsiArray(EsiType Inner, int Length)
+        public EsiArray(EsiType Inner, ulong Length)
             : base()
         {
             this.Inner = Inner;
             this.Length = Length;
         }
 
-        public EsiArray(Func<EsiType> Inner, int Length)
+        public EsiArray(Func<EsiType> Inner, ulong Length)
             : base()
         {
             this.Inner = Inner();
