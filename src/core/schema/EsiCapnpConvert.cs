@@ -115,13 +115,17 @@ namespace Esi.Schema
             {
                 case Node.WHICH.Struct:
                     return ConvertStruct(node);
+                default:
+                    return () => new CapnpEsiErrorType(() => {
+                        C.Log.Error(
+                            "Type {type} not yet supported.",
+                            Enum.GetName(typeof(Node.WHICH), node.which));
+                    });
             }
-            return null;
         }
 
         private Func<EsiStruct> ConvertStruct(Node.READER s)
         {
-
             Func<EsiStruct, IEnumerable<EsiStruct.StructField>> GetStructFieldsFuture(EsiCapnpLocation structNameFile)
             {
                 return (esiStruct) => {

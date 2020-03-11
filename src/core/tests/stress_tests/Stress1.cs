@@ -12,6 +12,9 @@ namespace Esi.Core.Tests
         {
         }
 
+        /// <summary>
+        /// Just test that the parser doesn't crap out entirely
+        /// </summary>
         [Test]
         public void ReadStress1a()
         {
@@ -36,5 +39,31 @@ namespace Esi.Core.Tests
             var exampleGroup = exampleGroups.First();
             Assert.IsInstanceOf(typeof(EsiStruct), exampleGroup.Type);
         }
+
+        [Test]
+        public void ReadStress1Compare()
+        {
+            var types = ReadSchema("stress_tests/stress1.capnp");
+            // var types = EsiCapnpConvert.ConvertFromCGRMessage(
+            //     new EsiContext(),
+            //     File.OpenRead(ResolveResource("stress_tests/stress1.capnp.CodeGeneratorRequest.bin").FullName));
+            Assert.Greater(types.Count, 0);
+            var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
+            Assert.Greater(structs.Count(), 0);
+
+            var poly = structs.Where(t => t.Name == "Polynomial3").First();
+            Assert.True(Polynomal3Model.StructuralEquals(poly));
+        }
+
+        static readonly EsiStruct Polynomal3Model =
+            new EsiStruct("Polynomial3", new EsiStruct.StructField[] {
+                new EsiStruct.StructField("a", new EsiInt(24, false)),
+                new EsiStruct.StructField("b", new EsiInt(40, false)),
+                new EsiStruct.StructField("c", new EsiCompound(
+                    EsiCompound.CompoundType.EsiFloat,
+                    true,
+                    3,
+                    10)),
+            });
     }
 }

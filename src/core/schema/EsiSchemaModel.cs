@@ -2,11 +2,12 @@ using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 #nullable enable
 namespace Esi.Schema
 {
-    public abstract class EsiType
+    public abstract partial class EsiType
     {    }
 
     public abstract class EsiValueType : EsiType
@@ -57,12 +58,12 @@ namespace Esi.Schema
             }
         }
 
-        public IReadOnlyList<EnumMember> Members { get; }
+        public EnumMember[] Members { get; }
 
         public EsiEnum(IReadOnlyList<EnumMember> Members)
             : base()
         {
-            this.Members = Members;
+            this.Members = Members.ToArray();
         }
     }
 
@@ -110,7 +111,7 @@ namespace Esi.Schema
 
     public class EsiStruct : EsiValueType
     {
-        public struct StructField
+        public class StructField : EsiType
         {
             public string Name { get; }
             // This is used for versioning in CapnProto

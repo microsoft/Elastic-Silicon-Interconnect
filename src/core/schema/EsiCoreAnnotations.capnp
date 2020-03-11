@@ -20,19 +20,33 @@ annotation cUnion @0xed2e4e8a596d00a5 (union) :Void;
 annotation fixedList @0x8e0d4f6349687e9b (field) :Void;
 
 # Fixed point type
-annotation fixed @0xb0aef92d8eed92a5 (field) :FixedPoint; 
-struct FixedPoint @0x82adb6b7cba4ca97 {
+annotation fixed @0xb0aef92d8eed92a5 (field, struct) :FixedPointSpec; 
+struct FixedPointSpec @0x82adb6b7cba4ca97 {
     signed @0 :Bool;
     whole @1 :UInt64; # Number of bits of whole
     fraction @2 :UInt64; # Number of bits of fraction
 }
 
+# If desired, a user can instantiate this struct to obtain a lossless value
+# To customize the bitwidth in hardware, use the $fixed attribute
+struct FixedPointValue {
+    whole @0 :Int64; # The whole part of the value
+    fraction @1 :UInt64; # The fractional part of the value
+}
+
 # Flexible floating point number
-annotation float @0xc06dd6e3ee4392de (field) :FloatingPoint;
-struct FloatingPoint @0xa9e717a24fd51f71 { 
+annotation float @0xc06dd6e3ee4392de (field, struct) :FloatingPointSpec;
+struct FloatingPointSpec @0xa9e717a24fd51f71 { 
     signed @0 :Bool;
     exp @1 :UInt64; # Number of bits of exponent
     mant @2 :UInt64; # Number of bits mantissa
+}
+
+# If desired, a user can instantiate this struct to obtain a lossless value
+# To customize the bitwidth in hardware, use the $float attribute
+struct FloatingPointValue {
+    exp @0 :Int64; # The exponent and sign bit
+    mant @1 :UInt64; # The mantissa
 }
 
 # Make field accessible with this offset in MMap'ed structs
