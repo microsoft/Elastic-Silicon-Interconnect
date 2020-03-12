@@ -187,7 +187,7 @@ namespace Esi.Schema
                     {
                         structNameFile = new EsiCapnpLocation {
                             Id = structId,
-                            StructName = displayName
+                            File = displayName
                         };
                     }
                     IDtoType[structId] = ConvertStructNow(structNameFile, s);
@@ -292,8 +292,8 @@ namespace Esi.Schema
                     CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
                     CapnpGen.Type.WHICH.Float32 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
                     CapnpGen.Type.WHICH.Float64 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-                    CapnpGen.Type.WHICH.Text => new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
-                    CapnpGen.Type.WHICH.Data => new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true),
+                    CapnpGen.Type.WHICH.Text => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+                    CapnpGen.Type.WHICH.Data => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
                     CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
                     CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId)(),

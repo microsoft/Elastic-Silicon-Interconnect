@@ -30,9 +30,9 @@ namespace Esi.Core.Tests
 
             var example = examples.First();
 
-            var subExamples = example.Fields.Where(f => f.Name == "subExample");
-            Assert.AreEqual(1, subExamples.Count());
-            Assert.AreSame(example, subExamples.First().Type);
+            // var subExamples = example.Fields.Where(f => f.Name == "subExample");
+            // Assert.AreEqual(1, subExamples.Count());
+            // Assert.AreSame(example, subExamples.First().Type);
 
             var exampleGroups = example.Fields.Where(f => f.Name == "exampleGroup");
             Assert.AreEqual(1, exampleGroups.Count());
@@ -53,6 +53,9 @@ namespace Esi.Core.Tests
 
             var poly = structs.Where(t => t.Name == "Polynomial3").First();
             Assert.True(Polynomal3Model.StructuralEquals(poly));
+
+            var ex = structs.Where(t => t.Name == "Example").First();
+            Assert.True(ExampleModel.StructuralEquals(ex));
         }
 
         static readonly EsiStruct Polynomal3Model =
@@ -63,7 +66,28 @@ namespace Esi.Core.Tests
                     EsiCompound.CompoundType.EsiFloat,
                     true,
                     3,
-                    10)),
+                    10
+                )),
             });
+
+        static readonly EsiStruct ExampleModel =
+            new EsiStruct("Example",
+                new EsiStruct.StructField[] {
+                    new EsiStruct.StructField(
+                        "poly",
+                        Polynomal3Model
+                    ),
+                    new EsiStruct.StructField(
+                        "exampleGroup",
+                        new EsiStruct (
+                            null,
+                            new EsiStruct.StructField[] {
+                                new EsiStruct.StructField("houseNumber", new EsiInt(32, false)),
+                                new EsiStruct.StructField("street", new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte)))),
+                                new EsiStruct.StructField("city", new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte))),
+                            }
+                        )
+                    )
+                });
     }
 }

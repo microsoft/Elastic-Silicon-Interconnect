@@ -8,11 +8,10 @@ struct Example {
     exampleGroup :group {
         houseNumber @1 :UInt32;
         street @2 :Text;
-        city @3 :Text;
-        country @4 :Text;
+        city @3 :Text $ESI.inline;
     }
 
-    subExample @5 :Example $ESI.inline;
+    #subExample @4 :Example $ESI.inline;
 }
 
 struct Polynomial3 { # ax^2 + bx + c
