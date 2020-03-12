@@ -1,3 +1,4 @@
+using System.Security;
 using System.Linq;
 using NUnit.Framework;
 using Esi.Schema;
@@ -19,9 +20,7 @@ namespace Esi.Core.Tests
         public void ReadStress1a()
         {
             var types = ReadSchema("stress_tests/stress1.capnp");
-            // var types = EsiCapnpConvert.ConvertFromCGRMessage(
-            //     new EsiContext(),
-            //     File.OpenRead(ResolveResource("stress_tests/stress1.capnp.CodeGeneratorRequest.bin").FullName));
+
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
             Assert.Greater(structs.Count(), 0);
@@ -44,9 +43,7 @@ namespace Esi.Core.Tests
         public void ReadStress1Compare()
         {
             var types = ReadSchema("stress_tests/stress1.capnp");
-            // var types = EsiCapnpConvert.ConvertFromCGRMessage(
-            //     new EsiContext(),
-            //     File.OpenRead(ResolveResource("stress_tests/stress1.capnp.CodeGeneratorRequest.bin").FullName));
+
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
             Assert.Greater(structs.Count(), 0);
@@ -94,9 +91,16 @@ namespace Esi.Core.Tests
                     )
                 });
 
-        static Stress1UnitTest()
+        [Test]
+        public void ReadStress1Fail()
         {
+            var types = ReadSchema("stress_tests/stress1_fail.capnp");
+            Assert.AreEqual(8, Context.Errors);
+            Assert.AreEqual(0, Context.Fatals);
+            Assert.True(Context.Failed);
+            Context.ClearCounts();
 
+            // Assert.Fail("Dummy fail to print out stdout");
         }
     }
 }

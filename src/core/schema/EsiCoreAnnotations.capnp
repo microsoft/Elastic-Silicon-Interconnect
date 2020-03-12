@@ -20,7 +20,7 @@ annotation cUnion @0xed2e4e8a596d00a5 (union) :Void;
 annotation fixedList @0x8e0d4f6349687e9b (field) :Void;
 
 # Fixed point type
-annotation fixed @0xb0aef92d8eed92a5 (field, struct) :FixedPointSpec; 
+annotation fixed @0xb0aef92d8eed92a5 (field) :FixedPointSpec; 
 struct FixedPointSpec @0x82adb6b7cba4ca97 {
     signed @0 :Bool;
     whole @1 :UInt64; # Number of bits of whole
@@ -35,7 +35,7 @@ struct FixedPointValue @0x81eebdd3a9e24c9d {
 }
 
 # Flexible floating point number
-annotation float @0xc06dd6e3ee4392de (field, struct) :FloatingPointSpec;
+annotation float @0xc06dd6e3ee4392de (field) :FloatingPointSpec;
 struct FloatingPointSpec @0xa9e717a24fd51f71 { 
     signed @0 :Bool;
     exp @1 :UInt64; # Number of bits of exponent

@@ -173,6 +173,14 @@ namespace Esi.Schema
             }
 
             var loc = IDtoNames[node.Id];
+            // if (string.IsNullOrWhiteSpace(loc.DisplayName) &&
+            //     node.ScopeId != 0 &&
+            //     IDtoNames.TryGetValue(node.ScopeId, out var scopeLoc))
+            // {
+            //     // Best effort DisplayName propogation
+            //     loc.DisplayName = scopeLoc.DisplayName;
+            // }
+
             switch (node.which)
             {
                 case Node.WHICH.Struct:
@@ -501,18 +509,23 @@ namespace Esi.Schema
             return new EsiCapnpLocation {
                 File = File,
                 StructName = StructName,
+                DisplayName = DisplayName,
                 Path = Path?.Append(field) ?? new string[] { field },
             };
         }
 
         public override string ToString()
         {
+            string fileStruct;
             if (!string.IsNullOrWhiteSpace(DisplayName))
-                return DisplayName;
-            else if (Path?.Count() > 0)
-                return $"{File}:{StructName}/{string.Join('/', Path)}";
+                fileStruct = DisplayName;
             else
-                return $"{File}:{StructName}";
+                fileStruct = $"{File}:{StructName}";
+
+            if (Path?.Count() > 0)
+                return $"{fileStruct}/{string.Join('/', Path)}";
+            else
+                return fileStruct;
         }
     }
 

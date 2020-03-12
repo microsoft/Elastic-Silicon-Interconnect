@@ -10,6 +10,10 @@ namespace Esi
         public Logger? Log { get; protected set; }
         public ulong Errors { get; protected set; } = 0;
         public ulong Fatals { get; protected set; } = 0;
+        public void ClearCounts() {
+            Errors = 0;
+            Fatals = 0;
+        }
 
         public bool Failed => Errors > 0 || Fatals > 0;
 
