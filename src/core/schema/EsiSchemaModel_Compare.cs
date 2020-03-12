@@ -34,23 +34,10 @@ namespace Esi.Schema
             if (thisType != thatType)
                 return false;
 
-            foreach (var member in thisType.GetMembers())
+            foreach (var prop in thisType.GetProperties())
             {
-                object thisValue;
-                object thatValue;
-                switch (member)
-                {
-                    case FieldInfo field:
-                        thisValue = field.GetValue(this);
-                        thatValue = field.GetValue(that);
-                        break;
-                    case PropertyInfo field:
-                        thisValue = field.GetValue(this);
-                        thatValue = field.GetValue(that);
-                        break;
-                    default:
-                        continue;
-                }
+                var thisValue = prop.GetValue(this);
+                var thatValue = prop.GetValue(that);
 
                 if (thisValue is EsiType thisFieldEsi &&
                     thatValue is EsiType thatFieldEsi)
@@ -69,9 +56,9 @@ namespace Esi.Schema
                         }
                         else
                         {
+                            objMap[thisFieldEsi] = thatFieldEsi;
                             if (!thisFieldEsi.StructuralEquals(thatFieldEsi, objMap))
                                 return false;
-                            objMap[thisFieldEsi] = thatFieldEsi;
                         }
                     }
                 }

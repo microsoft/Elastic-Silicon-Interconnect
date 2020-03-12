@@ -92,13 +92,18 @@ namespace Esi.Schema
 #endregion EntryPoints
 
 
-        protected Dictionary<UInt64, string> IDtoFile
-            = new Dictionary<ulong, string>();
         protected Dictionary<UInt64, EsiCapnpLocation> IDtoNames
             = new Dictionary<ulong, EsiCapnpLocation>();
+        protected EsiCapnpLocation GetLocation(UInt64 id)
+        {
+            if (!IDtoNames.TryGetValue(id, out var loc))
+            {
+                loc = new EsiCapnpLocation();
+                IDtoNames[id] = loc;
+            }
+            return loc;
+        }
         
-        protected Dictionary<UInt64, Func<EsiType>> IDtoTypeFuture
-            = new Dictionary<ulong, Func<EsiType>>();
         protected Dictionary<UInt64, EsiType> IDtoType
             = new Dictionary<ulong, EsiType>();
 
@@ -119,23 +124,37 @@ namespace Esi.Schema
         /// <returns></returns>
         protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest.READER cgr)
         {
+
+            // First pass: get all the filenames
+            var IDtoFile = new Dictionary<ulong, string>();
             cgr.RequestedFiles.Iterate(file => IDtoFile[file.Id] = file.Filename);
+
+            // Second pass: get all the struct names
             cgr.Nodes
-                // .Where(n => n.which == Node.WHICH.File)
                 .SelectMany(fileNode => fileNode.NestedNodes.Select(nested => (nested, fileNode)))
-                .Iterate(n => 
+                .ForEach(n => 
                     IDtoNames[n.nested.Id] =
                         new EsiCapnpLocation {
                             Id = n.nested.Id,
                             StructName = n.nested.Name,
                             File = IDtoFile.GetValueOrDefault(n.fileNode.Id)
                         });
-            var unresolvedStructs = cgr.Nodes.Select(ConvertNode).Where(t => t != null).ToList();
-            var esiTypes = unresolvedStructs.Select(f => f() switch {
-                EsiStructReference stRef => stRef.Struct,
-                EsiListReference lstRef => lstRef.List,
-                EsiType t => t
-            }).ToList();
+
+            // Third pass: get references to each node
+            cgr.Nodes.ForEach(n => {
+                var loc = GetLocation(n.Id);
+                loc.Node = n;
+                loc.DisplayName = n.DisplayName;
+            });
+
+            // Fourth pass: Do the actual conversion
+            var esiTypes = cgr.Nodes.Select(
+                node => ConvertNode(node) switch {
+                    EsiStructReference stRef => stRef.Struct,
+                    EsiListReference lstRef => lstRef.List,
+                    EsiType t => t,
+                    null => null,
+            }).Where(t => t != null).ToList();
             return esiTypes;
         }
 
@@ -144,7 +163,7 @@ namespace Esi.Schema
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
-        protected Func<EsiType> ConvertNode(Node.READER node)
+        protected EsiType ConvertNode(Node.READER node)
         {
             if (node.Parameters?.Count() > 0 ||
                 node.IsGeneric)
@@ -153,12 +172,13 @@ namespace Esi.Schema
                 return null;
             }
 
+            var loc = IDtoNames[node.Id];
             switch (node.which)
             {
                 case Node.WHICH.Struct:
-                    return ConvertStructCached(node.Id, node.Struct, node.DisplayName);
+                    return ConvertStructCached(loc);
                 default:
-                    return () => new CapnpEsiErrorType(() => {
+                    return new CapnpEsiErrorType(() => {
                         C.Log.Error(
                             "Type {type} not yet supported.",
                             Enum.GetName(typeof(Node.WHICH), node.which));
@@ -169,77 +189,68 @@ namespace Esi.Schema
         /// <summary>
         /// Return a function which returns an EsiStruct which has been converted from a
         /// CapNProto struct.
-        ///
-        /// This funky, async-y way of doing things is for two reasons:
-        ///     1) Capnp schemas contain "pointers" to structs/groups/unions which
-        ///     haven't necessarily been read yet (forward-pointers).
-        ///     2) These pointers may form cycles. The ESI schema is read-only
-        ///     (functional programming style), so the only way to encode cycles into
-        ///     it is with "lazy" functions.
-        ///
         /// </summary>
-        private Func<EsiType> ConvertStructCached(ulong structId, Node.@struct.READER s, string displayName)
+        private EsiType ConvertStructCached(EsiCapnpLocation loc)
         {
-            Func<EsiType> stFuture = () => {
-                if (!IDtoType.TryGetValue(structId, out var esiType))
+            if (!IDtoType.TryGetValue(loc.Id, out var esiType))
+            {
+                // First, create a struct reference and populate the cache with it.
+                //  This signals that we are descending this struct already, in the case of a cycle
+                var stRef = new EsiStructReferenceCapnp((EsiStruct)null);
+                esiType = stRef;
+                IDtoType[loc.Id] = esiType;
+
+                var canpnStruct = loc.Node.Value.Struct;
+                if (canpnStruct.DiscriminantCount == 0) // This capnp struct is not a union
                 {
-                    if (!IDtoNames.TryGetValue(structId, out var structNameFile))
+                    var esiStruct = new EsiStruct(
+                        Name: loc.StructName,
+                        Fields: canpnStruct.Fields.Select(f => ConvertField(loc, f))
+                    );
+                    if (canpnStruct.IsGroup) // This capnp "struct" is actually a group, which is equivalent to an EsiStruct
                     {
-                        structNameFile = new EsiCapnpLocation {
-                            Id = structId,
-                            File = displayName
-                        };
+                        esiType = esiStruct; // Set the return to the raw struct
+                        IDtoType.Remove(loc.Id); // And remove the reference to it
+                        if (stRef.RefCount > 0) // Check to see that nobody got the tentative reference while we were workin
+                            C.Log.Fatal("Found a cycle involving groups. This shouldn't occur! ({loc})", loc);
                     }
-                    IDtoType[structId] = ConvertStructNow(structNameFile, s);
-                }
-                return IDtoType[structId];
-            };
-            IDtoTypeFuture[structId] = stFuture;
-            return stFuture;
-        }
-
-        /// <summary>
-        /// Non-lazy version of ConvertStruct. Should ONLY be called from
-        /// ConvertStructCached or if you really, really know what you're doing.
-        /// </summary>
-        protected EsiType ConvertStructNow(EsiCapnpLocation structContext, Node.@struct.READER s)
-        {
-            var structId = structContext.Id;
-
-            if (s.DiscriminantCount == 0) // This capnp struct is not a union
-            {
-                var st = new EsiStruct(
-                    Name: structContext.StructName,
-                    Fields: (esiStruct) =>
+                    else // This capnp "struct" is actually a capnp struct, which is equivalent to an EsiStructReference
                     {
-                        Debug.Assert(!IDtoType.ContainsKey(structId) ||
-                            IDtoType[structId] == esiStruct );
-                        IDtoType[structId] = esiStruct;
-                        return s.Fields.Select(f => ConvertField(structContext, f));
-                    });
-                if (s.IsGroup) // This capnp "struct" is actually a group, which is equivalent to an EsiStruct
-                    return st;
-                else // This capnp "struct" is actually a capnp struct, which is equivalent to an EsiStructReference
-                    return new EsiStructReference(st);
+                        stRef.Struct = esiStruct;
+                    }
+                }
+                else // This capnp struct is actually a union
+                {
+                    C.Log.Error("Unions are not yet supported ({loc})", loc);
+                    return null;
+                }
             }
-            else // This capnp struct is actually a union
-            {
-                C.Log.Error("Unions are not yet supported ({loc})", structContext);
-                return null;
-            }
+
+            // Mark that we have returned this instance
+            if (esiType is EsiStructReferenceCapnp stRefCount)
+                stRefCount.RefCount++;
+            return esiType;
         }
 
         /// <summary>
         /// To construct a struct reference, it must exist already in the table
         /// of struct futures.
         /// </summary>
-        private Func<EsiType> GetNamedNode(UInt64 structId)
+        private EsiType GetNamedNode(UInt64 structId)
         {
-            if (IDtoTypeFuture.TryGetValue(structId, out var esiStructFuture))
-            {
-                return esiStructFuture;
+            if (IDtoType.TryGetValue(structId, out var esiNamedNode))
+                return esiNamedNode;
+            
+            EsiCapnpLocation loc = null;
+            var found = IDtoNames.TryGetValue(structId, out loc);
+            switch (found) {
+                case true when loc.Node != null:
+                    return ConvertNode(loc.Node.Value);
+                case true when loc.Node == null:
+                case false:
+                default:
+                    throw new EsiCapnpConvertException($"GetNamedNode failed to find named node {structId}");
             }
-            throw new EsiCapnpConvertException($"Future func for struct id {structId} doesn't exist in table!");
         }
 
         /// <summary>
@@ -273,52 +284,49 @@ namespace Esi.Schema
         /// <param name="type"></param>
         /// <param name="annotations"></param>
         /// <returns></returns>
-        private Func<EsiType> ConvertType(
+        private EsiType ConvertType(
             EsiCapnpLocation loc,
             CapnpGen.Type.READER type,
             IReadOnlyList<Annotation.READER> annotations)
         {
-            return () => {
-                var esiType = type.which switch {
-                    CapnpGen.Type.WHICH.Void => (EsiType) new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiVoid),
-                    CapnpGen.Type.WHICH.Bool => new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool),
-                    CapnpGen.Type.WHICH.Int8 => new EsiInt(8, true),
-                    CapnpGen.Type.WHICH.Int16 => new EsiInt(16, true),
-                    CapnpGen.Type.WHICH.Int32 => new EsiInt(32, true),
-                    CapnpGen.Type.WHICH.Int64 => new EsiInt(64, true),
-                    CapnpGen.Type.WHICH.Uint8 => new EsiInt(8, false),
-                    CapnpGen.Type.WHICH.Uint16 => new EsiInt(16, false),
-                    CapnpGen.Type.WHICH.Uint32 => new EsiInt(32, false),
-                    CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
-                    CapnpGen.Type.WHICH.Float32 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
-                    CapnpGen.Type.WHICH.Float64 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-                    CapnpGen.Type.WHICH.Text => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
-                    CapnpGen.Type.WHICH.Data => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+            var esiType = type.which switch {
+                CapnpGen.Type.WHICH.Void => (EsiType) new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiVoid),
+                CapnpGen.Type.WHICH.Bool => new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool),
+                CapnpGen.Type.WHICH.Int8 => new EsiInt(8, true),
+                CapnpGen.Type.WHICH.Int16 => new EsiInt(16, true),
+                CapnpGen.Type.WHICH.Int32 => new EsiInt(32, true),
+                CapnpGen.Type.WHICH.Int64 => new EsiInt(64, true),
+                CapnpGen.Type.WHICH.Uint8 => new EsiInt(8, false),
+                CapnpGen.Type.WHICH.Uint16 => new EsiInt(16, false),
+                CapnpGen.Type.WHICH.Uint32 => new EsiInt(32, false),
+                CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
+                CapnpGen.Type.WHICH.Float32 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
+                CapnpGen.Type.WHICH.Float64 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
+                CapnpGen.Type.WHICH.Text => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+                CapnpGen.Type.WHICH.Data => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
-                    CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
-                    CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId)(),
-                    CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
-                        // ---
-                        // "Special", known structs
-                        (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
-                            new EsiCompound(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
-                        (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
-                            new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
+                CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
+                CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId),
+                CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
+                    // ---
+                    // "Special", known structs
+                    (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
+                        new EsiCompound(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
+                    (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
+                        new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
 
-                        // ---
-                        // User-specified structs
-                        _ => GetNamedNode(type.Struct.TypeId)()
-                    },
+                    // ---
+                    // User-specified structs
+                    _ => GetNamedNode(type.Struct.TypeId)
+                },
 
-                    CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
-                    CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
+                CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
+                CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
 
-                    _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
-                };
-                return AddAnnotations(esiType, loc, annotations);
+                _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
             };
+            return AddAnnotations(esiType, loc, annotations);
         }
-
 
 
         /// <summary>
@@ -328,7 +336,10 @@ namespace Esi.Schema
         /// <param name="loc">The original type's Capnp "location"</param>
         /// <param name="annotations">A list of annotations</param>
         /// <returns>The modified EsiType</returns>
-        private EsiType AddAnnotations(EsiType esiType, EsiCapnpLocation loc, IReadOnlyList<Annotation.READER> annotations)
+        private EsiType AddAnnotations(
+            EsiType esiType,
+            EsiCapnpLocation loc,
+            IReadOnlyList<Annotation.READER> annotations)
         {
             annotations?.ForEach(a => {
                 if (!ESIAnnotations.Contains( a.Id ))
@@ -356,8 +367,11 @@ namespace Esi.Schema
 
                     // ---
                     // INLINE annotation
-                    case (EsiStructReference stRef, AnnotationIDs.INLINE):
+                    case (EsiStructReference stRef, AnnotationIDs.INLINE) when stRef.Struct != null:
                         esiType = stRef.Struct;
+                        break;
+                    case (EsiStructReference stRef, AnnotationIDs.INLINE) when stRef.Struct == null:
+                        C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
                         break;
                     case (EsiListReference lstRef, AnnotationIDs.INLINE):
                         esiType = lstRef.List;
@@ -433,7 +447,22 @@ namespace Esi.Schema
             return esiType;
         }
     }
-    
+
+    /// <summary>
+    /// Extend ESI's struct reference to add ref counting (for internal,
+    /// cpnp-specific accounting)
+    /// </summary>
+    public class EsiStructReferenceCapnp : EsiStructReference
+    {
+        public long RefCount = 0;
+
+        public EsiStructReferenceCapnp(EsiStruct Struct) : base (Struct)
+        {    }
+
+        public EsiStructReferenceCapnp(Func<EsiStruct> Resolver) : base (Resolver)
+        {    }
+    }
+
     /// <summary>
     /// Delay an error message until type is used... This may or may not be a good idea.
     /// </summary>
@@ -458,27 +487,32 @@ namespace Esi.Schema
     /// <summary>
     /// Track various data and metadata about capnp types
     /// </summary>
-    public struct EsiCapnpLocation
+    public class EsiCapnpLocation
     {
         public UInt64 Id;
+        public Node.READER? Node;
         public string File;
         public string StructName;
-        public IReadOnlyList<string> Path;
+        public string DisplayName;
+        public IEnumerable<string> Path;
 
         public EsiCapnpLocation AppendField(string field)
         {
             return new EsiCapnpLocation {
                 File = File,
-                Path = Path
+                StructName = StructName,
+                Path = Path?.Append(field) ?? new string[] { field },
             };
         }
 
         public override string ToString()
         {
-            if (Path?.Count() > 0)
-                return $"{File}/{StructName}/{string.Join('/', Path)}";
+            if (!string.IsNullOrWhiteSpace(DisplayName))
+                return DisplayName;
+            else if (Path?.Count() > 0)
+                return $"{File}:{StructName}/{string.Join('/', Path)}";
             else
-                return $"{File}/{StructName}";
+                return $"{File}:{StructName}";
         }
     }
 

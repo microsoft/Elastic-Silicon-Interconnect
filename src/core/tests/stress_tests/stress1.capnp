@@ -11,7 +11,7 @@ struct Example {
         city @3 :Text $ESI.inline;
     }
 
-    #subExample @4 :Example $ESI.inline;
+    subExample @4 :Example;
 }
 
 struct Polynomial3 { # ax^2 + bx + c

@@ -30,9 +30,9 @@ namespace Esi.Core.Tests
 
             var example = examples.First();
 
-            // var subExamples = example.Fields.Where(f => f.Name == "subExample");
-            // Assert.AreEqual(1, subExamples.Count());
-            // Assert.AreSame(example, subExamples.First().Type);
+            var subExamples = example.Fields.Where(f => f.Name == "subExample");
+            Assert.AreEqual(1, subExamples.Count());
+            Assert.AreSame(example, (subExamples.First().Type as EsiStructReference)?.Struct);
 
             var exampleGroups = example.Fields.Where(f => f.Name == "exampleGroup");
             Assert.AreEqual(1, exampleGroups.Count());
@@ -87,7 +87,16 @@ namespace Esi.Core.Tests
                                 new EsiStruct.StructField("city", new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte))),
                             }
                         )
+                    ),
+                    new EsiStruct.StructField(
+                        "subExample",
+                        new EsiStructReferenceCapnp(() => ExampleModel)
                     )
                 });
+
+        static Stress1UnitTest()
+        {
+
+        }
     }
 }

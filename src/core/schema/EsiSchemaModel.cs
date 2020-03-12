@@ -169,11 +169,31 @@ namespace Esi.Schema
 
     public class EsiStructReference : EsiType 
     {
-        public EsiStruct Struct { get; }
+        protected Func<EsiStruct>? Resolver = null;
+        protected EsiStruct? _Struct = null;
+        public EsiStruct? Struct {
+            get
+            {
+                if (_Struct != null)
+                    return _Struct;
+                if (Resolver != null)
+                    return Resolver();
+                return null;
+            }
+            set
+            {
+                _Struct = value;
+            }
+        }
 
         public EsiStructReference (EsiStruct Struct)
         {
             this.Struct = Struct;
+        }
+
+        public EsiStructReference(Func<EsiStruct> Resolver)
+        {
+            this.Resolver = Resolver;
         }
     }
 
@@ -230,7 +250,8 @@ namespace Esi.Schema
 
     public class EsiListReference : EsiType
     {
-        public EsiList List { get; }
+        public EsiList List { get; set; }
+
         public EsiListReference(EsiList List)
         {
             this.List = List;
