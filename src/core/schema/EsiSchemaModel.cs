@@ -10,7 +10,7 @@ namespace Esi.Schema
     public abstract partial class EsiType
     {    }
 
-    public abstract class EsiValueType : EsiType
+    public class EsiValueType : EsiType
     {    }
 
     public class EsiPrimitive : EsiValueType
@@ -149,6 +149,15 @@ namespace Esi.Schema
             FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         }
 
+        /// <summary>
+        /// This constructor is somewhat unintuitive, but is useful (necessary?)
+        /// to encode cycles in this read-only, functional style object schema.
+        /// 
+        /// By having to call 'Fields' with a reference to 'this' (which is not
+        /// available before the construction), this instance can be used in its
+        /// 'StructFields', directly or indirectly.
+        /// 
+        /// </summary>
         public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
             : base()
         {
