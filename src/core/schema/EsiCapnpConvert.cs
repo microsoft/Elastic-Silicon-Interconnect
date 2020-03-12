@@ -1,3 +1,4 @@
+using System.Text;
 using System.Reflection;
 using System.Data.Common;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using CapnpGen;
 using CliWrap;
 using Esi;
 using System.Runtime.ExceptionServices;
+using CliWrap.Exceptions;
 
 namespace Esi.Schema 
 {
@@ -62,9 +64,11 @@ namespace Esi.Schema
         {
             using (var memstream = new MemoryStream() )
             {
+                var errorStringBuilder = new StringBuilder();
                 var capnpCmd = Cli.Wrap("capnp")
                     .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
                     .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
+                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(errorStringBuilder))
                     .WithValidation(CommandResultValidation.ZeroExitCode);
 
                 try
@@ -73,12 +77,15 @@ namespace Esi.Schema
                 }
                 catch (AggregateException ex)
                 {
+                    if (ex.InnerException is CommandExecutionException cee)
+                    {
+                        ctxt.Log.Error($"CapNProto Error:\n{errorStringBuilder.ToString()}");
+                    }
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                 }
                 Debug.Assert(memstream.Length > 0);
 
                 memstream.Seek(0, SeekOrigin.Begin);
-                var msg = System.Text.Encoding.UTF8.GetString(memstream.ToArray());
                 return ConvertFromCGRMessage(ctxt, memstream);
             }
         }
@@ -124,7 +131,11 @@ namespace Esi.Schema
                             File = IDtoFile.GetValueOrDefault(n.fileNode.Id)
                         });
             var unresolvedStructs = cgr.Nodes.Select(ConvertNode).Where(t => t != null).ToList();
-            var esiTypes = unresolvedStructs.Select(f => f()).ToList();
+            var esiTypes = unresolvedStructs.Select(f => f() switch {
+                EsiStructReference stRef => stRef.Struct,
+                EsiListReference lstRef => lstRef.List,
+                EsiType t => t
+            }).ToList();
             return esiTypes;
         }
 
@@ -145,7 +156,7 @@ namespace Esi.Schema
             switch (node.which)
             {
                 case Node.WHICH.Struct:
-                    return ConvertStructCached(node.Id, node.Struct);
+                    return ConvertStructCached(node.Id, node.Struct, node.DisplayName);
                 default:
                     return () => new CapnpEsiErrorType(() => {
                         C.Log.Error(
@@ -167,7 +178,7 @@ namespace Esi.Schema
         ///     it is with "lazy" functions.
         ///
         /// </summary>
-        private Func<EsiType> ConvertStructCached(ulong structId, Node.@struct.READER s)
+        private Func<EsiType> ConvertStructCached(ulong structId, Node.@struct.READER s, string displayName)
         {
             Func<EsiType> stFuture = () => {
                 if (!IDtoType.TryGetValue(structId, out var esiType))
@@ -176,6 +187,7 @@ namespace Esi.Schema
                     {
                         structNameFile = new EsiCapnpLocation {
                             Id = structId,
+                            StructName = displayName
                         };
                     }
                     IDtoType[structId] = ConvertStructNow(structNameFile, s);
@@ -212,7 +224,7 @@ namespace Esi.Schema
             }
             else // This capnp struct is actually a union
             {
-                C.Log.Error("Unions are not yet supported");
+                C.Log.Error("Unions are not yet supported ({loc})", structContext);
                 return null;
             }
         }

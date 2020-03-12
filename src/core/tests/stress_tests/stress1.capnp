@@ -24,14 +24,14 @@ struct Polynomial3 { # ax^2 + bx + c
 struct Shape {
     area @0 :Float64;
 
-    union {
+    #union {
         circle @1 :Float64;      # radius
         square @2 :Float64;      # width
-    }
+    #}
 
     volume @3 :Float64;
 
-    volumShape :union {
+    #volumeShape :union {
         cube :group {
             length @4 :ESI.FixedPointValue;
             width @5 :ESI.FixedPointValue
@@ -46,5 +46,5 @@ struct Shape {
                     mant = 2);
         }
         sphere @7 :Float32 $ESI.fixed(signed = false, whole = 4, fraction = 12);
-    }
+    #}
 }

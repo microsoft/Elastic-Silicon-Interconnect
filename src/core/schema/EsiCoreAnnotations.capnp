@@ -52,9 +52,9 @@ struct FloatingPointValue @0xaf862f0ea103797c {
 # Make field accessible with this offset in MMap'ed structs
 annotation offset @0xcdbc3408a9217752 (field) :HWOffset;
 struct HWOffset @0xf7afdfd9eb5a7d15 {
-    union {
-        bytes @0 :UInt64;
-        bit @1 :UInt64;
-    }
+    #union {
+        #bytes @0 :UInt64;
+        #bit @1 :UInt64;
+    #}
 }
 
