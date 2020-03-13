@@ -188,8 +188,9 @@ namespace Esi.Schema
                 default:
                     return new CapnpEsiErrorType(() => {
                         C.Log.Error(
-                            "Type {type} not yet supported.",
-                            Enum.GetName(typeof(Node.WHICH), node.which));
+                            "Type {type} not yet supported. ({loc})",
+                            Enum.GetName(typeof(Node.WHICH), node.which),
+                            loc);
                     });
             }
         }

@@ -16,6 +16,7 @@ namespace Esi.Core.Tests
         public void CloseContext()
         {
             Assert.False(Context.Failed);
+            Context = null;
         }
     }
 }

@@ -24,6 +24,9 @@ namespace Esi.Core.Tests
             var poly3 = poly3s.First();
             Assert.AreEqual(1, poly3.Fields.Where(f => f.Name == "a").Count());
             Assert.IsInstanceOf(typeof(EsiStruct), poly3);
+
+            var poly3A = poly3.FieldLookup["a"];
+            Assert.True((new EsiInt(24, false)).StructuralEquals(poly3A.Type));
         }
     }
 }

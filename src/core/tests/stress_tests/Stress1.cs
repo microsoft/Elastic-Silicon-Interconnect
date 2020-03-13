@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Esi.Schema;
 using System.IO;
+using CliWrap.Exceptions;
 
 namespace Esi.Core.Tests 
 {
@@ -53,6 +54,29 @@ namespace Esi.Core.Tests
 
             var ex = structs.Where(t => t.Name == "Example").First();
             Assert.True(ExampleModel.StructuralEquals(ex));
+
+
+        }
+
+        // Test the structural equals code -- various ways it can evaluate false
+        [Test]
+        public void ReadStress1Incorrect()
+        {
+            var types = ReadSchema("stress_tests/stress1.capnp");
+
+            Assert.Greater(types.Count, 0);
+            var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
+            Assert.Greater(structs.Count(), 0);
+
+            var poly = structs.Where(t => t.Name == "Polynomial3").First();
+            var ex = structs.Where(t => t.Name == "Example").First();
+
+            // Test the structural equals code -- various ways it can evaluate false
+            Assert.False(ExampleModel.StructuralEquals(poly));
+            Assert.False(Polynomal3Model_Incorrect1.StructuralEquals(poly));
+            Assert.False(poly.StructuralEquals(Polynomal3Model_Incorrect1));
+            Assert.False(Polynomal3Model_Incorrect2.StructuralEquals(poly));
+            Assert.False(poly.StructuralEquals(Polynomal3Model_Incorrect2));
         }
 
         static readonly EsiStruct Polynomal3Model =
@@ -66,6 +90,13 @@ namespace Esi.Core.Tests
                     10
                 )),
             });
+
+        static readonly EsiStruct Polynomal3Model_Incorrect1 =
+            new EsiStruct("Polynomial3", new EsiStruct.StructField[] {
+                new EsiStruct.StructField("a", new EsiInt(24, false)),
+            });
+        static readonly EsiStruct Polynomal3Model_Incorrect2 =
+            new EsiStruct("Poly3", new EsiStruct.StructField[] { });
 
         static readonly EsiStruct ExampleModel =
             new EsiStruct("Example",
@@ -95,12 +126,20 @@ namespace Esi.Core.Tests
         public void ReadStress1Fail()
         {
             var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(8, Context.Errors);
+            Assert.AreEqual(11, Context.Errors);
             Assert.AreEqual(0, Context.Fatals);
             Assert.True(Context.Failed);
             Context.ClearCounts();
 
             // Assert.Fail("Dummy fail to print out stdout");
+        }
+
+        [Test]
+        public void ReadStress1FailSyntax()
+        {
+            Assert.Throws<CommandExecutionException>(
+                () => ReadSchema("stress_tests/stress1_failsyntax.capnp"));
+            Context.ClearCounts();
         }
     }
 }

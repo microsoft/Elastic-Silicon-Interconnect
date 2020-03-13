@@ -100,13 +100,6 @@ namespace Esi.Schema
             this.Inner = Inner;
             this.Length = Length;
         }
-
-        public EsiArray(Func<EsiType> Inner, ulong Length)
-            : base()
-        {
-            this.Inner = Inner();
-            this.Length = Length;
-        }
     }
 
     public class EsiStruct : EsiValueType
@@ -127,19 +120,11 @@ namespace Esi.Schema
                 this.CodeOrder = CodeOrder;
                 this.BitOffset = BitOffset;
             }
-
-            public StructField(string Name, Func<EsiType> Type, ulong? CodeOrder = null, int? BitOffset = null)
-            {
-                this.Name = Name;
-                this.Type = Type();
-                this.CodeOrder = CodeOrder;
-                this.BitOffset = BitOffset;
-            }
         }
 
         public string? Name { get; }
         public StructField[] Fields { get; }
-        protected IReadOnlyDictionary<string, StructField> FieldLookup { get; }
+        public readonly IReadOnlyDictionary<string, StructField> FieldLookup;
 
         public EsiStruct(string? Name, IEnumerable<StructField> Fields)
             : base()
@@ -150,7 +135,10 @@ namespace Esi.Schema
         }
 
         /// <summary>
-        /// This constructor is somewhat unintuitive, but is useful (necessary?)
+        /// UPDATE: I found a better way to do this. Keeping this here in case it
+        /// becomes useful again in the future.
+        ///
+        /// This constructor is somewhat unintuitive, but is useful
         /// to encode cycles in this read-only, functional style object schema.
         /// 
         /// By having to call 'Fields' with a reference to 'this' (which is not
@@ -158,13 +146,13 @@ namespace Esi.Schema
         /// 'StructFields', directly or indirectly.
         /// 
         /// </summary>
-        public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
-            : base()
-        {
-            this.Name = Name;
-            this.Fields = Fields(this).ToArray();
-            FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
-        }
+        // public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
+        //     : base()
+        // {
+        //     this.Name = Name;
+        //     this.Fields = Fields(this).ToArray();
+        //     FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
+        // }
     }
 
     public class EsiStructReference : EsiType 
@@ -237,13 +225,6 @@ namespace Esi.Schema
             : base()
         {
             this.Inner = Inner;
-            this.IsFixed = IsFixed;
-        }
-
-        public EsiList(Func<EsiType> Inner, bool IsFixed = true)
-            : base()
-        {
-            this.Inner = Inner();
             this.IsFixed = IsFixed;
         }
     }

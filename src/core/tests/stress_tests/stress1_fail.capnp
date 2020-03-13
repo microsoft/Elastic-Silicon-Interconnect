@@ -47,3 +47,28 @@ struct Shape {
         sphere @7 :Bool $ESI.fixed(signed = false, whole = 4, fraction = 12);
     #}
 }
+
+struct Map(Key, Value) {
+  entries @0 :List(Entry);
+  struct Entry {
+    key @0 :Key;
+    value @1 :Value;
+  }
+}
+
+struct UnionTest
+{
+    u :union {
+        a @0 :Void;
+        b @1 :Void;
+    }
+}
+
+interface Foo
+{ }
+
+struct InterfaceTest
+{
+    i @0 :Foo;
+    p @1 :AnyPointer;
+}
