@@ -126,7 +126,7 @@ namespace Esi.Core.Tests
         public void ReadStress1Fail()
         {
             var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(11, Context.Errors);
+            Assert.AreEqual(10, Context.Errors);
             Assert.AreEqual(0, Context.Fatals);
             Assert.True(Context.Failed);
             Context.ClearCounts();

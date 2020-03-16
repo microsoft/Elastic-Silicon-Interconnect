@@ -98,7 +98,9 @@ namespace Esi.Schema
         {
             if (!IDtoNames.TryGetValue(id, out var loc))
             {
-                loc = new EsiCapnpLocation();
+                loc = new EsiCapnpLocation() {
+                    Id = id,
+                };
                 IDtoNames[id] = loc;
             }
             return loc;
@@ -214,14 +216,14 @@ namespace Esi.Schema
                 {
                     var esiStruct = new EsiStruct(
                         Name: loc.StructName,
-                        Fields: canpnStruct.Fields.Select(f => ConvertField(loc, f))
+                        Fields: canpnStruct.Fields.Iterate(f => ConvertField(loc, f))
                     );
                     if (canpnStruct.IsGroup) // This capnp "struct" is actually a group, which is equivalent to an EsiStruct
                     {
                         esiType = esiStruct; // Set the return to the raw struct
-                        IDtoType.Remove(loc.Id); // And remove the reference to it
                         if (stRef.RefCount > 0) // Check to see that nobody got the tentative reference while we were workin
                             C.Log.Fatal("Found a cycle involving groups. This shouldn't occur! ({loc})", loc);
+                        IDtoType[loc.Id] = esiStruct; // And remove the reference to it
                     }
                     else // This capnp "struct" is actually a capnp struct, which is equivalent to an EsiStructReference
                     {
