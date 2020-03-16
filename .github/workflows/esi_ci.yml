@@ -16,5 +16,8 @@ jobs:
     - name: Build with dotnet
       run: dotnet build --configuration Release
       working-directory: src/core
+    - name: Core Unit Tests
+      run: dotnet test
+      working-directory: src/core
     - name: Core integration tests
       run: pytest src/core
