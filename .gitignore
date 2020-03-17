@@ -333,3 +333,6 @@ tools/
 
 # Captnproto output files
 *.capnp.cs
+
+# ESI output files
+*.esi.sv
