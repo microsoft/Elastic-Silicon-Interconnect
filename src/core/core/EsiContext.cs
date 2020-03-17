@@ -32,7 +32,6 @@ namespace Esi
 
         public void Dispose()
         {
-            Log?.Dispose();
             Log = null;
         }
 

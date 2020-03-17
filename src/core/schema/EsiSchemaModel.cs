@@ -7,8 +7,31 @@ using System.Reflection;
 #nullable enable
 namespace Esi.Schema
 {
+
+    public class EsiSystem
+    {
+        public IEnumerable<EsiType> Types { get; }
+        public IReadOnlyDictionary<string, EsiNamedType> NamedTypes { get; }
+
+
+        public EsiSystem (IEnumerable<EsiType> Types)
+        {
+            this.Types = Types.ToArray();
+            NamedTypes =
+                this.Types
+                    .Select(t => t as EsiNamedType)
+                    .Where(t => t != null && t.Name != null)
+                    .ToDictionary(t => t?.Name!, t => t!);
+        }
+    }
+
     public abstract partial class EsiType
     {    }
+    
+    public interface EsiNamedType
+    {
+        string? Name { get; }
+    }
 
     public class EsiValueType : EsiType
     {    }
@@ -102,7 +125,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiStruct : EsiValueType
+    public class EsiStruct : EsiValueType, EsiNamedType
     {
         public class StructField : EsiType
         {
