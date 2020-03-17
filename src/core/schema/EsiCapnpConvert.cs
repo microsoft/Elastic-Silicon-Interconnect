@@ -477,7 +477,7 @@ namespace Esi.Schema
     /// <summary>
     /// Delay an error message until type is used... This may or may not be a good idea.
     /// </summary>
-    public class CapnpEsiErrorType : EsiType
+    public class CapnpEsiErrorType : EsiTypeParent
     {
         public Action A { get; }
 

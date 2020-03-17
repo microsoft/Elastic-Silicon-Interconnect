@@ -25,18 +25,24 @@ namespace Esi.Schema
         }
     }
 
-    public abstract partial class EsiType
-    {    }
+
+    public interface EsiType
+    {
+        bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+    }
     
-    public interface EsiNamedType
+    public interface EsiNamedType : EsiType
     {
         string? Name { get; }
     }
 
-    public class EsiValueType : EsiType
+    public interface EsiValueType : EsiType
     {    }
 
-    public class EsiPrimitive : EsiValueType
+    public abstract partial class EsiTypeParent : EsiType
+    {    }
+
+    public class EsiPrimitive : EsiTypeParent, EsiValueType
     {
         public enum PrimitiveType {
             EsiVoid,
@@ -54,7 +60,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiInt : EsiValueType
+    public class EsiInt : EsiTypeParent, EsiValueType
     {
         public bool Signed { get; }
         public ulong Bits { get; }
@@ -67,7 +73,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiEnum : EsiValueType
+    public class EsiEnum : EsiTypeParent, EsiValueType
     {
         public struct EnumMember
         {
@@ -90,7 +96,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiCompound : EsiValueType
+    public class EsiCompound : EsiTypeParent, EsiValueType
     {
         public enum CompoundType
         {
@@ -112,7 +118,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiArray : EsiValueType
+    public class EsiArray : EsiTypeParent, EsiValueType
     {
         public EsiType Inner { get; }
         public ulong Length { get; }
@@ -125,9 +131,9 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiStruct : EsiValueType, EsiNamedType
+    public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
-        public class StructField : EsiType
+        public class StructField : EsiTypeParent
         {
             public string Name { get; }
             // This is used for versioning in CapnProto
@@ -178,7 +184,7 @@ namespace Esi.Schema
         // }
     }
 
-    public class EsiStructReference : EsiType 
+    public class EsiStructReference : EsiTypeParent
     {
         protected Func<EsiStruct>? Resolver = null;
         protected EsiStruct? _Struct = null;
@@ -208,7 +214,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiUnion : EsiValueType
+    public class EsiUnion : EsiTypeParent, EsiValueType
     {
         public struct UnionEntry
         {
@@ -239,7 +245,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiList : EsiValueType
+    public class EsiList : EsiTypeParent, EsiValueType
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
@@ -252,7 +258,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiListReference : EsiType
+    public class EsiListReference : EsiTypeParent
     {
         public EsiList List { get; set; }
 
