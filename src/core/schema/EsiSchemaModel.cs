@@ -133,7 +133,7 @@ namespace Esi.Schema
 
     public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
-        public class StructField : EsiTypeParent
+        public class StructField : EsiTypeParent, EsiNamedType
         {
             public string Name { get; }
             // This is used for versioning in CapnProto
@@ -182,6 +182,11 @@ namespace Esi.Schema
         //     this.Fields = Fields(this).ToArray();
         //     FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         // }
+
+        public override string ToString()
+        {
+            return $"struct {Name}";
+        }
     }
 
     public class EsiStructReference : EsiTypeParent

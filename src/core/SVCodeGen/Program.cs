@@ -30,7 +30,7 @@ namespace Esi.SVCodeGen
                 esiCtxt.Log.Information("Completed reading capnp message");
                 esiCtxt.Log.Information("Starting SV interface output");
                 var esiSys = new EsiSystem(esiTypes);
-                var sv = new EsiSystemVerilogInterface(esiCtxt, esiSys);
+                var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, esiSys);
                 sv.WriteSVInterfaces();
                 esiCtxt.Log.Information("Completed SV interface output");
             }
