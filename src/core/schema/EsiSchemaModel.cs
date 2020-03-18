@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
@@ -126,6 +127,7 @@ namespace Esi.Schema
         private EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
+            this.Signed = Signed;
             this.Type = Type;
             this.Whole = Whole;
             this.Fractional = Fractional;

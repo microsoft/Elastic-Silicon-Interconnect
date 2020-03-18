@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Esi.Schema;
 
@@ -11,14 +12,14 @@ namespace Esi.SVCodeGen
         protected EsiContext C;
         protected StreamWriter Writer;
         protected int Indent;
-        protected ISet<EsiNamedType> Includes;
+        protected ISet<EsiType> Includes;
 
         public EsiSystemVerilogTypeWriter(EsiContext C, StreamWriter Writer)
         {
             this.C = C;
             this.Writer = Writer;
             Indent = 0;
-            Includes = new HashSet<EsiNamedType>();
+            Includes = new HashSet<EsiType>();
         }
 
         protected void W(string line = "")
@@ -26,7 +27,13 @@ namespace Esi.SVCodeGen
             Writer.WriteLine(line);
         }
 
-        public void WriteSV(EsiNamedType type, FileInfo headerFile)
+        /// <summary>
+        /// Write out a SV header with a typedef for the type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="headerFile"></param>
+        /// <returns>A set of the used types</returns>
+        public ISet<EsiType> WriteSV(EsiNamedType type, FileInfo headerFile)
         {
             W(EsiSystemVerilogConsts.Header);
             var macro = $"__{headerFile.Name.Replace('.', '_')}__";
@@ -36,9 +43,12 @@ namespace Esi.SVCodeGen
 
             // Run this first to populate 'Includes'
             var svTypeString = GetSVType(type, false);
-            foreach (var incl in Includes)
+            foreach (var incl in Includes
+                .Select(i => i.GetSVHeaderName())
+                .Where(i => !string.IsNullOrWhiteSpace(i))
+                .Distinct())
             {
-                W($"`include \"{incl.GetSVHeaderName()}\"");
+                W($"`include \"{incl}\"");
             }
             W();
 
@@ -47,6 +57,8 @@ namespace Esi.SVCodeGen
             
             W();
             W("`endif");
+
+            return Includes;
         }
 
         private void WriteComment(EsiType type)
@@ -58,13 +70,15 @@ namespace Esi.SVCodeGen
 
         public string GetSVType(EsiType type, bool useName = true)
         {
+            if (useName)
+                Includes.Add(type);
             switch (type)
             {
                 // StructField MUST go first since it is an EsiNamedType, 
                 case EsiStruct.StructField field:
                     throw new ArgumentException("Internal Error: EsiStruct.StructField is not handled here!");
+                // Refer to another named struct when 1) it actually has a name and 2) we're permitted to
                 case EsiNamedType namedType when (useName && !string.IsNullOrWhiteSpace(namedType.Name)):
-                    Includes.Add(namedType);
                     return namedType.GetSVIdentifier();
                 case EsiStruct st:
                     return GetSVStruct(st);
@@ -80,6 +94,13 @@ namespace Esi.SVCodeGen
                 case EsiInt i:
                     return $"logic [{i.Bits-1}:0]";
 
+                case EsiCompound c:
+                    return c.GetSVCompoundModuleName();
+
+                // TODO: This should be correct for 1D packed arrays, but not for others
+                // FIXME!
+                case EsiArray a:
+                    return $"{GetSVType(a.Inner)}[{a.Length-1}:0]";
 
                 default:
                     C.Log.Error("SystemVerilog interface generation for type {type} not supported", type.GetType());

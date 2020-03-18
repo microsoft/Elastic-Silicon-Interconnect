@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,17 +18,36 @@ namespace Esi.SVCodeGen
 
         public void WriteSVInterfaces(DirectoryInfo to = null)
         {
+            var usedTypes = new HashSet<EsiType>();
             to = to ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 
             foreach (var type in Sys.NamedTypes.Values)
             {
                 var headerFile = to.FileUnder(type.GetSVHeaderName());
-                WriteSVType(type, headerFile);
+                var usedTypesLocal = WriteSVType(type, headerFile);
+                usedTypes.UnionWith(usedTypesLocal);
+
                 WriteSVInterface(type, to.FileUnder($"{type.GetFilename()}.esi.sv"), headerFile);
+            }
+
+            var usedCompounds = usedTypes.Where(t => t is EsiCompound).Select(t => t as EsiCompound).Distinct();
+            if (usedCompounds.Count() > 0)
+            {
+                C.Log.Information("Writing compound types to single file");
+                var compoundTypesFile = to.FileUnder(usedCompounds.First().GetSVHeaderName());
+                if (compoundTypesFile.Exists)
+                    compoundTypesFile.Delete();
+                using (var writer = new StreamWriter(compoundTypesFile.OpenWrite()))
+                {
+                    var compoundWriter = new EsiSystemVerilogCompoundWriter(C, writer);
+                    compoundWriter.Write(usedCompounds);
+                }
             }
         }
 
-        public void WriteSVType(EsiNamedType type, FileInfo fileInfo)
+
+
+        public ISet<EsiType> WriteSVType(EsiNamedType type, FileInfo fileInfo)
         {
             if (fileInfo.Exists)
                 fileInfo.Delete();
@@ -36,7 +56,7 @@ namespace Esi.SVCodeGen
                 C.Log.Information("Starting SV type generation for {type} to file {file}",
                     type, fileInfo.Name);
                 var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
-                svTypeWriter.WriteSV(type, fileInfo);
+                return svTypeWriter.WriteSV(type, fileInfo);
             }
         }
 
