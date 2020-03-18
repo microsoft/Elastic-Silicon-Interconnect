@@ -152,6 +152,7 @@ namespace Esi.Schema
             // Fourth pass: Do the actual conversion
             var esiTypes = cgr.Nodes.Select(
                 node => ConvertNode(node) switch {
+                    _ when (ESIAnnotations.Contains(node.Id)) => null,
                     EsiStructReference stRef => stRef.Struct,
                     EsiListReference lstRef => lstRef.List,
                     EsiType t => t,

@@ -29,22 +29,30 @@ namespace Esi.SVCodeGen
 
         public void WriteSVType(EsiNamedType type, FileInfo fileInfo)
         {
+            if (fileInfo.Exists)
+                fileInfo.Delete();
             using (var write = new StreamWriter(fileInfo.OpenWrite()))
             {
+                C.Log.Information("Starting SV type generation for {type} to file {file}",
+                    type, fileInfo.Name);
                 var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
                 svTypeWriter.WriteSV(type, fileInfo);
             }
         }
 
-        public void WriteSVInterface(EsiType type, FileInfo fileInfo, FileInfo headerFile)
+        public void WriteSVInterface(EsiNamedType type, FileInfo fileInfo, FileInfo headerFile)
         {
+            if (fileInfo.Exists)
+                fileInfo.Delete();
             using (var write = new StreamWriter(fileInfo.OpenWrite()))
             {
+                C.Log.Information("Starting SV interface generation for {type} to file {file}",
+                    type, fileInfo.Name);
                 write.WriteLine(EsiSystemVerilogConsts.Header);
                 write.Write($@"
 `include ""{headerFile.Name}""
 
-interface I{type.GetSVType()}ValidReady
+interface I{type.GetSVIdentifier()}ValidReady
     (
         input wire clk,
         input wire rstn
@@ -53,7 +61,7 @@ interface I{type.GetSVType()}ValidReady
     logic valid;
     logic ready;
 
-    {type.GetSVType()} data;
+    {type.GetSVIdentifier()} data;
 
     modport Source (
         input clk, rstn,

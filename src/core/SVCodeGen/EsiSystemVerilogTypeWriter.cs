@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using Esi.Schema;
 
 namespace Esi.SVCodeGen
@@ -19,12 +20,10 @@ namespace Esi.SVCodeGen
 
         protected void W(string line = "")
         {
-            for (int i = 0; i < Indent; i++)
-                Writer.Write("    ");
             Writer.WriteLine(line);
         }
 
-        public void WriteSV(EsiType type, FileInfo headerFile)
+        public void WriteSV(EsiNamedType type, FileInfo headerFile)
         {
             W(EsiSystemVerilogConsts.Header);
             var macro = $"__{headerFile.Name.Replace('.', '_')}__";
@@ -33,8 +32,8 @@ namespace Esi.SVCodeGen
             W();
 
             WriteComment(type);
-            Writer.Write("typedef ");
-            WriteSVType(type);
+            W($"typedef {GetSVType(type, false)}");
+            W($"{type.GetSVIdentifier()};");
             
             W();
             W("`endif");
@@ -42,43 +41,53 @@ namespace Esi.SVCodeGen
 
         private void WriteComment(EsiType type)
         {
-            W("// *****");
+            W( "// *****");
             W($"// {type}");
-            W("//");
+            W( "//");
         }
 
-        public void WriteSVType(EsiType type)
+        public string GetSVType(EsiType type, bool useName = true)
         {
             switch (type)
             {
+                case EsiNamedType namedType when (useName && !string.IsNullOrWhiteSpace(namedType.Name)):
+                    return namedType.GetSVIdentifier();
                 case EsiStruct st:
-                    WriteSVStruct(st);
-                    break;
+                    return GetSVStruct(st);
                 case EsiStruct.StructField field:
-                    WriteSVStructField(field);
-                    break;
+                    return $"{GetSVType(field.Type)} {field.Name};";
+
+
+                // -----
+                // Simple types
+                case EsiPrimitive p when (p.Type == EsiPrimitive.PrimitiveType.EsiByte):
+                    return "logic [7:0]";
+                case EsiPrimitive p when (p.Type == EsiPrimitive.PrimitiveType.EsiVoid):
+                    return null;
+                case EsiPrimitive p:
+                    return "logic";
+                case EsiInt i:
+                    return $"logic [{i.Bits-1}:0]";
+
+
                 default:
                     C.Log.Error("SystemVerilog interface generation for type {type} not supported", type.GetType());
-                    break;
+                    return null;
             }
         }
 
-        private void WriteSVStructField(EsiStruct.StructField field)
+        protected string GetSVStruct(EsiStruct st)
         {
-            W($"{field.Type.GetSVType()} {field.Name};");
-        }
-
-        public void WriteSVStruct(EsiStruct st)
-        {
-            W("struct packed");
-            W("{");
-            Indent++;
+            var sb = new StringBuilder();
+            sb.AppendLine("struct packed {");
+            Indent ++;
             foreach (var field in st.Fields)
             {
-                WriteSVType(field);
+                sb.Indent(Indent).AppendLine(GetSVType(field, false));
             }
-            Indent--;
-            W($"}} {st.GetSVIdentifier()};");
+            Indent --;
+            sb.Indent(Indent).Append('}');
+            return sb.ToString();
         }
     }
 }

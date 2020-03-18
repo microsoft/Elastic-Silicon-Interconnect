@@ -10,7 +10,7 @@
            "request": "launch",
            "preLaunchTask": "build",
            "program": "${workspaceFolder}/src/core/SVCodeGen/bin/Debug/netcoreapp3.1/SVCodeGen.exe",
-           "args": ["tests/toy_example/toy.capnp.bin"],
+           "args": ["tests/stress_tests/stress1_synth.capnp.bin"],
            "cwd": "${workspaceFolder}/src/core",
            "stopAtEntry": false,
            "console": "internalConsole"

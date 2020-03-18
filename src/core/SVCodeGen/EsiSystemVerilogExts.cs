@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Esi.Schema;
 
 namespace Esi.SVCodeGen
@@ -12,23 +13,11 @@ namespace Esi.SVCodeGen
                 ?.Replace(' ', '_');
         }
 
-        public static string GetSVType(this EsiType type)
+        public static StringBuilder Indent(this StringBuilder stringBuilder, int indent)
         {
-            switch (type)
-            {
-                case EsiNamedType namedType:
-                    return GetSVIdentifier(namedType);
-                case EsiPrimitive p when (p.Type == EsiPrimitive.PrimitiveType.EsiByte):
-                    return "logic [7:0]";
-                case EsiPrimitive p when (p.Type == EsiPrimitive.PrimitiveType.EsiVoid):
-                    return null;
-                case EsiPrimitive p:
-                    return "logic";
-                case EsiInt i:
-                    return $"logic [{i.Bits-1}:0]";
-                default:
-                    throw new NotImplementedException($"Type {type.GetType()} is not implemented for SystemVerilog");
-            }
+            for (int i = 0; i < indent; i++)
+                stringBuilder.Append("  ");
+            return stringBuilder;
         }
     }
 }

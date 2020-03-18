@@ -5,7 +5,7 @@ namespace Esi.SVCodeGen
         public const string Header = 
 @"////////////////////
 // ESI auto-generated file!
-//    Do NOT edit as this file WILL be overwriten
+//    Do NOT edit as this file WILL be overwritten
 /////////";
     }
 }
