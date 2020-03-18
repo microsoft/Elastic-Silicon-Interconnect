@@ -109,7 +109,21 @@ namespace Esi.Schema
         public ulong Whole { get; }
         public ulong Fractional { get; }
 
-        public EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
+        private static Dictionary<
+            (CompoundType Type, bool Signed, ulong Whole, ulong Fractional), EsiCompound> SingletonMapping = 
+                new Dictionary<(CompoundType Type, bool Signed, ulong Whole, ulong Fractional), EsiCompound>();
+        public static EsiCompound SingletonFor(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
+        {
+            var key = (Type, Signed, Whole, Fractional);
+            if (!SingletonMapping.TryGetValue(key, out var c))
+            {
+                c = new EsiCompound(Type, Signed, Whole, Fractional);
+                SingletonMapping[key] = c;
+            }
+            return c;
+        }
+
+        private EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
             this.Type = Type;
