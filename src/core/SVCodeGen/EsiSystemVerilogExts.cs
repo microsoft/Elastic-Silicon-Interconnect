@@ -13,6 +13,11 @@ namespace Esi.SVCodeGen
                 ?.Replace(' ', '_');
         }
 
+        public static string GetSVHeaderName(this EsiNamedType type)
+        {
+            return $"{type.GetFilename()}.esi.svh";
+        }
+
         public static StringBuilder Indent(this StringBuilder stringBuilder, int indent)
         {
             for (int i = 0; i < indent; i++)

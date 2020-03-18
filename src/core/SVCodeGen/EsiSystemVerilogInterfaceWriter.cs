@@ -21,7 +21,7 @@ namespace Esi.SVCodeGen
 
             foreach (var type in Sys.NamedTypes.Values)
             {
-                var headerFile = to.FileUnder($"{type.GetFilename()}.esi.svh");
+                var headerFile = to.FileUnder(type.GetSVHeaderName());
                 WriteSVType(type, headerFile);
                 WriteSVInterface(type, to.FileUnder($"{type.GetFilename()}.esi.sv"), headerFile);
             }
