@@ -38,6 +38,11 @@ namespace Esi
             }
         }
 
+        public static FileInfo FileUnder(this DirectoryInfo me, string filename)
+        {
+            return new FileInfo(Path.Combine(me.FullName, filename));
+        }
+
         public static FileInfo ResolveResource(string resource)
         {
             return new FileInfo(Path.Combine(RootDir.FullName, resource));

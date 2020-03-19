@@ -7,26 +7,18 @@ using System.Collections;
 #nullable enable
 namespace Esi.Schema
 {
-    public abstract partial class EsiType
+    public abstract partial class EsiTypeParent : EsiType
     {
-        /// <summary>
-        /// Redefine the equals thisthod using reflection to do value-based
-        /// comparisons
-        /// </summary>
-        public bool StructuralEquals(EsiType that)
-        {
-            return StructuralEquals(that, new Dictionary<EsiType, EsiType?>());
-        }
-
         /// <summary>
         /// Reflection-based equality comparison which handles cycles
         /// </summary>
-        protected virtual bool StructuralEquals(
+        public virtual bool StructuralEquals(
             EsiType that,
-            IDictionary<EsiType, EsiType?> objMap)
+            IDictionary<EsiType, EsiType?>? objMap = null)
         {
             if (that == null)
                 return false;
+            objMap = objMap ?? new Dictionary<EsiType, EsiType?>();
 
             Type thisType = this.GetType();
             Type thatType = that.GetType();
@@ -39,8 +31,8 @@ namespace Esi.Schema
                 var thisValue = prop.GetValue(this);
                 var thatValue = prop.GetValue(that);
 
-                if (thisValue is EsiType thisFieldEsi &&
-                    thatValue is EsiType thatFieldEsi)
+                if (thisValue is EsiTypeParent thisFieldEsi &&
+                    thatValue is EsiTypeParent thatFieldEsi)
                 {
                     if (objMap.TryGetValue(thisFieldEsi, out var expectedThatField))
                     {

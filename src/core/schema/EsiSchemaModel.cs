@@ -1,3 +1,4 @@
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
@@ -7,13 +8,42 @@ using System.Reflection;
 #nullable enable
 namespace Esi.Schema
 {
-    public abstract partial class EsiType
+
+    public class EsiSystem
+    {
+        public IEnumerable<EsiType> Types { get; }
+        public IReadOnlyDictionary<string, EsiNamedType> NamedTypes { get; }
+
+
+        public EsiSystem (IEnumerable<EsiType> Types)
+        {
+            this.Types = Types.ToArray();
+            NamedTypes =
+                this.Types
+                    .Select(t => t as EsiNamedType)
+                    .Where(t => t != null && t.Name != null)
+                    .ToDictionary(t => t?.Name!, t => t!);
+        }
+    }
+
+
+    public interface EsiType
+    {
+        bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+    }
+    
+    public interface EsiNamedType : EsiType
+    {
+        string? Name { get; }
+    }
+
+    public interface EsiValueType : EsiType
     {    }
 
-    public class EsiValueType : EsiType
+    public abstract partial class EsiTypeParent : EsiType
     {    }
 
-    public class EsiPrimitive : EsiValueType
+    public class EsiPrimitive : EsiTypeParent, EsiValueType
     {
         public enum PrimitiveType {
             EsiVoid,
@@ -31,7 +61,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiInt : EsiValueType
+    public class EsiInt : EsiTypeParent, EsiValueType
     {
         public bool Signed { get; }
         public ulong Bits { get; }
@@ -44,7 +74,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiEnum : EsiValueType
+    public class EsiEnum : EsiTypeParent, EsiValueType
     {
         public struct EnumMember
         {
@@ -67,7 +97,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiCompound : EsiValueType
+    public class EsiCompound : EsiTypeParent, EsiValueType
     {
         public enum CompoundType
         {
@@ -80,16 +110,31 @@ namespace Esi.Schema
         public ulong Whole { get; }
         public ulong Fractional { get; }
 
-        public EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
+        private static Dictionary<
+            (CompoundType Type, bool Signed, ulong Whole, ulong Fractional), EsiCompound> SingletonMapping = 
+                new Dictionary<(CompoundType Type, bool Signed, ulong Whole, ulong Fractional), EsiCompound>();
+        public static EsiCompound SingletonFor(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
+        {
+            var key = (Type, Signed, Whole, Fractional);
+            if (!SingletonMapping.TryGetValue(key, out var c))
+            {
+                c = new EsiCompound(Type, Signed, Whole, Fractional);
+                SingletonMapping[key] = c;
+            }
+            return c;
+        }
+
+        private EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
+            this.Signed = Signed;
             this.Type = Type;
             this.Whole = Whole;
             this.Fractional = Fractional;
         }
     }
 
-    public class EsiArray : EsiValueType
+    public class EsiArray : EsiTypeParent, EsiValueType
     {
         public EsiType Inner { get; }
         public ulong Length { get; }
@@ -102,9 +147,9 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiStruct : EsiValueType
+    public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
-        public class StructField : EsiType
+        public class StructField : EsiTypeParent, EsiNamedType
         {
             public string Name { get; }
             // This is used for versioning in CapnProto
@@ -153,9 +198,14 @@ namespace Esi.Schema
         //     this.Fields = Fields(this).ToArray();
         //     FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         // }
+
+        public override string ToString()
+        {
+            return $"struct {Name}";
+        }
     }
 
-    public class EsiStructReference : EsiType 
+    public class EsiStructReference : EsiTypeParent
     {
         protected Func<EsiStruct>? Resolver = null;
         protected EsiStruct? _Struct = null;
@@ -185,7 +235,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiUnion : EsiValueType
+    public class EsiUnion : EsiTypeParent, EsiValueType
     {
         public struct UnionEntry
         {
@@ -216,7 +266,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiList : EsiValueType
+    public class EsiList : EsiTypeParent, EsiValueType
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
@@ -229,7 +279,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiListReference : EsiType
+    public class EsiListReference : EsiTypeParent
     {
         public EsiList List { get; set; }
 

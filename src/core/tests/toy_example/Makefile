@@ -1,3 +1,15 @@
-investData:
-	capnp compile -I../../schema/ -o- toy.capnp > toy.capnp.CodeGeneratorRequest.bin
-	cat toy.capnp.CodeGeneratorRequest.bin | capnp decode /usr/include/capnp/schema.capnp CodeGeneratorRequest > toy.capnp.CodeGeneratorRequest.txt
+include ../capnp.mk
+
+investData: toy.capnp.txt
+
+run: toy.capnp.bin
+	../../SVCodeGen/bin/Debug/netcoreapp3.1/SVCodeGen.exe toy.capnp.bin
+
+vericompile: run
+	verilator --lint-only *.sv
+
+vlog: run
+	vlog -sv09compat *.sv
+
+vsim: vlog
+	vsim Polynomial3Compute_tb

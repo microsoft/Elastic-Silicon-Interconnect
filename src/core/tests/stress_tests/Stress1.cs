@@ -83,7 +83,7 @@ namespace Esi.Core.Tests
             new EsiStruct("Polynomial3", new EsiStruct.StructField[] {
                 new EsiStruct.StructField("a", new EsiInt(24, false)),
                 new EsiStruct.StructField("b", new EsiInt(40, false)),
-                new EsiStruct.StructField("c", new EsiCompound(
+                new EsiStruct.StructField("c", EsiCompound.SingletonFor(
                     EsiCompound.CompoundType.EsiFloat,
                     true,
                     3,

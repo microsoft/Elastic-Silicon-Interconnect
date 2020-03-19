@@ -152,6 +152,7 @@ namespace Esi.Schema
             // Fourth pass: Do the actual conversion
             var esiTypes = cgr.Nodes.Select(
                 node => ConvertNode(node) switch {
+                    _ when (ESIAnnotations.Contains(node.Id)) => null,
                     EsiStructReference stRef => stRef.Struct,
                     EsiListReference lstRef => lstRef.List,
                     EsiType t => t,
@@ -311,8 +312,8 @@ namespace Esi.Schema
                 CapnpGen.Type.WHICH.Uint16 => new EsiInt(16, false),
                 CapnpGen.Type.WHICH.Uint32 => new EsiInt(32, false),
                 CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
-                CapnpGen.Type.WHICH.Float32 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
-                CapnpGen.Type.WHICH.Float64 => new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
+                CapnpGen.Type.WHICH.Float32 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
+                CapnpGen.Type.WHICH.Float64 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
                 CapnpGen.Type.WHICH.Text => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
                 CapnpGen.Type.WHICH.Data => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
@@ -322,9 +323,9 @@ namespace Esi.Schema
                     // ---
                     // "Special", known structs
                     (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
-                        new EsiCompound(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
+                        EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
                     (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
-                        new EsiCompound(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
+                        EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
 
                     // ---
                     // User-specified structs
@@ -428,7 +429,7 @@ namespace Esi.Schema
                     // FIXED annotation
                     case (EsiCompound esiCompound, AnnotationIDs.FIXED):
                         var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
-                        esiType = new EsiCompound(
+                        esiType = EsiCompound.SingletonFor(
                             EsiCompound.CompoundType.EsiFixed,
                             cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
                         break;
@@ -440,7 +441,7 @@ namespace Esi.Schema
                     // FLOAT annotation
                     case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
                         var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
-                        esiType = new EsiCompound(
+                        esiType = EsiCompound.SingletonFor(
                             EsiCompound.CompoundType.EsiFloat,
                             cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
                         break;
@@ -477,7 +478,7 @@ namespace Esi.Schema
     /// <summary>
     /// Delay an error message until type is used... This may or may not be a good idea.
     /// </summary>
-    public class CapnpEsiErrorType : EsiType
+    public class CapnpEsiErrorType : EsiTypeParent
     {
         public Action A { get; }
 

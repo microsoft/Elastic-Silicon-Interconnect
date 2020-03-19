@@ -3,7 +3,7 @@ using System.IO;
 using Esi;
 using Esi.Schema;
 
-namespace SVCodeGen
+namespace Esi.SVCodeGen
 {
     class Program
     {
@@ -28,6 +28,11 @@ namespace SVCodeGen
                 esiCtxt.Log.Information("Starting conversion to EsiTypes");
                 var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
                 esiCtxt.Log.Information("Completed reading capnp message");
+                esiCtxt.Log.Information("Starting SV interface output");
+                var esiSys = new EsiSystem(esiTypes);
+                var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, esiSys);
+                sv.WriteSVInterfaces();
+                esiCtxt.Log.Information("Completed SV interface output");
             }
 
             return 0;

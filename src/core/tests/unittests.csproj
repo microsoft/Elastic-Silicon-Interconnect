@@ -14,6 +14,7 @@
     <PackageReference Include="ReportGenerator" Version="4.5.2"/>
 
     <ProjectReference Include="../schema/schema.csproj"/>
+    <ProjectReference Include="../SVCodeGen/SVCodeGen.csproj"/>
   </ItemGroup>
 
 </Project>
