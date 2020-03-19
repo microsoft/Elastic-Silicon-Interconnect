@@ -42,7 +42,8 @@ namespace Esi.SVCodeGen
             W();
 
             // Run this first to populate 'Includes'
-            var svTypeString = GetSVType(type, false);
+            var svTypeString = GetStructField(
+                new EsiStruct.StructField(type.GetSVIdentifier(), type), false);
             foreach (var incl in Includes
                 .Select(i => i.GetSVHeaderName())
                 .Where(i => !string.IsNullOrWhiteSpace(i))
@@ -53,7 +54,7 @@ namespace Esi.SVCodeGen
             W();
 
             WriteComment(type);
-            W($"typedef {svTypeString} {type.GetSVIdentifier()};");
+            W($"typedef {svTypeString}");
             
             W();
             W("`endif");
@@ -68,7 +69,7 @@ namespace Esi.SVCodeGen
             W( "//");
         }
 
-        public string GetSVType(EsiType type, bool useName = true)
+        public string GetSVType(EsiType type, ref List<ulong> arrayDims, bool useName = true)
         {
             if (useName)
                 Includes.Add(type);
@@ -92,15 +93,15 @@ namespace Esi.SVCodeGen
                 case EsiPrimitive p:
                     return "logic";
                 case EsiInt i:
-                    return $"logic [{i.Bits-1}:0]";
+                    arrayDims.Add(i.Bits);
+                    return $"logic";
 
                 case EsiCompound c:
                     return c.GetSVCompoundModuleName();
 
-                // TODO: This should be correct for 1D packed arrays, but not for others
-                // FIXME!
                 case EsiArray a:
-                    return $"{GetSVType(a.Inner)}[{a.Length-1}:0]";
+                    arrayDims.Add(a.Length);
+                    return $"{GetSVType(a.Inner, ref arrayDims)}";
 
                 default:
                     C.Log.Error("SystemVerilog interface generation for type {type} not supported", type.GetType());
@@ -108,22 +109,31 @@ namespace Esi.SVCodeGen
             }
         }
 
+        protected string GetStructField(EsiStruct.StructField field, bool useName = true)
+        {
+            var arrayDims = new List<ulong>();
+            var svString = GetSVType(field.Type, ref arrayDims, useName);
+            if (string.IsNullOrWhiteSpace(svString))
+                return $"// {field.Name} of type {field.Type}";
+
+            var sb = new StringBuilder();
+            sb.Append($"{svString}");
+            foreach (var d in arrayDims)
+            {
+                sb.Append($"[{d-1}:0]");
+            }
+            sb.Append($" {field.Name};");
+            return sb.ToString();
+        }
+
         protected string GetSVStruct(EsiStruct st)
         {
-            string StructField(EsiStruct.StructField field)
-            {
-                var svString = GetSVType(field.Type);
-                if (string.IsNullOrWhiteSpace(svString))
-                    return $"// {field.Name} of type {field.Type}";
-                return $"{svString} {field.Name};";
-            }
-
             var sb = new StringBuilder();
             sb.AppendLine("struct packed {");
             Indent ++;
             foreach (var field in st.Fields)
             {
-                sb.Indent(Indent).AppendLine(StructField(field));
+                sb.Indent(Indent).AppendLine(GetStructField(field));
             }
             Indent --;
             sb.Indent(Indent).Append('}');

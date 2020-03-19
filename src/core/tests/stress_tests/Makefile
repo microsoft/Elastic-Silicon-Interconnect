@@ -10,3 +10,7 @@ clean:
 
 vlog: run
 	vlog -sv09compat *.sv
+
+shape: vlog
+	vopt Shape_tb -o Shape_tb_vopt
+	vsim Shape_tb_vopt -c -do "run 100; exit"
