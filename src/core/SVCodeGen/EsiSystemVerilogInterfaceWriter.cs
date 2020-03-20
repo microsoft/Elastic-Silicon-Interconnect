@@ -72,11 +72,7 @@ namespace Esi.SVCodeGen
                 write.Write($@"
 `include ""{headerFile.Name}""
 
-interface I{type.GetSVIdentifier()}ValidReady
-    (
-        input wire clk,
-        input wire rstn
-    );
+interface I{type.GetSVIdentifier()}ValidReady ();
 
     logic valid;
     logic ready;
@@ -84,7 +80,6 @@ interface I{type.GetSVIdentifier()}ValidReady
     {type.GetSVIdentifier()} data;
 
     modport Source (
-        input clk, rstn,
         output valid,
         input ready,
 
@@ -92,7 +87,6 @@ interface I{type.GetSVIdentifier()}ValidReady
     );
     
     modport Sink (
-        input clk, rstn,
         input valid,
         output ready,
 
@@ -100,7 +94,7 @@ interface I{type.GetSVIdentifier()}ValidReady
     );
 
 endinterface
-                ");
+");
             }
         }
     }
