@@ -32,7 +32,7 @@ namespace Esi.Core.Tests
 
             var subExamples = example.Fields.Where(f => f.Name == "subExample");
             Assert.AreEqual(1, subExamples.Count());
-            Assert.AreSame(example, (subExamples.First().Type as EsiStructReference)?.Struct);
+            Assert.AreSame(example, (subExamples.First().Type as EsiReferenceType)?.Reference);
 
             var exampleGroups = example.Fields.Where(f => f.Name == "exampleGroup");
             Assert.AreEqual(1, exampleGroups.Count());
@@ -111,14 +111,14 @@ namespace Esi.Core.Tests
                             null,
                             new EsiStruct.StructField[] {
                                 new EsiStruct.StructField("houseNumber", new EsiInt(32, false)),
-                                new EsiStruct.StructField("street", new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte)))),
+                                new EsiStruct.StructField("street", new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte)))),
                                 new EsiStruct.StructField("city", new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte))),
                             }
                         )
                     ),
                     new EsiStruct.StructField(
                         "subExample",
-                        new EsiStructReferenceCapnp(() => ExampleModel)
+                        new EsiReferenceCapnp(() => ExampleModel)
                     )
                 });
 

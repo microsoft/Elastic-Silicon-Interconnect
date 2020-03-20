@@ -45,7 +45,7 @@ struct Shape {
         sphere @7 :Float32 $ESI.fixed(signed = false, whole = 4, fraction = 12);
     #}
 
-    array1 @8 :List(UInt32) $ESI.array(3);
+    array1 @8 :List(UInt32) $ESI.bits(24) $ESI.array(3);
 }
 
 struct All {

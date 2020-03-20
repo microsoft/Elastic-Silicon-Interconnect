@@ -1,3 +1,4 @@
+using System.IO.Pipes;
 using System.Text;
 using System.Reflection;
 using System.Data.Common;
@@ -153,8 +154,7 @@ namespace Esi.Schema
             var esiTypes = cgr.Nodes.Select(
                 node => ConvertNode(node) switch {
                     _ when (ESIAnnotations.Contains(node.Id)) => null,
-                    EsiStructReference stRef => stRef.Struct,
-                    EsiListReference lstRef => lstRef.List,
+                    EsiReferenceType stRef => stRef.Reference,
                     EsiType t => t,
                     null => null,
             }).Where(t => t != null).ToList();
@@ -208,7 +208,7 @@ namespace Esi.Schema
             {
                 // First, create a struct reference and populate the cache with it.
                 //  This signals that we are descending this struct already, in the case of a cycle
-                var stRef = new EsiStructReferenceCapnp((EsiStruct)null);
+                var stRef = new EsiReferenceCapnp((EsiStruct)null);
                 esiType = stRef;
                 IDtoType[loc.Id] = esiType;
 
@@ -228,7 +228,7 @@ namespace Esi.Schema
                     }
                     else // This capnp "struct" is actually a capnp struct, which is equivalent to an EsiStructReference
                     {
-                        stRef.Struct = esiStruct;
+                        stRef.Reference = esiStruct;
                     }
                 }
                 else // This capnp struct is actually a union
@@ -239,7 +239,7 @@ namespace Esi.Schema
             }
 
             // Mark that we have returned this instance
-            if (esiType is EsiStructReferenceCapnp stRefCount)
+            if (esiType is EsiReferenceCapnp stRefCount)
                 stRefCount.RefCount++;
             return esiType;
         }
@@ -314,10 +314,10 @@ namespace Esi.Schema
                 CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
                 CapnpGen.Type.WHICH.Float32 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
                 CapnpGen.Type.WHICH.Float64 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-                CapnpGen.Type.WHICH.Text => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
-                CapnpGen.Type.WHICH.Data => new EsiListReference(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+                CapnpGen.Type.WHICH.Text => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+                CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
-                CapnpGen.Type.WHICH.List => new EsiListReference(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
+                CapnpGen.Type.WHICH.List => new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
                 CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId),
                 CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
                     // ---
@@ -353,110 +353,109 @@ namespace Esi.Schema
             EsiCapnpLocation loc,
             IReadOnlyList<Annotation.READER> annotations)
         {
-            annotations?.ForEach(a => {
-                if (!ESIAnnotations.Contains( a.Id ))
-                    // No-op if we don't recognize the annotation ID
-                    return;
+            return annotations?.Aggregate(esiType, (et, a) => AddAnnotation(et, loc, a)) ?? esiType;
+        }
 
-                switch (esiType, (AnnotationIDs) a.Id)
-                {
-                    // ---
-                    // BITS annotation
-                    case (EsiInt ei, AnnotationIDs.BITS):
-                        if (ei.Bits < a.Value.Uint64)
-                        {
-                            C.Log.Warning(
-                                "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
-                                a.Value.Uint64,
-                                ei.Bits,
-                                loc);
-                        }
-                        esiType = new EsiInt(a.Value.Uint64, ei.Signed);
-                        break;
-                    case (_, AnnotationIDs.BITS):
-                        C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
-                        break;
+        public EsiType AddAnnotation (EsiType esiType, EsiCapnpLocation loc, Annotation.READER a) {
+            if (!ESIAnnotations.Contains( a.Id ))
+                // No-op if we don't recognize the annotation ID
+                return esiType;
 
-                    // ---
-                    // INLINE annotation
-                    case (EsiStructReference stRef, AnnotationIDs.INLINE) when stRef.Struct != null:
-                        esiType = stRef.Struct;
-                        break;
-                    case (EsiStructReference stRef, AnnotationIDs.INLINE) when stRef.Struct == null:
-                        C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
-                        break;
-                    case (EsiListReference lstRef, AnnotationIDs.INLINE):
-                        esiType = lstRef.List;
-                        break;
-                    case (EsiValueType _, AnnotationIDs.INLINE):
-                        C.Log.Warning("$inline on value types have no effect ({loc})", loc);
-                        break;
-                    case (_, AnnotationIDs.INLINE):
-                        C.Log.Error("$Inline on '{type}' not expected ({loc})", esiType.GetType(), loc);
-                        break;
+            switch (esiType, (AnnotationIDs) a.Id)
+            {
+                // ---
+                // INLINE annotation
+                case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference != null:
+                    return stRef.Reference;
+                case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference == null:
+                    C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
+                    return esiType;
+                case (EsiValueType _, AnnotationIDs.INLINE):
+                    C.Log.Warning("$inline on value types have no effect ({loc})", loc);
+                    return esiType;
+                case (_, AnnotationIDs.INLINE):
+                    C.Log.Error("$Inline on '{type}' not expected ({loc})", esiType.GetType(), loc);
+                    return esiType;
 
-                    // ---
-                    // ARRAY annotation
-                    case (EsiListReference listRef, AnnotationIDs.ARRAY):
-                        esiType = new EsiArray(listRef.List.Inner, a.Value.Uint64);
-                        break;
-                    case (EsiList list, AnnotationIDs.ARRAY):
-                        esiType = new EsiArray(list.Inner, a.Value.Uint64);
-                        break;
-                    case (_, AnnotationIDs.ARRAY):
-                        C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
-                        break;
+                // ---
+                // All annotations on refs apply to the thing they reference
+                case (EsiReferenceType refType, AnnotationIDs.ARRAY): // ARRAY implies $inline
+                    return AddAnnotation(refType.Reference, loc, a);
+                case (EsiReferenceType refType, _): // Default case
+                    return refType.WithReference(AddAnnotation(refType.Reference, loc, a));
 
-                    // ---
-                    // C_UNION annotation
-                    case (_, AnnotationIDs.C_UNION):
-                        C.Log.Error("$cUnion not yet supported");
-                        break;
+                // ---
+                // BITS annotation
+                case (EsiInt ei, AnnotationIDs.BITS):
+                    if (ei.Bits < a.Value.Uint64)
+                    {
+                        C.Log.Warning(
+                            "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
+                            a.Value.Uint64,
+                            ei.Bits,
+                            loc);
+                    }
+                    return new EsiInt(a.Value.Uint64, ei.Signed);
+                case (EsiContainerType containerType, AnnotationIDs.BITS):
+                    return containerType.WithInner(AddAnnotation(containerType.Inner, loc, a));
+                case (_, AnnotationIDs.BITS):
+                    C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
+                    return esiType;
 
-                    // ---
-                    // FIXED_LIST annotation
-                    case (EsiListReference listRef, AnnotationIDs.FIXED_LIST):
-                        esiType = new EsiListReference(new EsiList(listRef.List.Inner, true));
-                        break;
-                    case (EsiList list, AnnotationIDs.FIXED_LIST):
-                        esiType = new EsiList(list.Inner, true);
-                        break;
-                    case (_, AnnotationIDs.FIXED_LIST):
-                        C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
-                        break;
+                // ---
+                // ARRAY annotation
+                case (EsiList list, AnnotationIDs.ARRAY):
+                    return new EsiArray(list.Inner, a.Value.Uint64);
+                case (_, AnnotationIDs.ARRAY):
+                    C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                    return esiType;
 
-                    // ---
-                    // FIXED annotation
-                    case (EsiCompound esiCompound, AnnotationIDs.FIXED):
-                        var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
-                        esiType = EsiCompound.SingletonFor(
-                            EsiCompound.CompoundType.EsiFixed,
-                            cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
-                        break;
-                    case (_, AnnotationIDs.FIXED):
-                        C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
-                        break;
+                // ---
+                // C_UNION annotation
+                case (_, AnnotationIDs.C_UNION):
+                    C.Log.Error("$cUnion not yet supported");
+                    return esiType;
 
-                    // ---
-                    // FLOAT annotation
-                    case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
-                        var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
-                        esiType = EsiCompound.SingletonFor(
-                            EsiCompound.CompoundType.EsiFloat,
-                            cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
-                        break;
-                    case (_, AnnotationIDs.FLOAT):
-                        C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
-                        break;
+                // ---
+                // FIXED_LIST annotation
+                case (EsiList list, AnnotationIDs.FIXED_LIST):
+                    return new EsiList(list.Inner, true);
+                case (_, AnnotationIDs.FIXED_LIST):
+                    C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                    return esiType;
 
-                    // ---
-                    // HWOffset annotation
-                    case (_, AnnotationIDs.HWOFFSET):
-                        C.Log.Error("$hwoffset not yet supported");
-                        break;
-                }
-            });
-            return esiType;
+                // ---
+                // FIXED annotation
+                case (EsiCompound esiCompound, AnnotationIDs.FIXED):
+                    var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
+                    return EsiCompound.SingletonFor(
+                        EsiCompound.CompoundType.EsiFixed,
+                        cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
+                case (_, AnnotationIDs.FIXED):
+                    C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                    return esiType;
+
+                // ---
+                // FLOAT annotation
+                case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
+                    var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
+                    return EsiCompound.SingletonFor(
+                        EsiCompound.CompoundType.EsiFloat,
+                        cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
+                case (_, AnnotationIDs.FLOAT):
+                    C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
+                    return esiType;
+
+                // ---
+                // HWOffset annotation
+                case (_, AnnotationIDs.HWOFFSET):
+                    C.Log.Error("$hwoffset not yet supported");
+                    return esiType;
+
+                case (_, _):
+                    C.Log.Error("Annotation not recognized (annotationID)", a.Id);
+                    return esiType;
+            }
         }
     }
 
@@ -464,14 +463,14 @@ namespace Esi.Schema
     /// Extend ESI's struct reference to add ref counting (for internal,
     /// cpnp-specific accounting)
     /// </summary>
-    public class EsiStructReferenceCapnp : EsiStructReference
+    public class EsiReferenceCapnp : EsiReferenceType
     {
         public long RefCount = 0;
 
-        public EsiStructReferenceCapnp(EsiStruct Struct) : base (Struct)
+        public EsiReferenceCapnp(EsiStruct Reference) : base (Reference)
         {    }
 
-        public EsiStructReferenceCapnp(Func<EsiStruct> Resolver) : base (Resolver)
+        public EsiReferenceCapnp(Func<EsiType> Resolver) : base (Resolver)
         {    }
     }
 

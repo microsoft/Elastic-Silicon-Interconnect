@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Linq;
@@ -39,6 +40,13 @@ namespace Esi.Schema
 
     public interface EsiValueType : EsiType
     {    }
+
+    public interface EsiContainerType : EsiType
+    {
+        EsiType Inner { get; }
+
+        EsiContainerType WithInner(EsiType newInner);
+    }
 
     public abstract partial class EsiTypeParent : EsiType
     {    }
@@ -134,7 +142,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiArray : EsiTypeParent, EsiValueType
+    public class EsiArray : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
         public ulong Length { get; }
@@ -144,6 +152,11 @@ namespace Esi.Schema
         {
             this.Inner = Inner;
             this.Length = Length;
+        }
+
+        public EsiContainerType WithInner(EsiType newInner)
+        {
+            return new EsiArray(newInner, Length);
         }
     }
 
@@ -205,36 +218,6 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiStructReference : EsiTypeParent
-    {
-        protected Func<EsiStruct>? Resolver = null;
-        protected EsiStruct? _Struct = null;
-        public EsiStruct? Struct {
-            get
-            {
-                if (_Struct != null)
-                    return _Struct;
-                if (Resolver != null)
-                    return Resolver();
-                return null;
-            }
-            set
-            {
-                _Struct = value;
-            }
-        }
-
-        public EsiStructReference (EsiStruct Struct)
-        {
-            this.Struct = Struct;
-        }
-
-        public EsiStructReference(Func<EsiStruct> Resolver)
-        {
-            this.Resolver = Resolver;
-        }
-    }
-
     public class EsiUnion : EsiTypeParent, EsiValueType
     {
         public struct UnionEntry
@@ -266,7 +249,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiList : EsiTypeParent, EsiValueType
+    public class EsiList : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
@@ -274,18 +257,49 @@ namespace Esi.Schema
         public EsiList(EsiType Inner, bool IsFixed = true)
             : base()
         {
+            Debug.Assert(Inner != null);
             this.Inner = Inner;
             this.IsFixed = IsFixed;
         }
+
+        public EsiContainerType WithInner(EsiType newInner)
+        {
+            return new EsiList(newInner, IsFixed);
+        }
     }
 
-    public class EsiListReference : EsiTypeParent
+    public class EsiReferenceType : EsiTypeParent
     {
-        public EsiList List { get; set; }
+        protected Func<EsiType>? Resolver = null;
+        protected EsiType? _Reference = null;
+        public EsiType? Reference {
+            get
+            {
+                if (_Reference != null)
+                    return _Reference;
+                if (Resolver != null)
+                    return Resolver();
+                return null;
+            }
+            set
+            {
+                _Reference = value;
+            }
+        }
 
-        public EsiListReference(EsiList List)
+        public EsiReferenceType (EsiType Reference)
         {
-            this.List = List;
+            this.Reference = Reference;
+        }
+
+        public EsiReferenceType(Func<EsiType> Resolver)
+        {
+            this.Resolver = Resolver;
+        }
+
+        public EsiReferenceType WithReference(EsiType newInner)
+        {
+            return new EsiReferenceType(newInner);
         }
     }
 }
