@@ -149,7 +149,7 @@ namespace Esi.Schema
 
     public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
-        public class StructField : EsiTypeParent, EsiNamedType
+        public class StructField : EsiTypeParent
         {
             public string Name { get; }
             // This is used for versioning in CapnProto
