@@ -5,6 +5,7 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 #nullable enable
 namespace Esi.Schema
@@ -31,6 +32,7 @@ namespace Esi.Schema
     public interface EsiType
     {
         bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+        void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
     }
     
     public interface EsiNamedType : EsiType
@@ -49,7 +51,9 @@ namespace Esi.Schema
     }
 
     public abstract partial class EsiTypeParent : EsiType
-    {    }
+    {
+        public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
+    }
 
     public class EsiPrimitive : EsiTypeParent, EsiValueType
     {
@@ -67,6 +71,16 @@ namespace Esi.Schema
         {
             this.Type = Type;
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append(Enum.GetName(typeof(PrimitiveType), Type));
+        }
+
+        public override string ToString()
+        {
+            return Enum.GetName(typeof(PrimitiveType), Type);
+        }
     }
 
     public class EsiInt : EsiTypeParent, EsiValueType
@@ -79,6 +93,11 @@ namespace Esi.Schema
         {
             this.Bits = Bits;
             this.Signed = Signed;
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append($"{(Signed ? "signed" : "unsigned")} int{Bits}");
         }
     }
 
@@ -102,6 +121,11 @@ namespace Esi.Schema
             : base()
         {
             this.Members = Members.ToArray();
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -132,6 +156,11 @@ namespace Esi.Schema
             return c;
         }
 
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append($"{(Signed ? "signed" : "unsigned")} {Enum.GetName(typeof(CompoundType), Type)} {Whole}.{Fractional}");
+        }
+
         private EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
@@ -158,6 +187,12 @@ namespace Esi.Schema
         {
             return new EsiArray(newInner, Length);
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            Inner.GetDescriptionTree(stringBuilder, indent);
+            stringBuilder.Append($" [{Length}] ");
+        }
     }
 
     public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
@@ -177,6 +212,13 @@ namespace Esi.Schema
                 this.Type = Type;
                 this.CodeOrder = CodeOrder;
                 this.BitOffset = BitOffset;
+            }
+
+            public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+            {
+                stringBuilder.Indent(indent).Append($"{Name} ");
+                Type.GetDescriptionTree(stringBuilder, indent);
+                stringBuilder.AppendLine(";");
             }
         }
 
@@ -216,6 +258,16 @@ namespace Esi.Schema
         {
             return $"struct {Name}";
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.AppendLine($"{this} {{");
+            foreach (var f in Fields)
+            {
+                f.GetDescriptionTree(stringBuilder, indent+1);
+            }
+            stringBuilder.Indent(indent).Append("}");
+        }
     }
 
     public class EsiUnion : EsiTypeParent, EsiValueType
@@ -247,6 +299,11 @@ namespace Esi.Schema
             this.Entries = Entries.ToArray();
             this.IsDiscriminated = IsDiscriminated;
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class EsiList : EsiTypeParent, EsiValueType, EsiContainerType
@@ -265,6 +322,12 @@ namespace Esi.Schema
         public EsiContainerType WithInner(EsiType newInner)
         {
             return new EsiList(newInner, IsFixed);
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            Inner.GetDescriptionTree(stringBuilder, indent);
+            stringBuilder.Append($" [{(IsFixed ? "fixed" : "")}] ");
         }
     }
 
@@ -300,6 +363,23 @@ namespace Esi.Schema
         public EsiReferenceType WithReference(EsiType newInner)
         {
             return new EsiReferenceType(newInner);
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            switch (Reference)
+            {
+                case null:
+                    stringBuilder.Append(" null ");
+                    break;
+                case EsiNamedType namedType when (!string.IsNullOrWhiteSpace(namedType.Name)):
+                    stringBuilder.Append($" {namedType.Name} * ");
+                    break;
+                default:
+                    Reference.GetDescriptionTree(stringBuilder, indent);
+                    stringBuilder.Append(" * ");
+                    break;
+            }
         }
     }
 }

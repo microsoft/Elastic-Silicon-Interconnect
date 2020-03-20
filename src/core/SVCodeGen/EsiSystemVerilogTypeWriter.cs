@@ -37,9 +37,19 @@ namespace Esi.SVCodeGen
         public ISet<EsiType> WriteSV(EsiNamedType type, FileInfo headerFile)
         {
             W(EsiSystemVerilogConsts.Header);
-            var macro = $"__{headerFile.Name.Replace('.', '_')}__";
-            W($"`ifndef {macro}");
-            W($"`define {macro}");
+
+            W();
+            W("// ---");
+            W("// Type description plain text");
+            W("//");
+            var textDescriptionBuilder = new StringBuilder();
+            type.GetDescriptionTree(textDescriptionBuilder, 0);
+            foreach (var line in textDescriptionBuilder
+                .ToString()
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                W($"// {line.TrimEnd()}");
+            }
             W();
 
             // Run this first to populate 'Includes'
@@ -56,15 +66,26 @@ namespace Esi.SVCodeGen
             }
             W();
 
-            W( "// ****");
-            W($"// Types which '{type}' depends upon");
+            var macro = $"__{headerFile.Name.Replace('.', '_')}__";
+            W($"`ifndef {macro}");
+            W($"`define {macro}");
+            W();
+
+            if (DependentAnonymousTypes.Count() > 0)
+            {
+                W( "// ****");
+                W($"// Types which '{type}' depends upon");
+            }
             foreach (var dat in DependentAnonymousTypes)
             {
                 W($"typedef {dat.svType} {dat.name};");
             }
-            W( "// ****");
-            W();
-            W();
+            if (DependentAnonymousTypes.Count() > 0)
+            {
+                W( "// ****");
+                W();
+                W();
+            }
 
             W( "// *****");
             W($"// {type}");

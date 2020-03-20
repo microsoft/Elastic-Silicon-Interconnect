@@ -485,6 +485,11 @@ namespace Esi.Schema
         {
             this.A = A;
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            A();
+        }
     }
 
     /// <summary>

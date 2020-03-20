@@ -45,8 +45,6 @@ namespace Esi.SVCodeGen
             }
         }
 
-
-
         public ISet<EsiType> WriteSVType(EsiNamedType type, FileInfo fileInfo)
         {
             if (fileInfo.Exists)
