@@ -1,6 +1,7 @@
 ###
 ###  Set up a build environment on Windows
 ###
+###  Must install Python3 w/ pip first
 
 # Change to "tools" dir
 $origDir = Get-Location
@@ -22,3 +23,5 @@ Set-Location $origDir
 
 # Write string for GH build env var
 Write-Output "::set-env name=PATH::$env:PATH"
+
+pip3 install -U pytest
