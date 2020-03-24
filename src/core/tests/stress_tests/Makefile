@@ -7,6 +7,7 @@ run: stress1_synth.capnp.bin
 
 clean:
 	rm -f *.txt *.bin *.esi.svh *.esi.sv
+	rm -rf obj_dir work __pycache__
 
 verilator:
 	verilator --cc -Wno-fatal *.sv --top-module Shape_tb
