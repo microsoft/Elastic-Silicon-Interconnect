@@ -6,7 +6,10 @@ run: stress1_synth.capnp.bin
 	dotnet run --project ../../SVCodeGen -- stress1_synth.capnp.bin
 
 clean:
-	rm -f *.txt *.bin
+	rm -f *.txt *.bin *.esi.svh *.esi.sv
+
+verilator:
+	verilator --cc -Wno-fatal *.sv --top-module Shape_tb
 
 vlog: run
 	vlog -sv09compat *.sv

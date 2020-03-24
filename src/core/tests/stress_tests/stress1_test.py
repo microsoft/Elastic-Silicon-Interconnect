@@ -9,5 +9,6 @@ def setup_module():
 class TestStress:
 
     def test_svgen(self):
-        print (os.getcwd())
+        cmd.run("make investData")
         cmd.run("make run")
+        cmd.run("make verilator")

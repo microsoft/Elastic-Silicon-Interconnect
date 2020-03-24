@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     verilator \
     python3 \
     python3-pip
+RUN python3 -m pip install -U pylint
 RUN python3 -m pip install -U pytest
 
 RUN apt-get update && apt-get install capnproto libcapnp-dev -y
