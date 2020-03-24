@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using Esi.Schema;
 
 namespace Esi.SVCodeGen
@@ -32,11 +31,5 @@ namespace Esi.SVCodeGen
             };
         }
 
-        public static StringBuilder Indent(this StringBuilder stringBuilder, int indent)
-        {
-            for (int i = 0; i < indent; i++)
-                stringBuilder.Append("  ");
-            return stringBuilder;
-        }
     }
 }

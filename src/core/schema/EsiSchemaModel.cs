@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 
 #nullable enable
 namespace Esi.Schema
@@ -30,6 +32,7 @@ namespace Esi.Schema
     public interface EsiType
     {
         bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+        void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
     }
     
     public interface EsiNamedType : EsiType
@@ -40,8 +43,17 @@ namespace Esi.Schema
     public interface EsiValueType : EsiType
     {    }
 
+    public interface EsiContainerType : EsiType
+    {
+        EsiType Inner { get; }
+
+        EsiContainerType WithInner(EsiType newInner);
+    }
+
     public abstract partial class EsiTypeParent : EsiType
-    {    }
+    {
+        public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
+    }
 
     public class EsiPrimitive : EsiTypeParent, EsiValueType
     {
@@ -59,6 +71,16 @@ namespace Esi.Schema
         {
             this.Type = Type;
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append(Enum.GetName(typeof(PrimitiveType), Type));
+        }
+
+        public override string ToString()
+        {
+            return Enum.GetName(typeof(PrimitiveType), Type);
+        }
     }
 
     public class EsiInt : EsiTypeParent, EsiValueType
@@ -71,6 +93,11 @@ namespace Esi.Schema
         {
             this.Bits = Bits;
             this.Signed = Signed;
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append($"{(Signed ? "signed" : "unsigned")} int{Bits}");
         }
     }
 
@@ -94,6 +121,11 @@ namespace Esi.Schema
             : base()
         {
             this.Members = Members.ToArray();
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -124,6 +156,11 @@ namespace Esi.Schema
             return c;
         }
 
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            stringBuilder.Append($"{(Signed ? "signed" : "unsigned")} {Enum.GetName(typeof(CompoundType), Type)} {Whole}.{Fractional}");
+        }
+
         private EsiCompound(CompoundType Type, bool Signed, ulong Whole, ulong Fractional)
             : base()
         {
@@ -134,7 +171,7 @@ namespace Esi.Schema
         }
     }
 
-    public class EsiArray : EsiTypeParent, EsiValueType
+    public class EsiArray : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
         public ulong Length { get; }
@@ -145,11 +182,22 @@ namespace Esi.Schema
             this.Inner = Inner;
             this.Length = Length;
         }
+
+        public EsiContainerType WithInner(EsiType newInner)
+        {
+            return new EsiArray(newInner, Length);
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            Inner.GetDescriptionTree(stringBuilder, indent);
+            stringBuilder.Append($" [{Length}] ");
+        }
     }
 
     public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
-        public class StructField : EsiTypeParent, EsiNamedType
+        public class StructField : EsiTypeParent
         {
             public string Name { get; }
             // This is used for versioning in CapnProto
@@ -164,6 +212,13 @@ namespace Esi.Schema
                 this.Type = Type;
                 this.CodeOrder = CodeOrder;
                 this.BitOffset = BitOffset;
+            }
+
+            public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+            {
+                stringBuilder.Indent(indent).Append($"{Name} ");
+                Type.GetDescriptionTree(stringBuilder, indent);
+                stringBuilder.AppendLine(";");
             }
         }
 
@@ -203,35 +258,15 @@ namespace Esi.Schema
         {
             return $"struct {Name}";
         }
-    }
 
-    public class EsiStructReference : EsiTypeParent
-    {
-        protected Func<EsiStruct>? Resolver = null;
-        protected EsiStruct? _Struct = null;
-        public EsiStruct? Struct {
-            get
-            {
-                if (_Struct != null)
-                    return _Struct;
-                if (Resolver != null)
-                    return Resolver();
-                return null;
-            }
-            set
-            {
-                _Struct = value;
-            }
-        }
-
-        public EsiStructReference (EsiStruct Struct)
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
         {
-            this.Struct = Struct;
-        }
-
-        public EsiStructReference(Func<EsiStruct> Resolver)
-        {
-            this.Resolver = Resolver;
+            stringBuilder.AppendLine($"{this} {{");
+            foreach (var f in Fields)
+            {
+                f.GetDescriptionTree(stringBuilder, indent+1);
+            }
+            stringBuilder.Indent(indent).Append("}");
         }
     }
 
@@ -264,9 +299,14 @@ namespace Esi.Schema
             this.Entries = Entries.ToArray();
             this.IsDiscriminated = IsDiscriminated;
         }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    public class EsiList : EsiTypeParent, EsiValueType
+    public class EsiList : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
@@ -274,18 +314,72 @@ namespace Esi.Schema
         public EsiList(EsiType Inner, bool IsFixed = true)
             : base()
         {
+            Debug.Assert(Inner != null);
             this.Inner = Inner;
             this.IsFixed = IsFixed;
         }
+
+        public EsiContainerType WithInner(EsiType newInner)
+        {
+            return new EsiList(newInner, IsFixed);
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            Inner.GetDescriptionTree(stringBuilder, indent);
+            stringBuilder.Append($" [{(IsFixed ? "fixed" : "")}] ");
+        }
     }
 
-    public class EsiListReference : EsiTypeParent
+    public class EsiReferenceType : EsiTypeParent
     {
-        public EsiList List { get; set; }
+        protected Func<EsiType>? Resolver = null;
+        protected EsiType? _Reference = null;
+        public EsiType? Reference {
+            get
+            {
+                if (_Reference != null)
+                    return _Reference;
+                if (Resolver != null)
+                    return Resolver();
+                return null;
+            }
+            set
+            {
+                _Reference = value;
+            }
+        }
 
-        public EsiListReference(EsiList List)
+        public EsiReferenceType (EsiType Reference)
         {
-            this.List = List;
+            this.Reference = Reference;
+        }
+
+        public EsiReferenceType(Func<EsiType> Resolver)
+        {
+            this.Resolver = Resolver;
+        }
+
+        public EsiReferenceType WithReference(EsiType newInner)
+        {
+            return new EsiReferenceType(newInner);
+        }
+
+        public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
+        {
+            switch (Reference)
+            {
+                case null:
+                    stringBuilder.Append(" null ");
+                    break;
+                case EsiNamedType namedType when (!string.IsNullOrWhiteSpace(namedType.Name)):
+                    stringBuilder.Append($" {namedType.Name} * ");
+                    break;
+                default:
+                    Reference.GetDescriptionTree(stringBuilder, indent);
+                    stringBuilder.Append(" * ");
+                    break;
+            }
         }
     }
 }

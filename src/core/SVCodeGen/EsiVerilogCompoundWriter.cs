@@ -42,22 +42,22 @@ namespace Esi.SVCodeGen
         private void WriteCompound(EsiCompound c)
         {
             W($"typedef struct packed {{");
-            if (c.Signed)
-                W("  logic sign;");
             switch (c.Type)
             {
                 case EsiCompound.CompoundType.EsiFixed:
-                    W($"  logic [{c.Whole-1}:0] whole;");
                     W($"  logic [{c.Fractional-1}:0] frac;");
+                    W($"  logic [{c.Whole-1}:0] whole;");
                     break;
                 case EsiCompound.CompoundType.EsiFloat:
-                    W($"  logic [{c.Whole-1}:0] exp;");
                     W($"  logic [{c.Fractional-1}:0] mant;");
+                    W($"  logic [{c.Whole-1}:0] exp;");
                     break;
                 default:
                     C.Log.Error("Invalid EsiCompound type: {type}", c.Type);
                     break;
             }
+            if (c.Signed)
+                W("  logic sign;");
             W($"}} {c.GetSVCompoundModuleName()};");
         }
     }

@@ -13,7 +13,7 @@ struct Example {
 }
 
 struct Polynomial3 { # ax^2 + bx + c
-    a @0 :UInt32 $ESI.bits(24);
+    a @0 :Int32 $ESI.bits(24);
     b @1 :UInt32 $ESI.bits(40);
     c @2 :Float32 $ESI.float(signed = true, exp = 3, mant = 10);
 }
@@ -45,7 +45,7 @@ struct Shape {
         sphere @7 :Float32 $ESI.fixed(signed = false, whole = 4, fraction = 12);
     #}
 
-    array1 @8 :List(UInt32) $ESI.array(3);
+    array1 @8 :List(UInt32) $ESI.bits(24) $ESI.array(3);
 }
 
 struct All {
