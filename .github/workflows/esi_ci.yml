@@ -20,4 +20,4 @@ jobs:
       run: dotnet test
       working-directory: src/core
     - name: Core integration tests
-      run: -m nolic pytest src/core
+      run: pytest -m nolic src/core
