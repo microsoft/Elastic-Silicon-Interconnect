@@ -41,13 +41,12 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: esi_core_linux
-          path: ../bin/core
+          path: bin/core
       - uses: actions/checkout@v2
         with:
           path: src
       - run: |
           pwd
-          cd ..
           find
       - name: Test SVCodeGen
         run: bin/core/esi_core_linux/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
