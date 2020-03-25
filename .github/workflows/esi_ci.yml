@@ -45,6 +45,7 @@ jobs:
       - uses: actions/checkout@v1
         with:
           path: src
+      - run: find
       - name: Test SVCodeGen
-        run: bin/core/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
+        run: bin/core/esi_core_linux/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
 
