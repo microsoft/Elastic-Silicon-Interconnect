@@ -8,6 +8,7 @@ on:
 
 jobs:
   linux_docker_build:
+    name: Build and test on Ubuntu
     runs-on: ubuntu-latest
     container:
       image: teqdruid/esi:devenv-0.3
@@ -29,3 +30,20 @@ jobs:
       with:
         name: esi_core_linux
         path: src/core/bin/esi_core_linux
+  linux_docker_run:
+    name: Test on bare Ubuntu image
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:16.04
+    steps:
+      - name: Download executable
+        uses: actions/download-artifact@v1
+        with:
+          name: esi_core_linux
+          path: bin/core
+      - uses: actions/checkout@v1
+        with:
+          path: src
+      - name: Test SVCodeGen
+        run: bin/core/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
+
