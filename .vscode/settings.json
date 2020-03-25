@@ -1,0 +1,6 @@
+{
+    "python.autoComplete.extraPaths": [
+        "./src"
+    ],
+    "python.pythonPath": "/usr/bin/python3.6"
+}

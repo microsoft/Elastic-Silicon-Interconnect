@@ -4,7 +4,7 @@
 ifeq ($(OS), Windows_NT)
 	gci $*.capnp.bin | capnp decode ../../schema/CapnpSchema.capnp CodeGeneratorRequest > $*.capnp.txt
 else
-	$*.capnp.bin | capnp decode ../../schema/CapnpSchema.capnp CodeGeneratorRequest > $*.capnp.txt
+	cat $*.capnp.bin | capnp decode ../../schema/CapnpSchema.capnp CodeGeneratorRequest > $*.capnp.txt
 endif
 
 .capnp.capnp.bin:
