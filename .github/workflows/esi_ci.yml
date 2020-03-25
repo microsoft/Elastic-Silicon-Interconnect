@@ -21,3 +21,11 @@ jobs:
       working-directory: src/core
     - name: Core integration tests
       run: pytest -m nolic src/core
+    - name: Dotnet publish linux
+      run: dotnet publish -o bin/esi_core_linux -r linux-x64
+      working-directory: src/core
+    - name: Upload ESI Core Linux artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: esi_core_linux
+        path: src/core/bin/esi_core_linux
