@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1.201-bionic
 LABEL maintainer="John Demme (me@teqdruid.com)"
 
 ARG DEBIAN_FRONTEND=noninteractive

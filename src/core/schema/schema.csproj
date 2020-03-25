@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="../common.props" />
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <!-- <CapnpPackageReferenceVersion>1.2.189</CapnpPackageReferenceVersion> -->
@@ -21,6 +23,19 @@
     <CapnpFiles Include="CapnpSchema.capnp">
       <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
     </CapnpFiles>
+
+    <Content Include="/usr/bin/capnp" Condition="'$(OS)' == 'Unix'">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="/usr/lib/x86_64-linux-gnu/libcapnp-0.6.1.so" Condition="'$(OS)' == 'Unix'">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="/usr/lib/x86_64-linux-gnu/libcapnpc-0.6.1.so" Condition="'$(OS)' == 'Unix'">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="/usr/lib/x86_64-linux-gnu/libkj-0.6.1.so" Condition="'$(OS)' == 'Unix'">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

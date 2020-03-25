@@ -63,10 +63,14 @@ namespace Esi.Schema
 
         public static IReadOnlyList<EsiType> ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
+            var exeDir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             using (var memstream = new MemoryStream() )
             {
                 var errorStringBuilder = new StringBuilder();
                 var capnpCmd = Cli.Wrap("capnp")
+                    .WithEnvironmentVariables(new Dictionary<string, string>() {
+                        ["LD_LIBRARY_PATH"] = exeDir
+                    })
                     .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
                     .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
                     .WithStandardErrorPipe(PipeTarget.ToStringBuilder(errorStringBuilder))
