@@ -42,14 +42,12 @@ jobs:
         with:
           name: esi_core_linux
           path: ../bin/core
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         with:
           path: src
       - run: |
-          find
           pwd
           cd ..
           find
       - name: Test SVCodeGen
         run: bin/core/esi_core_linux/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
-        working-directory: .
