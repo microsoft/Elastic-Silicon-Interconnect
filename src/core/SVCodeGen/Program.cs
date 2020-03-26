@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Esi;
 using Esi.Schema;
@@ -10,10 +11,12 @@ namespace Esi.SVCodeGen
         static int Main(string[] args)
         {
             Stream input;
+            bool txt = false;
 
             if (args.Length > 0)
             {
                 input = new FileStream(args[0], FileMode.Open, FileAccess.Read);
+                txt = args[0].EndsWith(".capnp");
             }
             else
             { 
@@ -26,7 +29,15 @@ namespace Esi.SVCodeGen
             using (var esiCtxt = new EsiContext())
             {
                 esiCtxt.Log.Information("Starting conversion to EsiTypes");
-                var esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
+                IEnumerable<EsiType> esiTypes;
+                if (txt)
+                {
+                    esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(args[0]));
+                }
+                else
+                {
+                    esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
+                }
                 esiCtxt.Log.Information("Completed reading capnp message");
                 esiCtxt.Log.Information("Starting SV interface output");
                 var esiSys = new EsiSystem(esiTypes);
