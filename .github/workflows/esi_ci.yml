@@ -25,11 +25,13 @@ jobs:
     - name: Dotnet publish linux
       run: dotnet publish -o bin/esi_core_linux -r linux-x64
       working-directory: src/core
+    - run: tar -zcvf esi_core_linux.tar.gz esi_core_linux
+      working-directory: src/core/bin
     - name: Upload ESI Core Linux artifact
       uses: actions/upload-artifact@v1
       with:
         name: esi_core_linux
-        path: src/core/bin/esi_core_linux
+        path: src/core/bin/esi_core_linux.tar.gz
   linux_docker_run:
     name: Test on bare Ubuntu image
     needs: linux_build
@@ -41,7 +43,8 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: esi_core_linux
-          path: bin/core
+          path: tarballs
+      - run: tar -zxvf tarballs/esi_core_linux.tar.gz
       - uses: actions/checkout@v2
         with:
           path: src
@@ -49,4 +52,4 @@ jobs:
           pwd
           find
       - name: Test SVCodeGen
-        run: bin/core/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
+        run: esi_core_linux/SVCodeGen src/src/core/tests/stress1/stress1_synth.capnp
