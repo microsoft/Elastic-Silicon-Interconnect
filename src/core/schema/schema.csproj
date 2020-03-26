@@ -6,6 +6,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <!-- <CapnpPackageReferenceVersion>1.2.189</CapnpPackageReferenceVersion> -->
     <LangVersion>8.0</LangVersion>
+    <!-- <EnableDefaultCompileItems>false</EnableDefaultCompileItems> -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <CapnpFiles Include="EsiCoreAnnotations.capnp">
+      <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
+    </CapnpFiles>
+    <CapnpFiles Include="CapnpSchema.capnp">
+      <Verbose Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">true</Verbose>
+    </CapnpFiles>
+
+    <!-- <Compile Include="*.cs" /> -->
+
     <Content Include="/usr/bin/capnp" Condition="'$(OS)' == 'Unix'">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
@@ -27,7 +37,8 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
 
-    <Content Include="schema/**">
+    <Content Include="*.capnp">
+      <Link>schema/%(Filename)%(Extension)</Link>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
