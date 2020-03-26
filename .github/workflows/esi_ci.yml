@@ -9,7 +9,7 @@ on:
 jobs:
   linux_build:
     name: Build and test on Ubuntu
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container:
       image: teqdruid/esi:devenv-0.3
     steps:
