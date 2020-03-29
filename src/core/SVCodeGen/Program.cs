@@ -1,6 +1,8 @@
-﻿using System;
+﻿using System.Runtime.InteropServices;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using CommandLine;
 using Esi;
 using Esi.Schema;
 
@@ -8,22 +10,36 @@ namespace Esi.SVCodeGen
 {
     class Program
     {
+        class SVCodeGenOptions : EsiCommonCommandOptions
+        {
+            [Option('i', "input", Required = false, HelpText = "Input Capnp file")]
+            public string InputFile { get; set; } = "-";
+        }
+
         static int Main(string[] args)
+        {
+            return Parser.Default.ParseArguments<SVCodeGenOptions>(args)
+                    .MapResult(
+                        opts => RunOpts(opts),
+                        _ => 1);
+        }
+        private static int RunOpts(SVCodeGenOptions opts)
         {
             Stream input;
             bool txt = false;
+            Directory.SetCurrentDirectory(opts.OutputDir);
 
-            if (args.Length > 0)
-            {
-                input = new FileStream(args[0], FileMode.Open, FileAccess.Read);
-                txt = args[0].EndsWith(".capnp");
-            }
-            else
+            if (opts.InputFile == "-")
             { 
                 Console.WriteLine("Elastic Silicon Interconnect SystemVerilog code generator");
                 Console.WriteLine("expecting binary-encoded code generation request from standard input");
 
                 input = Console.OpenStandardInput();
+            }
+            else
+            {
+                input = new FileStream(opts.InputFile, FileMode.Open, FileAccess.Read);
+                txt = opts.InputFile.EndsWith(".capnp");
             }
 
             using (var esiCtxt = new EsiContext())
@@ -32,7 +48,7 @@ namespace Esi.SVCodeGen
                 IEnumerable<EsiType> esiTypes;
                 if (txt)
                 {
-                    esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(args[0]));
+                    esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
                 }
                 else
                 {

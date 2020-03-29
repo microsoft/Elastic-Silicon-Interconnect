@@ -1,4 +1,4 @@
-name: ESI CI Gates
+name: ESI PR Gates
 
 on:
   pull_request:
@@ -52,4 +52,4 @@ jobs:
           pwd
           find
       - name: Test SVCodeGen
-        run: esi_core_linux/SVCodeGen src/src/core/tests/stress_tests/stress1_synth.capnp
+        run: esi_core_linux/SVCodeGen -i src/src/core/tests/stress_tests/stress1_synth.capnp
