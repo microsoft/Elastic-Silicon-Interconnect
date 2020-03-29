@@ -24,4 +24,4 @@ Set-Location $origDir
 # Write string for GH build env var
 Write-Output "::set-env name=PATH::$env:PATH"
 
-pip3 install -U pytest
+python -m pip install -U pytest
