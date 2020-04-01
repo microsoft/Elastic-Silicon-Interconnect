@@ -10,36 +10,6 @@ using System.Text;
 #nullable enable
 namespace Esi.Schema
 {
-
-    public interface EsiObject
-    {
-        void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
-        public string GetDescriptionTree(uint indent=0)
-        {
-            var sb = new StringBuilder();
-            GetDescriptionTree(sb, indent);
-            return sb.ToString();
-        }
-    }
-
-    public class EsiSystem
-    {
-        public IEnumerable<EsiObject> Objects { get; }
-        public IReadOnlyDictionary<string, EsiNamedType> NamedTypes { get; }
-
-
-        public EsiSystem (IEnumerable<EsiObject> Objects)
-        {
-            this.Objects = Objects.ToArray();
-            NamedTypes =
-                this.Objects
-                    .Select(t => t as EsiNamedType)
-                    .Where(t => t != null && t.Name != null)
-                    .ToDictionary(t => t?.Name!, t => t!);
-        }
-    }
-
-
     public interface EsiType : EsiObject
     {
         bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);

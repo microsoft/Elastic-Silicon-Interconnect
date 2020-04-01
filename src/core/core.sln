@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schema", "schema\schema.csproj", "{BB93497B-C7BB-4C37-805F-9653EB90B834}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "capnp", "capnp\capnp.csproj", "{BB93497B-C7BB-4C37-805F-9653EB90B834}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SVCodeGen", "SVCodeGen\SVCodeGen.csproj", "{85773823-CBC7-48E8-86FA-EEC7EB79C527}"
 EndProject

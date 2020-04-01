@@ -15,7 +15,7 @@ using Esi;
 using System.Runtime.ExceptionServices;
 using CliWrap.Exceptions;
 
-namespace Esi.Schema 
+namespace Esi.Capnp
 {
     public class EsiCapnpConvert
     {

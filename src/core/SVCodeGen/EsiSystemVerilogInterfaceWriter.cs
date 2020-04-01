@@ -27,7 +27,7 @@ namespace Esi.SVCodeGen
                 var usedTypesLocal = WriteSVType(type, headerFile);
                 usedTypes.UnionWith(usedTypesLocal);
 
-                WriteSVInterface(type, to.FileUnder($"{type.GetFilename()}.esi.sv"), headerFile);
+                WriteSVTypeInterface(type, to.FileUnder($"{type.GetFilename()}.esi.sv"), headerFile);
             }
 
             var usedCompounds = usedTypes.Where(t => t is EsiCompound).Select(t => t as EsiCompound).Distinct();
@@ -58,7 +58,7 @@ namespace Esi.SVCodeGen
             }
         }
 
-        public void WriteSVInterface(EsiNamedType type, FileInfo fileInfo, FileInfo headerFile)
+        public void WriteSVTypeInterface(EsiNamedType type, FileInfo fileInfo, FileInfo headerFile)
         {
             if (fileInfo.Exists)
                 fileInfo.Delete();
