@@ -23,7 +23,7 @@ namespace Esi.Schema
         public string Name { get; }
         public Method[] Methods { get; }
 
-        public EsiInterface(string Name, Method[] methods)
+        public EsiInterface(string Name, Method[] Methods)
         {
             this.Name = Name;
             this.Methods = Methods;
