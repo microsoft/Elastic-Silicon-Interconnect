@@ -79,7 +79,7 @@ namespace Esi.Core.Tests
 
         static readonly EsiStruct Polynomal3Model =
             new EsiStruct("Polynomial3", new EsiStruct.StructField[] {
-                new EsiStruct.StructField("a", new EsiInt(24, false)),
+                new EsiStruct.StructField("a", new EsiInt(24, true)),
                 new EsiStruct.StructField("b", new EsiInt(40, false)),
                 new EsiStruct.StructField("c", EsiCompound.SingletonFor(
                     EsiCompound.CompoundType.EsiFloat,
@@ -154,8 +154,44 @@ namespace Esi.Core.Tests
             var poly = structs.Where(t => t.Name == "Polynomial3").First();
             var shape = structs.Where(t => t.Name == "Shape").First();
 
-            var interfaces = types.Where(t => t is EsiInterface);
+            var interfaces = types.Where(t => t is EsiInterface).Select(t => t as EsiInterface);
             Assert.AreEqual(2, interfaces.Count());
+
+            var polyComps = interfaces.Where(i => i.Name == "Polynomial3Compute");
+            Assert.AreEqual(1, polyComps.Count());
+            var polyComp = polyComps.First();
+
+            Assert.AreEqual(2, polyComp.Methods.Length);
+            var comp = polyComp.Methods.Where(m => m.Name == "compute").First();
+            Context.Log.Information("Expected model: {model}", ComputeParam.GetDescriptionTree());
+            Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
+
+            Assert.True(ComputeParam.StructuralEquals(comp.Param));
+            Assert.True((comp.Return as EsiStruct).Fields[0].Type.StructuralEquals(EsiCompound.SingletonFor(
+                Type: EsiCompound.CompoundType.EsiFloat,
+                Signed: true,
+                Whole: 8,
+                Fractional: 23
+            )));
         }
+
+        static readonly EsiStruct ComputeParam =
+            new EsiStruct(
+                Name: null,
+                Fields: new EsiStruct.StructField[] {
+                    new EsiStruct.StructField (
+                        Name: "coeff",
+                        Type: Polynomal3Model
+                    ),
+                    new EsiStruct.StructField (
+                        Name: "x",
+                        Type: EsiCompound.SingletonFor (
+                            Type: EsiCompound.CompoundType.EsiFloat,
+                            Signed: true,
+                            Whole: 8,
+                            Fractional: 23
+                        )
+                    )
+            });
     }
 }
