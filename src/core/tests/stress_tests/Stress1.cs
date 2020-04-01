@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Esi.Schema;
 using System.IO;
 using CliWrap.Exceptions;
+using Esi.Capnp;
 
 namespace Esi.Core.Tests 
 {

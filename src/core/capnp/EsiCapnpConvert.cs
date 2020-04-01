@@ -14,6 +14,7 @@ using CliWrap;
 using Esi;
 using System.Runtime.ExceptionServices;
 using CliWrap.Exceptions;
+using Esi.Schema;
 
 namespace Esi.Capnp
 {

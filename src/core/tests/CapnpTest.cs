@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Esi;
 using Esi.Schema;
 using System;
+using Esi.Capnp;
 
 namespace Esi.Core.Tests
 {

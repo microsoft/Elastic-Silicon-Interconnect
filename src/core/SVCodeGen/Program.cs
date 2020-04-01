@@ -5,6 +5,7 @@ using System.IO;
 using CommandLine;
 using Esi;
 using Esi.Schema;
+using Esi.Capnp;
 
 namespace Esi.SVCodeGen
 {
