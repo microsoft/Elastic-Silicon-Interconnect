@@ -10,35 +10,9 @@ using System.Text;
 #nullable enable
 namespace Esi.Schema
 {
-    public interface EsiType : EsiObject
-    {
-        bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
-    }
-    
-    public interface EsiNamedType : EsiType
-    {
-        string? Name { get; }
-    }
-
-    public interface EsiValueType : EsiType
-    {    }
-
-    public interface EsiContainerType : EsiType
-    {
-        EsiType Inner { get; }
-
-        EsiContainerType WithInner(EsiType newInner);
-    }
-
-    public abstract partial class EsiTypeParent : EsiType
-    {
-        public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
-        public string GetDescriptionTree(uint indent=0)
-        {
-            return ((EsiObject)this).GetDescriptionTree(indent);
-        }
-    }
-
+    /// <summary>
+    /// void, bool, byte, bit -- datatypes where the width is trivially known
+    /// </summary>
     public class EsiPrimitive : EsiTypeParent, EsiValueType
     {
         public enum PrimitiveType {
@@ -67,6 +41,9 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// signed and unsigned integers of custom widths
+    /// </summary>
     public class EsiInt : EsiTypeParent, EsiValueType
     {
         public bool Signed { get; }
@@ -85,6 +62,9 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// enum. 'nuff said
+    /// </summary>
     public class EsiEnum : EsiTypeParent, EsiValueType
     {
         public struct EnumMember
@@ -113,6 +93,11 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// fixed and floating point types
+    /// 
+    /// ideas for a better name accepted
+    /// </summary>
     public class EsiCompound : EsiTypeParent, EsiValueType
     {
         public enum CompoundType
@@ -155,6 +140,9 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// a fixed-size array
+    /// </summary>
     public class EsiArray : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
@@ -179,15 +167,35 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// struct: name optional and manditory named fields
+    /// </summary>
     public class EsiStruct : EsiTypeParent, EsiValueType, EsiNamedType
     {
+        /// <summary>
+        /// A struct field
+        /// </summary>
         public class StructField : EsiTypeParent
         {
+            /// <summary>
+            /// field name
+            /// </summary>
             public string Name { get; }
-            // This is used for versioning in CapnProto
+
+            /// <summary>
+            /// This is used for versioning in CapnProto. Unsure if it'll be
+            /// useful here.
+            /// </summary>
             public ulong? CodeOrder { get; }
+
+            /// <summary>
+            /// type of the field
+            /// </summary>
             public EsiType Type { get; }
-            // BitOffset is into the _entire_ struct.
+
+            /// <summary>
+            /// offset into the struct in bits. BitOffset is into the _entire_ struct.
+            /// </summary>
             public int? BitOffset { get; }
 
             public StructField(string Name, EsiType Type, ulong? CodeOrder = null, int? BitOffset = null)
@@ -218,26 +226,6 @@ namespace Esi.Schema
             FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
         }
 
-        /// <summary>
-        /// UPDATE: I found a better way to do this. Keeping this here in case it
-        /// becomes useful again in the future.
-        ///
-        /// This constructor is somewhat unintuitive, but is useful
-        /// to encode cycles in this read-only, functional style object schema.
-        /// 
-        /// By having to call 'Fields' with a reference to 'this' (which is not
-        /// available before the construction), this instance can be used in its
-        /// 'StructFields', directly or indirectly.
-        /// 
-        /// </summary>
-        // public EsiStruct(string? Name, Func<EsiStruct, IEnumerable<StructField>> Fields)
-        //     : base()
-        // {
-        //     this.Name = Name;
-        //     this.Fields = Fields(this).ToArray();
-        //     FieldLookup = this.Fields.ToDictionary(sf => sf.Name, sf => sf);
-        // }
-
         public override string ToString()
         {
             return $"struct {Name}";
@@ -254,6 +242,10 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// An ESI union is like a C union, but can be discriminated like a
+    /// SystemVerilog union.
+    /// </summary>
     public class EsiUnion : EsiTypeParent, EsiValueType
     {
         public struct UnionEntry
@@ -290,6 +282,12 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// A variable-length, ordered collection of items. Similar to a C++ vector.
+    /// One key difference is that a 'fixed' list is one whose length is known in
+    /// advance of its creation/transmittal so can be sent first. A non-fixed
+    /// list is not, so must be ended by an end-of-list token.
+    /// </summary>
     public class EsiList : EsiTypeParent, EsiValueType, EsiContainerType
     {
         public EsiType Inner { get; }
@@ -315,6 +313,10 @@ namespace Esi.Schema
         }
     }
 
+    /// <summary>
+    /// A reference to another type (typed pointer). Not clear how to implement
+    /// in hardware yet. Maybe represents an adjustable offset?
+    /// </summary>
     public class EsiReferenceType : EsiTypeParent
     {
         protected Func<EsiType>? Resolver = null;

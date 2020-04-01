@@ -4,6 +4,12 @@ using System.Text;
 
 namespace Esi.Schema
 {
+    /// <summary>
+    /// An ESI Interface models a collection of channels grouped into 'methods',
+    /// each of which may or may not have a parameter or return type. This is
+    /// useful for modeling the HW/SW interface. It _may_ also be useful for
+    /// on-chip communication but that could just as easily not be the case.
+    /// </summary>
     public class EsiInterface : EsiObject
     {
         public struct Method
