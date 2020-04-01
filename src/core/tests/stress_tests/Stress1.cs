@@ -54,8 +54,6 @@ namespace Esi.Core.Tests
 
             var ex = structs.Where(t => t.Name == "Example").First();
             Assert.True(ExampleModel.StructuralEquals(ex));
-
-
         }
 
         // Test the structural equals code -- various ways it can evaluate false
@@ -125,11 +123,12 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Fail()
         {
+            ShouldFail = true;
+
             var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(10, Context.Errors);
+            Assert.AreEqual(11, Context.Errors);
             Assert.AreEqual(0, Context.Fatals);
             Assert.True(Context.Failed);
-            Context.ClearCounts();
 
             // Assert.Fail("Dummy fail to print out stdout");
         }
@@ -137,9 +136,26 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1FailSyntax()
         {
+            ShouldFail = true;
+
             Assert.Throws<CommandExecutionException>(
                 () => ReadSchema("stress_tests/stress1_failsyntax.capnp"));
-            Context.ClearCounts();
+        }
+
+        [Test]
+        public void ReadStress1Interfaces()
+        {
+            var types = ReadSchema("stress_tests/stress1_synth.capnp");
+
+            Assert.Greater(types.Count, 0);
+            var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
+            Assert.Greater(structs.Count(), 0);
+
+            var poly = structs.Where(t => t.Name == "Polynomial3").First();
+            var shape = structs.Where(t => t.Name == "Shape").First();
+
+            var interfaces = types.Where(t => t is EsiInterface);
+            Assert.AreEqual(2, interfaces.Count());
         }
     }
 }

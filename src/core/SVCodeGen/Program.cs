@@ -45,7 +45,7 @@ namespace Esi.SVCodeGen
             using (var esiCtxt = new EsiContext())
             {
                 esiCtxt.Log.Information("Starting conversion to EsiTypes");
-                IEnumerable<EsiType> esiTypes;
+                IEnumerable<EsiObject> esiTypes;
                 if (txt)
                 {
                     esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));

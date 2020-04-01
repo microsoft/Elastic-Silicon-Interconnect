@@ -11,17 +11,22 @@ using System.Text;
 namespace Esi.Schema
 {
 
+    public interface EsiObject
+    {
+        void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
+    }
+
     public class EsiSystem
     {
-        public IEnumerable<EsiType> Types { get; }
+        public IEnumerable<EsiObject> Objects { get; }
         public IReadOnlyDictionary<string, EsiNamedType> NamedTypes { get; }
 
 
-        public EsiSystem (IEnumerable<EsiType> Types)
+        public EsiSystem (IEnumerable<EsiObject> Objects)
         {
-            this.Types = Types.ToArray();
+            this.Objects = Objects.ToArray();
             NamedTypes =
-                this.Types
+                this.Objects
                     .Select(t => t as EsiNamedType)
                     .Where(t => t != null && t.Name != null)
                     .ToDictionary(t => t?.Name!, t => t!);
@@ -29,10 +34,9 @@ namespace Esi.Schema
     }
 
 
-    public interface EsiType
+    public interface EsiType : EsiObject
     {
         bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
-        void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
     }
     
     public interface EsiNamedType : EsiType

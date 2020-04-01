@@ -47,13 +47,13 @@ namespace Esi.Schema
         // ########
         // Various entry points
         //
-        public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
+        public static IReadOnlyList<EsiObject> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
         {
             var convert = new EsiCapnpConvert(ctxt);
             return convert.GoConvert(request);
         }
 
-        public static IReadOnlyList<EsiType> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
+        public static IReadOnlyList<EsiObject> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
         {
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
@@ -61,7 +61,7 @@ namespace Esi.Schema
             return Convert(ctxt, reader);
         }
 
-        public static IReadOnlyList<EsiType> ConvertTextSchema(EsiContext ctxt, FileInfo file)
+        public static IReadOnlyList<EsiObject> ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
             var exeDir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             using (var memstream = new MemoryStream() )
@@ -111,8 +111,8 @@ namespace Esi.Schema
             return loc;
         }
         
-        protected Dictionary<UInt64, EsiType> IDtoType
-            = new Dictionary<ulong, EsiType>();
+        protected Dictionary<UInt64, EsiObject> IDtoType
+            = new Dictionary<UInt64, EsiObject>();
 
         /// <summary>
         /// ESI context member variables are generally called 'C' so it's easier to log stuff
@@ -129,7 +129,7 @@ namespace Esi.Schema
         /// </summary>
         /// <param name="cgr"></param>
         /// <returns></returns>
-        protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest.READER cgr)
+        protected IReadOnlyList<EsiObject> GoConvert(CodeGeneratorRequest.READER cgr)
         {
 
             // First pass: get all the filenames
@@ -155,14 +155,14 @@ namespace Esi.Schema
             });
 
             // Fourth pass: Do the actual conversion
-            var esiTypes = cgr.Nodes.Select(
+            var esiObjects = cgr.Nodes.Select(
                 node => ConvertNode(node) switch {
                     _ when (ESIAnnotations.Contains(node.Id)) => null,
                     EsiReferenceType stRef => stRef.Reference,
-                    EsiType t => t,
+                    EsiObject o => o,
                     null => null,
             }).Where(t => t != null).ToList();
-            return esiTypes;
+            return esiObjects;
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Esi.Schema
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
-        protected EsiType ConvertNode(Node.READER node)
+        protected EsiObject ConvertNode(Node.READER node)
         {
             if (node.Parameters?.Count() > 0 ||
                 node.IsGeneric)
@@ -245,14 +245,17 @@ namespace Esi.Schema
             // Mark that we have returned this instance
             if (esiType is EsiReferenceCapnp stRefCount)
                 stRefCount.RefCount++;
-            return esiType;
+            if (esiType is EsiType ty)
+                return ty;
+            C.Log.Error("Unsupported type: {type}", esiType.GetType());
+            return null;
         }
 
         /// <summary>
         /// To construct a struct reference, it must exist already in the table
         /// of struct futures.
         /// </summary>
-        private EsiType GetNamedNode(UInt64 structId)
+        private EsiObject GetNamedNode(UInt64 structId)
         {
             if (IDtoType.TryGetValue(structId, out var esiNamedNode))
                 return esiNamedNode;
@@ -269,6 +272,15 @@ namespace Esi.Schema
             }
         }
 
+        private EsiType GetNamedType(UInt64 structId)
+        {
+            var esiObj = GetNamedNode(structId);
+            if (esiObj is EsiType type)
+                return type;
+            C.Log.Error("Unsupported use as data type: {type}", esiObj?.GetType());
+            return null;
+        }
+
         /// <summary>
         /// Convert a struct field which can be either an actual member, "slot", or a group.
         /// </summary>
@@ -279,7 +291,7 @@ namespace Esi.Schema
                 case Field.WHICH.Group:
                     return new EsiStruct.StructField(
                         Name: field.Name,
-                        Type: GetNamedNode(field.Group.TypeId));
+                        Type: GetNamedType(field.Group.TypeId));
 
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
@@ -322,7 +334,7 @@ namespace Esi.Schema
                 CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
                 CapnpGen.Type.WHICH.List => new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
-                CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId),
+                CapnpGen.Type.WHICH.Enum => GetNamedType(type.Enum.TypeId),
                 CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
                     // ---
                     // "Special", known structs
@@ -333,7 +345,7 @@ namespace Esi.Schema
 
                     // ---
                     // User-specified structs
-                    _ => GetNamedNode(type.Struct.TypeId)
+                    _ => GetNamedType(type.Struct.TypeId)
                 },
 
                 CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
