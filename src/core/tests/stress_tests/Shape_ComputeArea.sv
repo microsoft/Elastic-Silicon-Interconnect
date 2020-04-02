@@ -5,7 +5,7 @@ module Shape_ComputeArea (
     input logic clk,
     input logic rstn,
 
-    IShapeValidReady.Sink shapeIn
+    IShapeType_ValidReady.Sink shapeIn
 );
 
     always_ff @(posedge clk)

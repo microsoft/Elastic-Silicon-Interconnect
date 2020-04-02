@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -36,6 +37,14 @@ namespace Esi.Schema
     public interface EsiNamedType : EsiType
     {
         string? Name { get; }
+
+        /// <summary>
+        /// In the case when a "named" type is actually anonymous (doesn't have a
+        /// name), get the contained named types which we'll need to use when
+        /// creating this type.
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<EsiNamedType> GetClosestNames();
     }
 
     /// <summary>
@@ -46,15 +55,25 @@ namespace Esi.Schema
     {    }
 
     /// <summary>
+    /// All types which contain other types should implement this
+    /// </summary>
+    public interface EsiTypeCollection : EsiType
+    {
+        IEnumerable<EsiType> ContainedTypes { get; }
+    }
+
+    /// <summary>
     /// Abstraction for things which contain another type (struct fields, lists,
     /// arrays, etc.)
     /// </summary>
-    public interface EsiContainerType : EsiType
+    public interface EsiContainerType : EsiTypeCollection
     {
         EsiType Inner { get; }
 
         EsiContainerType WithInner(EsiType newInner);
     }
+
+
 
     /// <summary>
     /// Common methods which all EsiTypes could use. The implementation of more

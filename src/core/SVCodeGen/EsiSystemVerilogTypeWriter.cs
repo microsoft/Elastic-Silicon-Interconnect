@@ -98,6 +98,7 @@ namespace Esi.SVCodeGen
             return Includes;
         }
 
+
         public string GetSVType(
             EsiType type,
             IEnumerable<EsiStruct.StructField> hierarchy,
@@ -150,24 +151,38 @@ namespace Esi.SVCodeGen
             }
         }
 
-        protected string GetStructField(
-            EsiStruct.StructField field,
-            IEnumerable<EsiStruct.StructField> hierarchy,
+        public string GetSVTypeSimple(
+            EsiType type,
+            IEnumerable<EsiStruct.StructField> hierarchy = null,
             bool useName = true)
         {
-            var arrayDims = new List<ulong>();
-            var svString = GetSVType(field.Type, hierarchy.Append(field), ref arrayDims, useName);
-            if (string.IsNullOrWhiteSpace(svString))
-                return $"// {field.Name} of type {field.Type}";
+            if (hierarchy == null)
+                hierarchy = new List<EsiStruct.StructField>();
 
+            var arrayDims = new List<ulong>();
+            var svString = GetSVType(type, hierarchy, ref arrayDims, useName);
+            if (svString == null)
+                return null;
             var sb = new StringBuilder();
             sb.Append($"{svString}");
             foreach (var d in arrayDims)
             {
                 sb.Append($" [{d-1}:0]");
             }
-            sb.Append($" {field.Name};");
             return sb.ToString();
+        }
+
+        protected string GetStructField(
+            EsiStruct.StructField field,
+            IEnumerable<EsiStruct.StructField> hierarchy,
+            bool useName = true)
+        {
+            var newHierarchy = hierarchy.Append(field);
+            var svString = GetSVTypeSimple(field.Type, newHierarchy, useName);
+            if (string.IsNullOrWhiteSpace(svString))
+                return $"// {field.Name} of type {field.Type}";
+
+            return $"{svString} {field.Name};";
         }
 
         protected string GetSVStruct(EsiStruct st, IEnumerable<EsiStruct.StructField> hierarchy)

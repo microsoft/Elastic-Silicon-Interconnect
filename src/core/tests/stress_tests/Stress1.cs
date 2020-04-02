@@ -164,11 +164,12 @@ namespace Esi.Core.Tests
 
             Assert.AreEqual(2, polyComp.Methods.Length);
             var comp = polyComp.Methods.Where(m => m.Name == "compute").First();
-            Context.Log.Information("Expected model: {model}", (ComputeParam as EsiObject).GetDescriptionTree());
-            Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
+            // Context.Log.Information("Expected model: {model}", (ComputeParam as EsiObject).GetDescriptionTree());
+            // Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
 
-            Assert.True(ComputeParam.StructuralEquals(comp.Param));
-            Assert.True((comp.Return as EsiStruct).Fields[0].Type.StructuralEquals(EsiCompound.SingletonFor(
+            Assert.True(ComputeParam1Type.StructuralEquals(comp.Params[0].Type));
+            Assert.True(ComputeParam2Type.StructuralEquals(comp.Params[1].Type));
+            Assert.True(comp.Returns[0].Type.StructuralEquals(EsiCompound.SingletonFor(
                 Type: EsiCompound.CompoundType.EsiFloat,
                 Signed: true,
                 Whole: 8,
@@ -176,23 +177,13 @@ namespace Esi.Core.Tests
             )));
         }
 
-        static readonly EsiStruct ComputeParam =
-            new EsiStruct(
-                Name: null,
-                Fields: new EsiStruct.StructField[] {
-                    new EsiStruct.StructField (
-                        Name: "coeff",
-                        Type: Polynomal3Model
-                    ),
-                    new EsiStruct.StructField (
-                        Name: "x",
-                        Type: EsiCompound.SingletonFor (
-                            Type: EsiCompound.CompoundType.EsiFloat,
-                            Signed: true,
-                            Whole: 8,
-                            Fractional: 23
-                        )
-                    )
-            });
+        static readonly EsiStruct ComputeParam1Type = Polynomal3Model;
+        static readonly EsiType ComputeParam2Type =
+            EsiCompound.SingletonFor (
+                Type: EsiCompound.CompoundType.EsiFloat,
+                Signed: true,
+                Whole: 8,
+                Fractional: 23
+            );
     }
 }

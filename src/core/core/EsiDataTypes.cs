@@ -1,10 +1,7 @@
 using System.Diagnostics;
-using System.Threading;
-using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 
 #nullable enable
@@ -148,6 +145,8 @@ namespace Esi.Schema
         public EsiType Inner { get; }
         public ulong Length { get; }
 
+        public IEnumerable<EsiType> ContainedTypes => new EsiType[] { Inner };
+
         public EsiArray(EsiType Inner, ulong Length)
             : base()
         {
@@ -212,6 +211,19 @@ namespace Esi.Schema
                 Type.GetDescriptionTree(stringBuilder, indent);
                 stringBuilder.AppendLine(";");
             }
+
+            public IEnumerable<EsiNamedType> GetClosestNames()
+            {
+                IEnumerable<EsiNamedType> DoIt(EsiType lclType)
+                {
+                    if (lclType is EsiNamedType namedType)
+                        return namedType.GetClosestNames();
+                    if (lclType is EsiTypeCollection typeCollection)
+                        return typeCollection.ContainedTypes.SelectMany(t => DoIt(t));
+                    return new EsiNamedType[] {};
+                }
+                return DoIt(Type);
+            }
         }
 
         public string? Name { get; }
@@ -240,13 +252,21 @@ namespace Esi.Schema
             }
             stringBuilder.Indent(indent).Append("}");
         }
+
+        public IEnumerable<EsiNamedType> GetClosestNames()
+        {
+            if (Name != null)
+                return new EsiNamedType[] { this };
+            
+            return Fields.SelectMany(f => f.GetClosestNames());
+        }
     }
 
     /// <summary>
     /// An ESI union is like a C union, but can be discriminated like a
     /// SystemVerilog union.
     /// </summary>
-    public class EsiUnion : EsiTypeParent, EsiValueType
+    public class EsiUnion : EsiTypeParent, EsiValueType, EsiTypeCollection
     {
         public struct UnionEntry
         {
@@ -268,6 +288,8 @@ namespace Esi.Schema
 
         public UnionEntry[] Entries { get; }
         public bool IsDiscriminated { get; }
+
+        public IEnumerable<EsiType> ContainedTypes => Entries.Select(e => e.Type);
 
         public EsiUnion(IEnumerable<UnionEntry> Entries, bool IsDiscriminated = true)
             : base()
@@ -292,6 +314,8 @@ namespace Esi.Schema
     {
         public EsiType Inner { get; }
         public bool IsFixed { get; }
+
+        public IEnumerable<EsiType> ContainedTypes => new EsiType[] { Inner };
 
         public EsiList(EsiType Inner, bool IsFixed = true)
             : base()

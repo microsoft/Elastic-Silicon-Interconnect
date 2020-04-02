@@ -12,6 +12,13 @@ namespace Esi.SVCodeGen
                 ?.Replace(' ', '_');
         }
 
+        public static string GetSVIdentifier(this EsiInterface iface)
+        {
+            return iface?.Name
+                ?.Replace('-', '_')
+                ?.Replace(' ', '_');
+        }
+
         public static string GetSVHeaderName(this EsiType type)
         {
             return type switch {

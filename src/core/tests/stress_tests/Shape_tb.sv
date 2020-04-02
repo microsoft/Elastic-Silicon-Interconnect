@@ -3,7 +3,7 @@ module Shape_tb();
 
     logic clk;
 
-    IShapeValidReady shape();
+    IShapeType_ValidReady shape();
 
     Shape_ComputeArea dut (
         .clk(clk),

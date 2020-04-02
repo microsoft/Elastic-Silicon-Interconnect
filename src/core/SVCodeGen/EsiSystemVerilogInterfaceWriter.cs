@@ -16,11 +16,12 @@ namespace Esi.SVCodeGen
             Sys = sys;
         }
 
-        public void WriteSVInterfaces(DirectoryInfo to = null)
+        public void WriteSV(DirectoryInfo to = null)
         {
             var usedTypes = new HashSet<EsiType>();
             to = to ?? new DirectoryInfo(Directory.GetCurrentDirectory());
 
+            // Output the SV interfaces and structs for all the types
             foreach (var type in Sys.NamedTypes.Values)
             {
                 var headerFile = to.FileUnder(type.GetSVHeaderName());
@@ -30,6 +31,8 @@ namespace Esi.SVCodeGen
                 WriteSVTypeInterface(type, to.FileUnder($"{type.GetFilename()}.esi.sv"), headerFile);
             }
 
+            // During the type output process, various shared types were used
+            // which don't exist yet. Put them all in the same file here.
             var usedCompounds = usedTypes.Where(t => t is EsiCompound).Select(t => t as EsiCompound).Distinct();
             if (usedCompounds.Count() > 0)
             {
@@ -42,6 +45,12 @@ namespace Esi.SVCodeGen
                     var compoundWriter = new EsiSystemVerilogCompoundWriter(C, writer);
                     compoundWriter.Write(usedCompounds);
                 }
+            }
+
+            // For each interface, write a system verilog interface
+            foreach (var iface in Sys.Interfaces)
+            {
+                WriteSVInterface(iface, to.FileUnder($"Interface{iface.Name}.esi.sv"));
             }
         }
 
@@ -70,7 +79,7 @@ namespace Esi.SVCodeGen
                 write.Write($@"
 `include ""{headerFile.Name}""
 
-interface I{type.GetSVIdentifier()}ValidReady ();
+interface I{type.GetSVIdentifier()}Type_ValidReady ();
 
     logic valid;
     logic ready;
@@ -93,6 +102,80 @@ interface I{type.GetSVIdentifier()}ValidReady ();
 
 endinterface
 ");
+            }
+        }
+
+        public void WriteSVInterface(EsiInterface iface, FileInfo to)
+        {
+            if (to.Exists)
+                to.Delete();
+
+            using (var write = new StreamWriter(to.OpenWrite()))
+            {
+                var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
+                C.Log.Information("Starting SV interface generation for {iface} to file {file}",
+                    iface, to.Name);
+                write.WriteLine(EsiSystemVerilogConsts.Header);
+
+                write.WriteLine();
+                foreach (var usedNamedType in iface.CollectTypes().Distinct())
+                {
+                    write.WriteLine($"`include \"{usedNamedType.GetSVHeaderName()}\"");
+                }
+                write.WriteLine();
+
+
+                foreach (var method in iface.Methods)
+                {
+                    write.WriteLine();
+                    write.WriteLine($"///");
+                    write.WriteLine($"/// Interface '{iface.Name}' method '{method.Name}'");
+                    write.WriteLine($"///");
+                    write.WriteLine($"interface I{iface.GetSVIdentifier()}_{method.Name}_ValidReady ();");
+                    write.WriteLine();
+                    if (method.Params?.Count() > 0)
+                    {
+                        write.WriteLine("    // Input parameters (all signals are prefixed with 'p')");
+                        WriteParamReturn(method.Params, true);
+                    }
+                    if (method.Returns?.Count() > 0)
+                    {
+                        write.WriteLine();
+                        write.WriteLine("    // Output returns (all signals are prefixed with 'r')");
+                        WriteParamReturn(method.Returns, false);
+                    }
+
+                    write.WriteLine("endinterface");
+                }
+
+                void WriteParamReturn((string Name, EsiType Type)[] pr, bool isParam)
+                {
+                    var pvChar = isParam ? "p" : "r";
+                    var pvString = isParam ? "Param" : "Return";
+                    write.WriteLine($"    logic {pvChar}Valid;");
+                    write.WriteLine($"    logic {pvChar}Ready;");
+                    foreach (var p in pr)
+                        write.WriteLine($"    {svTypeWriter.GetSVTypeSimple(p.Type, useName: true)} {pvChar}{p.Name};");
+
+                    write.WriteLine();
+                    write.WriteLine($"    modport {pvString}Source (");
+                    foreach (var p in pr)
+                        write.WriteLine($"        output {pvChar}{p.Name},");
+
+                    write.WriteLine($"        output {pvChar}Valid,");
+                    write.WriteLine($"        input {pvChar}Ready");
+                    write.WriteLine( "    );");
+
+                    write.WriteLine($"    modport {pvString}Sink (");
+                    foreach (var p in pr)
+                        write.WriteLine($"        input {pvChar}{p.Name},");
+
+                    write.WriteLine($"        input {pvChar}Valid,");
+                    write.WriteLine($"        output {pvChar}Ready");
+                    write.WriteLine( "    );");
+                    write.WriteLine();
+                }
+
             }
         }
     }
