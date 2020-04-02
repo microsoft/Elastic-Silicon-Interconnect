@@ -9,6 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../core/core.csproj"/>
-    <ProjectReference Include="../capnp/capnp.csproj"/>
+    <ProjectReference Include="../capnp.convert/capnp.csproj"/>
   </ItemGroup>
 </Project>

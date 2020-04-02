@@ -17,7 +17,7 @@
     <PackageReference Include="ReportGenerator" Version="4.5.2"/>
 
     <ProjectReference Include="../core/core.csproj"/>
-    <ProjectReference Include="../capnp/capnp.csproj"/>
+    <ProjectReference Include="../capnp.convert/capnp.csproj"/>
     <ProjectReference Include="../SVCodeGen/SVCodeGen.csproj"/>
   </ItemGroup>
 
