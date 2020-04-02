@@ -63,9 +63,5 @@ namespace Esi.Schema
     public abstract partial class EsiTypeParent : EsiType
     {
         public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
-        public string GetDescriptionTree(uint indent=0)
-        {
-            return ((EsiObject)this).GetDescriptionTree(indent);
-        }
     }
 }

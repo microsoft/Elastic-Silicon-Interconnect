@@ -72,7 +72,7 @@ namespace Esi.Capnp
                     .WithEnvironmentVariables(new Dictionary<string, string>() {
                         ["LD_LIBRARY_PATH"] = exeDir
                     })
-                    .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
+                    .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "capnp")} -o- {file.FullName}")
                     .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
                     .WithStandardErrorPipe(PipeTarget.ToStringBuilder(errorStringBuilder))
                     .WithValidation(CommandResultValidation.ZeroExitCode);

@@ -37,7 +37,7 @@
     </Content>
 
     <Content Include="*.capnp">
-      <Link>schema/%(Filename)%(Extension)</Link>
+      <Link>capnp/%(Filename)%(Extension)</Link>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>

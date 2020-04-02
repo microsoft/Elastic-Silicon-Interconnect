@@ -164,7 +164,7 @@ namespace Esi.Core.Tests
 
             Assert.AreEqual(2, polyComp.Methods.Length);
             var comp = polyComp.Methods.Where(m => m.Name == "compute").First();
-            Context.Log.Information("Expected model: {model}", ComputeParam.GetDescriptionTree());
+            Context.Log.Information("Expected model: {model}", (ComputeParam as EsiObject).GetDescriptionTree());
             Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
 
             Assert.True(ComputeParam.StructuralEquals(comp.Param));
