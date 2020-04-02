@@ -16,7 +16,8 @@
     <PackageReference Include="Microsoft.CodeCoverage" Version="16.5.0"/>
     <PackageReference Include="ReportGenerator" Version="4.5.2"/>
 
-    <ProjectReference Include="../schema/schema.csproj"/>
+    <ProjectReference Include="../core/core.csproj"/>
+    <ProjectReference Include="../capnp.convert/capnp.csproj"/>
     <ProjectReference Include="../SVCodeGen/SVCodeGen.csproj"/>
   </ItemGroup>
 

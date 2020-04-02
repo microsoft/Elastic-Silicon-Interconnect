@@ -14,8 +14,9 @@ using CliWrap;
 using Esi;
 using System.Runtime.ExceptionServices;
 using CliWrap.Exceptions;
+using Esi.Schema;
 
-namespace Esi.Schema 
+namespace Esi.Capnp
 {
     public class EsiCapnpConvert
     {
@@ -47,13 +48,13 @@ namespace Esi.Schema
         // ########
         // Various entry points
         //
-        public static IReadOnlyList<EsiType> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
+        public static IReadOnlyList<EsiObject> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
         {
             var convert = new EsiCapnpConvert(ctxt);
             return convert.GoConvert(request);
         }
 
-        public static IReadOnlyList<EsiType> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
+        public static IReadOnlyList<EsiObject> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
         {
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
@@ -61,7 +62,7 @@ namespace Esi.Schema
             return Convert(ctxt, reader);
         }
 
-        public static IReadOnlyList<EsiType> ConvertTextSchema(EsiContext ctxt, FileInfo file)
+        public static IReadOnlyList<EsiObject> ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
             var exeDir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             using (var memstream = new MemoryStream() )
@@ -71,7 +72,7 @@ namespace Esi.Schema
                     .WithEnvironmentVariables(new Dictionary<string, string>() {
                         ["LD_LIBRARY_PATH"] = exeDir
                     })
-                    .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "schema")} -o- {file.FullName}")
+                    .WithArguments($"compile -I{Path.Join(Esi.Utils.RootDir.FullName, "capnp.convert")} -o- {file.FullName}")
                     .WithStandardOutputPipe(PipeTarget.ToStream(memstream))
                     .WithStandardErrorPipe(PipeTarget.ToStringBuilder(errorStringBuilder))
                     .WithValidation(CommandResultValidation.ZeroExitCode);
@@ -111,8 +112,8 @@ namespace Esi.Schema
             return loc;
         }
         
-        protected Dictionary<UInt64, EsiType> IDtoType
-            = new Dictionary<ulong, EsiType>();
+        protected Dictionary<UInt64, EsiObject> IDtoType
+            = new Dictionary<UInt64, EsiObject>();
 
         /// <summary>
         /// ESI context member variables are generally called 'C' so it's easier to log stuff
@@ -129,21 +130,21 @@ namespace Esi.Schema
         /// </summary>
         /// <param name="cgr"></param>
         /// <returns></returns>
-        protected IReadOnlyList<EsiType> GoConvert(CodeGeneratorRequest.READER cgr)
+        protected IReadOnlyList<EsiObject> GoConvert(CodeGeneratorRequest.READER cgr)
         {
 
             // First pass: get all the filenames
             var IDtoFile = new Dictionary<ulong, string>();
             cgr.RequestedFiles.Iterate(file => IDtoFile[file.Id] = file.Filename);
 
-            // Second pass: get all the struct names
+            // Second pass: get all the node names
             cgr.Nodes
                 .SelectMany(fileNode => fileNode.NestedNodes.Select(nested => (nested, fileNode)))
                 .ForEach(n => 
                     IDtoNames[n.nested.Id] =
                         new EsiCapnpLocation {
                             Id = n.nested.Id,
-                            StructName = n.nested.Name,
+                            NodeName = n.nested.Name,
                             File = IDtoFile.GetValueOrDefault(n.fileNode.Id)
                         });
 
@@ -155,14 +156,14 @@ namespace Esi.Schema
             });
 
             // Fourth pass: Do the actual conversion
-            var esiTypes = cgr.Nodes.Select(
+            var esiObjects = cgr.Nodes.Select(
                 node => ConvertNode(node) switch {
                     _ when (ESIAnnotations.Contains(node.Id)) => null,
                     EsiReferenceType stRef => stRef.Reference,
-                    EsiType t => t,
+                    EsiObject o => o,
                     null => null,
             }).Where(t => t != null).ToList();
-            return esiTypes;
+            return esiObjects;
         }
 
         /// <summary>
@@ -170,7 +171,7 @@ namespace Esi.Schema
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
-        protected EsiType ConvertNode(Node.READER node)
+        protected EsiObject ConvertNode(Node.READER node)
         {
             if (node.Parameters?.Count() > 0 ||
                 node.IsGeneric)
@@ -179,35 +180,72 @@ namespace Esi.Schema
                 return null;
             }
 
-            var loc = IDtoNames[node.Id];
-            // if (string.IsNullOrWhiteSpace(loc.DisplayName) &&
-            //     node.ScopeId != 0 &&
-            //     IDtoNames.TryGetValue(node.ScopeId, out var scopeLoc))
-            // {
-            //     // Best effort DisplayName propogation
-            //     loc.DisplayName = scopeLoc.DisplayName;
-            // }
-
             switch (node.which)
             {
                 case Node.WHICH.Struct:
-                    return ConvertStructCached(loc);
+                    return ConvertStructCached(node.Id);
+                case Node.WHICH.Interface:
+                    return ConvertInterface(node.Id);
                 default:
                     return new CapnpEsiErrorType(() => {
                         C.Log.Error(
                             "Type {type} not yet supported. ({loc})",
                             Enum.GetName(typeof(Node.WHICH), node.which),
-                            loc);
+                            IDtoNames[node.Id]);
                     });
             }
+        }
+
+        private EsiInterface ConvertInterface(ulong id)
+        {
+            var loc = IDtoNames[id];
+            if (!loc.Node.HasValue)
+                throw new EsiCapnpConvertException($"Could not find node for interface {loc}");
+            var iface = loc.Node.Value.Interface;
+            var superClasses = iface.Superclasses.Select(s => ConvertInterface(s.Id)).ToArray();
+            return new EsiInterface(
+                Name: loc.NodeName,
+                Methods: iface.Methods.Select(ConvertMethod).ToArray()
+            );
+        }
+
+        private EsiInterface.Method ConvertMethod(Method.READER method)
+        {
+            EsiType MethodConvert(EsiType t)
+            {
+                if (t is EsiReferenceType refType)
+                    t = refType.Reference;
+                if (t is EsiStruct st)
+                    t = new EsiStruct(
+                        Name: st.Name,
+                        Fields: st.Fields.Select(origField => {
+                            return new EsiStruct.StructField(
+                                Name: origField.Name,
+                                Type: origField.Type is EsiReferenceType refType ?
+                                    refType.Reference : origField.Type
+                            );
+                        })
+                    );
+                return t;
+            }
+
+            if (method.ResultBrand.Scopes.Count() > 0 ||
+                method.ParamBrand.Scopes.Count() > 0)
+                C.Log.Error("Generics currently unsupported");
+            return new EsiInterface.Method(
+                Name: method.Name,
+                Param: MethodConvert(GetNamedType(method.ParamStructType)),
+                Return: MethodConvert(GetNamedType(method.ResultStructType))
+            );
         }
 
         /// <summary>
         /// Return a function which returns an EsiStruct which has been converted from a
         /// CapNProto struct.
         /// </summary>
-        private EsiType ConvertStructCached(EsiCapnpLocation loc)
+        private EsiType ConvertStructCached(ulong id)
         {
+            var loc = IDtoNames[id];
             if (!IDtoType.TryGetValue(loc.Id, out var esiType))
             {
                 // First, create a struct reference and populate the cache with it.
@@ -220,7 +258,7 @@ namespace Esi.Schema
                 if (canpnStruct.DiscriminantCount == 0) // This capnp struct is not a union
                 {
                     var esiStruct = new EsiStruct(
-                        Name: loc.StructName,
+                        Name: loc.NodeName,
                         Fields: canpnStruct.Fields.Iterate(f => ConvertField(loc, f))
                     );
                     if (canpnStruct.IsGroup) // This capnp "struct" is actually a group, which is equivalent to an EsiStruct
@@ -245,14 +283,17 @@ namespace Esi.Schema
             // Mark that we have returned this instance
             if (esiType is EsiReferenceCapnp stRefCount)
                 stRefCount.RefCount++;
-            return esiType;
+            if (esiType is EsiType ty)
+                return ty;
+            C.Log.Error("Unsupported type: {type}", esiType.GetType());
+            return null;
         }
 
         /// <summary>
         /// To construct a struct reference, it must exist already in the table
         /// of struct futures.
         /// </summary>
-        private EsiType GetNamedNode(UInt64 structId)
+        private EsiObject GetNamedNode(UInt64 structId)
         {
             if (IDtoType.TryGetValue(structId, out var esiNamedNode))
                 return esiNamedNode;
@@ -269,6 +310,15 @@ namespace Esi.Schema
             }
         }
 
+        private EsiType GetNamedType(UInt64 structId)
+        {
+            var esiObj = GetNamedNode(structId);
+            if (esiObj is EsiType type)
+                return type;
+            C.Log.Error("Unsupported use as data type: {type}", esiObj?.GetType());
+            return null;
+        }
+
         /// <summary>
         /// Convert a struct field which can be either an actual member, "slot", or a group.
         /// </summary>
@@ -279,7 +329,7 @@ namespace Esi.Schema
                 case Field.WHICH.Group:
                     return new EsiStruct.StructField(
                         Name: field.Name,
-                        Type: GetNamedNode(field.Group.TypeId));
+                        Type: GetNamedType(field.Group.TypeId));
 
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
@@ -322,7 +372,7 @@ namespace Esi.Schema
                 CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
 
                 CapnpGen.Type.WHICH.List => new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
-                CapnpGen.Type.WHICH.Enum => GetNamedNode(type.Enum.TypeId),
+                CapnpGen.Type.WHICH.Enum => GetNamedType(type.Enum.TypeId),
                 CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
                     // ---
                     // "Special", known structs
@@ -333,7 +383,7 @@ namespace Esi.Schema
 
                     // ---
                     // User-specified structs
-                    _ => GetNamedNode(type.Struct.TypeId)
+                    _ => GetNamedType(type.Struct.TypeId)
                 },
 
                 CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
@@ -512,7 +562,7 @@ namespace Esi.Schema
         public UInt64 Id;
         public Node.READER? Node;
         public string File;
-        public string StructName;
+        public string NodeName;
         public string DisplayName;
         public IEnumerable<string> Path;
 
@@ -520,7 +570,7 @@ namespace Esi.Schema
         {
             return new EsiCapnpLocation {
                 File = File,
-                StructName = StructName,
+                NodeName = NodeName,
                 DisplayName = DisplayName,
                 Path = Path?.Append(field) ?? new string[] { field },
             };
@@ -532,7 +582,7 @@ namespace Esi.Schema
             if (!string.IsNullOrWhiteSpace(DisplayName))
                 fileStruct = DisplayName;
             else
-                fileStruct = $"{File}:{StructName}";
+                fileStruct = $"{File}:{NodeName}";
 
             if (Path?.Count() > 0)
                 return $"{fileStruct}/{string.Join('/', Path)}";

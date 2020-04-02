@@ -5,7 +5,6 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <!-- <CapnpPackageReferenceVersion>1.2.189</CapnpPackageReferenceVersion> -->
-    <LangVersion>8.0</LangVersion>
     <!-- <EnableDefaultCompileItems>false</EnableDefaultCompileItems> -->
   </PropertyGroup>
 
@@ -38,7 +37,7 @@
     </Content>
 
     <Content Include="*.capnp">
-      <Link>schema/%(Filename)%(Extension)</Link>
+      <Link>capnp.convert/%(Filename)%(Extension)</Link>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>

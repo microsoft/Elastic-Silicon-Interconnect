@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Esi.Schema;
 using System.IO;
 using CliWrap.Exceptions;
+using Esi.Capnp;
 
 namespace Esi.Core.Tests 
 {
@@ -54,8 +55,6 @@ namespace Esi.Core.Tests
 
             var ex = structs.Where(t => t.Name == "Example").First();
             Assert.True(ExampleModel.StructuralEquals(ex));
-
-
         }
 
         // Test the structural equals code -- various ways it can evaluate false
@@ -81,7 +80,7 @@ namespace Esi.Core.Tests
 
         static readonly EsiStruct Polynomal3Model =
             new EsiStruct("Polynomial3", new EsiStruct.StructField[] {
-                new EsiStruct.StructField("a", new EsiInt(24, false)),
+                new EsiStruct.StructField("a", new EsiInt(24, true)),
                 new EsiStruct.StructField("b", new EsiInt(40, false)),
                 new EsiStruct.StructField("c", EsiCompound.SingletonFor(
                     EsiCompound.CompoundType.EsiFloat,
@@ -125,11 +124,12 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Fail()
         {
+            ShouldFail = true;
+
             var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(10, Context.Errors);
+            Assert.AreEqual(11, Context.Errors);
             Assert.AreEqual(0, Context.Fatals);
             Assert.True(Context.Failed);
-            Context.ClearCounts();
 
             // Assert.Fail("Dummy fail to print out stdout");
         }
@@ -137,9 +137,62 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1FailSyntax()
         {
+            ShouldFail = true;
+
             Assert.Throws<CommandExecutionException>(
                 () => ReadSchema("stress_tests/stress1_failsyntax.capnp"));
-            Context.ClearCounts();
         }
+
+        [Test]
+        public void ReadStress1Interfaces()
+        {
+            var types = ReadSchema("stress_tests/stress1_synth.capnp");
+
+            Assert.Greater(types.Count, 0);
+            var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
+            Assert.Greater(structs.Count(), 0);
+
+            var poly = structs.Where(t => t.Name == "Polynomial3").First();
+            var shape = structs.Where(t => t.Name == "Shape").First();
+
+            var interfaces = types.Where(t => t is EsiInterface).Select(t => t as EsiInterface);
+            Assert.AreEqual(2, interfaces.Count());
+
+            var polyComps = interfaces.Where(i => i.Name == "Polynomial3Compute");
+            Assert.AreEqual(1, polyComps.Count());
+            var polyComp = polyComps.First();
+
+            Assert.AreEqual(2, polyComp.Methods.Length);
+            var comp = polyComp.Methods.Where(m => m.Name == "compute").First();
+            Context.Log.Information("Expected model: {model}", (ComputeParam as EsiObject).GetDescriptionTree());
+            Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
+
+            Assert.True(ComputeParam.StructuralEquals(comp.Param));
+            Assert.True((comp.Return as EsiStruct).Fields[0].Type.StructuralEquals(EsiCompound.SingletonFor(
+                Type: EsiCompound.CompoundType.EsiFloat,
+                Signed: true,
+                Whole: 8,
+                Fractional: 23
+            )));
+        }
+
+        static readonly EsiStruct ComputeParam =
+            new EsiStruct(
+                Name: null,
+                Fields: new EsiStruct.StructField[] {
+                    new EsiStruct.StructField (
+                        Name: "coeff",
+                        Type: Polynomal3Model
+                    ),
+                    new EsiStruct.StructField (
+                        Name: "x",
+                        Type: EsiCompound.SingletonFor (
+                            Type: EsiCompound.CompoundType.EsiFloat,
+                            Signed: true,
+                            Whole: 8,
+                            Fractional: 23
+                        )
+                    )
+            });
     }
 }
