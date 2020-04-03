@@ -1,0 +1,21 @@
+requires:
+  - feature: tools.Questa
+    params:
+      Modelsim: true
+
+topLevel: Shape_ComputeArea
+
+codeGenTool:
+  name: esi_interface
+
+common:
+  - stress1_synth.capnp
+  - Shape_ComputeArea.sv
+  - Shape_QueryProcessor.sv
+
+sim:
+  - Shape_tb.sv
+
+simTests:
+  - topLevel: Shape_tb
+

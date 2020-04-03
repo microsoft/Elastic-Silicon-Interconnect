@@ -1,4 +1,6 @@
+# include $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/../capnp.mk
 include ../capnp.mk
+
 
 investData: stress1_synth.capnp.txt stress1.capnp.txt stress1_fail.capnp.txt
 
