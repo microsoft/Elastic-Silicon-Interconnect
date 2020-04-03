@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../schema/schema.csproj"/>
+    <ProjectReference Include="../core/core.csproj"/>
+    <ProjectReference Include="../capnp.convert/capnp.csproj"/>
   </ItemGroup>
 </Project>

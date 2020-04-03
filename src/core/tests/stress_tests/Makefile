@@ -1,6 +1,8 @@
+# include $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/../capnp.mk
 include ../capnp.mk
 
-investData: stress1.capnp.txt stress1_fail.capnp.txt
+
+investData: stress1_synth.capnp.txt stress1.capnp.txt stress1_fail.capnp.txt
 
 run: stress1_synth.capnp.bin
 	dotnet run --project ../../SVCodeGen -- -i stress1_synth.capnp.bin
@@ -10,7 +12,11 @@ clean:
 	rm -rf obj_dir work __pycache__
 
 verilator: run
+ifeq ($(OS), Windows_NT)
+	verilator_bin --cc -Wno-fatal *.sv --top-module Shape_tb
+else
 	verilator --cc -Wno-fatal *.sv --top-module Shape_tb
+endif
 
 vlog: run
 	vlog -sv09compat *.sv

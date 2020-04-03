@@ -5,6 +5,7 @@ using System.IO;
 using CommandLine;
 using Esi;
 using Esi.Schema;
+using Esi.Capnp;
 
 namespace Esi.SVCodeGen
 {
@@ -45,7 +46,7 @@ namespace Esi.SVCodeGen
             using (var esiCtxt = new EsiContext())
             {
                 esiCtxt.Log.Information("Starting conversion to EsiTypes");
-                IEnumerable<EsiType> esiTypes;
+                IEnumerable<EsiObject> esiTypes;
                 if (txt)
                 {
                     esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
@@ -58,7 +59,7 @@ namespace Esi.SVCodeGen
                 esiCtxt.Log.Information("Starting SV interface output");
                 var esiSys = new EsiSystem(esiTypes);
                 var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, esiSys);
-                sv.WriteSVInterfaces();
+                sv.WriteSV();
                 esiCtxt.Log.Information("Completed SV interface output");
             }
 

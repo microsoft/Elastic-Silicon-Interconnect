@@ -2,10 +2,10 @@
 
 .capnp.bin.capnp.txt:
 ifeq ($(OS), Windows_NT)
-	capnp decode ../../schema/CapnpSchema.capnp CodeGeneratorRequest < $*.capnp.bin  > $*.capnp.txt
+	capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest < $*.capnp.bin  > $*.capnp.txt
 else
-	cat $*.capnp.bin | capnp decode ../../schema/CapnpSchema.capnp CodeGeneratorRequest > $*.capnp.txt
+	cat $*.capnp.bin | capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest > $*.capnp.txt
 endif
 
 .capnp.capnp.bin:
-	capnp compile -I../../schema/ -o- $*.capnp > $*.capnp.bin
+	capnp compile -I../../capnp.convert/ -o- $*.capnp > $*.capnp.bin

@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Esi;
 using Esi.Schema;
 using System;
+using Esi.Capnp;
 
 namespace Esi.Core.Tests
 {
@@ -15,7 +16,7 @@ namespace Esi.Core.Tests
             return Esi.Utils.ResolveResource(Path.Combine("tests", resource));
         }
 
-        public IReadOnlyList<EsiType> ReadSchema(string resource)
+        public IReadOnlyList<EsiObject> ReadSchema(string resource)
         {
             return EsiCapnpConvert.ConvertTextSchema(Context, ResolveResource(resource));
         }

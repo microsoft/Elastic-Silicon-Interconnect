@@ -69,7 +69,7 @@ namespace Esi.Schema
                         while (e1.MoveNext())
                         {
                             if (!(e2.MoveNext() && StructuralEquals(e1.Current, e2.Current, objMap)))
-                            return false;
+                                return false;
                         }
                         if (e2.MoveNext())
                             return false;

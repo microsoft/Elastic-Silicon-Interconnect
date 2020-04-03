@@ -62,3 +62,12 @@ struct All {
     k @10 :Float32;
     l @11 :Float64;
 }
+
+interface ShapeQuery {
+    getVolume @0 (Shape :Shape) -> (Volume :Float32);
+}
+
+interface Polynomial3Compute {
+    compute @0 (coeff :Polynomial3, x :Float32) -> (y :Float32);
+    solveForX @1 (coeff :Polynomial3, y :UInt16) -> (x1 :Float32, x2 :Float32);
+}
