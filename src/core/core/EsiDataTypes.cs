@@ -211,19 +211,6 @@ namespace Esi.Schema
                 Type.GetDescriptionTree(stringBuilder, indent);
                 stringBuilder.AppendLine(";");
             }
-
-            public IEnumerable<EsiNamedType> GetClosestNames()
-            {
-                IEnumerable<EsiNamedType> DoIt(EsiType lclType)
-                {
-                    if (lclType is EsiNamedType namedType)
-                        return namedType.GetClosestNames();
-                    if (lclType is EsiTypeCollection typeCollection)
-                        return typeCollection.ContainedTypes.SelectMany(t => DoIt(t));
-                    return new EsiNamedType[] {};
-                }
-                return DoIt(Type);
-            }
         }
 
         public string? Name { get; }
@@ -251,14 +238,6 @@ namespace Esi.Schema
                 f.GetDescriptionTree(stringBuilder, indent+1);
             }
             stringBuilder.Indent(indent).Append("}");
-        }
-
-        public IEnumerable<EsiNamedType> GetClosestNames()
-        {
-            if (Name != null)
-                return new EsiNamedType[] { this };
-            
-            return Fields.SelectMany(f => f.GetClosestNames());
         }
     }
 

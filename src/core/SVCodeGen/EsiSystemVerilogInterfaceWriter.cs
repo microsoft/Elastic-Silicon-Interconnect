@@ -118,9 +118,15 @@ endinterface
                 write.WriteLine(EsiSystemVerilogConsts.Header);
 
                 write.WriteLine();
-                foreach (var usedNamedType in iface.CollectTypes().Distinct())
+
+                var usedTypes = new List<EsiType>();
+                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Params.Select(p => p.Type)));
+                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type)));
+                foreach (var usedNamedType in usedTypes.Distinct())
                 {
-                    write.WriteLine($"`include \"{usedNamedType.GetSVHeaderName()}\"");
+                    var header = usedNamedType.GetSVHeaderName();
+                    if (!string.IsNullOrWhiteSpace(header))
+                        write.WriteLine($"`include \"{header}\"");
                 }
                 write.WriteLine();
 

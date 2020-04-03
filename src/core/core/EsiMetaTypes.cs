@@ -37,14 +37,6 @@ namespace Esi.Schema
     public interface EsiNamedType : EsiType
     {
         string? Name { get; }
-
-        /// <summary>
-        /// In the case when a "named" type is actually anonymous (doesn't have a
-        /// name), get the contained named types which we'll need to use when
-        /// creating this type.
-        /// </summary>
-        /// <returns></returns>
-        IEnumerable<EsiNamedType> GetClosestNames();
     }
 
     /// <summary>

@@ -30,22 +30,6 @@ namespace Esi.Schema
                 this.Params = Params.ToArray();
                 this.Returns = Returns.ToArray();
             }
-
-            public IEnumerable<EsiNamedType> CollectTypes()
-            {
-                var ret = new List<EsiNamedType>();
-                foreach (var p in Params)
-                {
-                    if (p.Type is EsiNamedType pnt)
-                        ret.AddRange(pnt.GetClosestNames());
-                }
-                foreach (var r in Returns)
-                {
-                    if (r.Type is EsiNamedType rnt)
-                        ret.AddRange(rnt.GetClosestNames());
-                }
-                return ret;
-            }
         }
 
         public string Name { get; }
@@ -60,11 +44,6 @@ namespace Esi.Schema
         public void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
         {
             throw new System.NotImplementedException();
-        }
-
-        public IEnumerable<EsiNamedType> CollectTypes()
-        {
-            return Methods.SelectMany(method => method.CollectTypes());
         }
     }
 }
