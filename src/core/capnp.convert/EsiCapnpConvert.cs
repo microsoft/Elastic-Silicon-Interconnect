@@ -211,22 +211,19 @@ namespace Esi.Capnp
 
         private EsiInterface.Method ConvertMethod(Method.READER method)
         {
-            EsiType MethodConvert(EsiType t)
+            IEnumerable<(string Name, EsiType type)> MethodConvert(EsiType t)
             {
-                if (t is EsiReferenceType refType)
-                    t = refType.Reference;
-                if (t is EsiStruct st)
-                    t = new EsiStruct(
-                        Name: st.Name,
-                        Fields: st.Fields.Select(origField => {
-                            return new EsiStruct.StructField(
-                                Name: origField.Name,
-                                Type: origField.Type is EsiReferenceType refType ?
-                                    refType.Reference : origField.Type
-                            );
-                        })
-                    );
-                return t;
+                if (!(t is EsiReferenceType refType))
+                    throw new EsiCapnpConvertException($"Internal error: expected reference, got {t.GetType()}");
+
+                t = refType.Reference;
+                if (!(t is EsiStruct st))
+                    throw new EsiCapnpConvertException($"Internal error: expected struct reference, got {t.GetType()}*");
+
+                return st.Fields.Select(f =>
+                    (Name: f.Name,
+                    Type: f.Type is EsiReferenceType refType ?
+                                    refType.Reference : f.Type));
             }
 
             if (method.ResultBrand.Scopes.Count() > 0 ||
@@ -234,8 +231,8 @@ namespace Esi.Capnp
                 C.Log.Error("Generics currently unsupported");
             return new EsiInterface.Method(
                 Name: method.Name,
-                Param: MethodConvert(GetNamedType(method.ParamStructType)),
-                Return: MethodConvert(GetNamedType(method.ResultStructType))
+                Params: MethodConvert(GetNamedType(method.ParamStructType)),
+                Returns: MethodConvert(GetNamedType(method.ResultStructType))
             );
         }
 

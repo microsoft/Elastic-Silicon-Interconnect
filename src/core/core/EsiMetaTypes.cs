@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -46,15 +47,25 @@ namespace Esi.Schema
     {    }
 
     /// <summary>
+    /// All types which contain other types should implement this
+    /// </summary>
+    public interface EsiTypeCollection : EsiType
+    {
+        IEnumerable<EsiType> ContainedTypes { get; }
+    }
+
+    /// <summary>
     /// Abstraction for things which contain another type (struct fields, lists,
     /// arrays, etc.)
     /// </summary>
-    public interface EsiContainerType : EsiType
+    public interface EsiContainerType : EsiTypeCollection
     {
         EsiType Inner { get; }
 
         EsiContainerType WithInner(EsiType newInner);
     }
+
+
 
     /// <summary>
     /// Common methods which all EsiTypes could use. The implementation of more

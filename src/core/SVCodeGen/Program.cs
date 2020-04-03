@@ -59,7 +59,7 @@ namespace Esi.SVCodeGen
                 esiCtxt.Log.Information("Starting SV interface output");
                 var esiSys = new EsiSystem(esiTypes);
                 var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, esiSys);
-                sv.WriteSVInterfaces();
+                sv.WriteSV();
                 esiCtxt.Log.Information("Completed SV interface output");
             }
 

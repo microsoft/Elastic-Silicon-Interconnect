@@ -10,7 +10,11 @@ clean:
 	rm -rf obj_dir work __pycache__
 
 verilator: run
+ifeq ($(OS), Windows_NT)
+	verilator_bin --cc -Wno-fatal *.sv --top-module Shape_tb
+else
 	verilator --cc -Wno-fatal *.sv --top-module Shape_tb
+endif
 
 vlog: run
 	vlog -sv09compat *.sv

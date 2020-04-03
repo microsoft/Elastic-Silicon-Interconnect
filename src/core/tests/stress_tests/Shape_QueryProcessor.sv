@@ -1,11 +1,11 @@
 
 `include "Shape.esi.svh"
 
-module Shape_ComputeArea (
+module Shape_QueryProcessor (
     input logic clk,
     input logic rstn,
 
-    IShapeType_ValidReady.Sink shapeIn
+    IShapeQuery_getVolume_ValidReady.ParamSink param
 );
 
     always_ff @(posedge clk)

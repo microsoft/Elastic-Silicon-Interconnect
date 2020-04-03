@@ -3,13 +3,13 @@ module Shape_tb();
 
     logic clk;
 
-    IShapeValidReady shape();
+    IShapeType_ValidReady shape();
 
     Shape_ComputeArea dut (
         .clk(clk),
         .rstn(1'b1),
 
-        .shapeIn(shape.Sink)
+        .shapeIn(shape)
     );
 
     initial begin
@@ -19,6 +19,22 @@ module Shape_tb();
         for (int i = 0; i < $size(shape.data.array1); i++) begin
             $display ("array1[%0d] = %h", i, shape.data.array1[i]);
         end
+    end
+
+
+    IShapeQuery_getVolume_ValidReady GetVolume();
+
+    Shape_QueryProcessor qpDut (
+        .clk(clk),
+        .rstn(1'b1),
+
+        .param(GetVolume)
+    );
+
+    initial
+    begin
+        #16
+        GetVolume.pShape.cube.height.exp = 3;
     end
 
     initial begin

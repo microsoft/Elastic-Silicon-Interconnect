@@ -1,4 +1,7 @@
+using System.Linq;
+using System;
 using System.Text;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -15,24 +18,27 @@ namespace Esi.Schema
         public struct Method
         {
             public string Name { get; }
-            public EsiType Param { get; }
-            public EsiType Return { get; }
+            public (string Name, EsiType Type)[] Params { get; }
+            public (string Name, EsiType Type)[] Returns { get; }
 
-            public Method(string Name, EsiType Param, EsiType Return)
+            public Method(
+                string Name,
+                IEnumerable<(string name, EsiType)> Params,
+                IEnumerable<(string name, EsiType)> Returns)
             {
                 this.Name = Name;
-                this.Param = Param;
-                this.Return = Return;
+                this.Params = Params.ToArray();
+                this.Returns = Returns.ToArray();
             }
         }
 
         public string Name { get; }
         public Method[] Methods { get; }
 
-        public EsiInterface(string Name, Method[] Methods)
+        public EsiInterface(string Name, IEnumerable<Method> Methods)
         {
             this.Name = Name;
-            this.Methods = Methods;
+            this.Methods = Methods.ToArray();
         }
 
         public void GetDescriptionTree(StringBuilder stringBuilder, uint indent)

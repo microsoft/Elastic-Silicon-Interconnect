@@ -64,7 +64,7 @@ struct All {
 }
 
 interface ShapeQuery {
-    getVolume @0 (shape :Shape) -> (volume :Float32);
+    getVolume @0 (Shape :Shape) -> (Volume :Float32);
 }
 
 interface Polynomial3Compute {
