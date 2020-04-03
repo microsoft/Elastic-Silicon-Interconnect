@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-## What are these *.hwlib.yml and *.hwcgt.py files?
+## What are these hwlib.yml and hwcgt.py files?
 
 At Microsoft, we used an internal tool called 'HWBuild' to drive our
 synthesis and simulation flows. The 'hwlibs' that you see scattered around
