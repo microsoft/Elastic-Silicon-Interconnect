@@ -42,9 +42,12 @@ module Cosim_Endpoint
    always@(posedge clk)
    begin
       // We've been instructed to start AND we're uninitialized
-      if (rstn && !Initialized)
+      if (!Initialized)
       begin
          int rc;
+         rc = cosim_init();
+         if (rc != 0)
+            $error("Cosim init failed (%d)", rc);
          rc = cosim_ep_register(ENDPOINT_ID, ESI_TYPE_ID, TYPE_SIZE_BYTES);
          if (rc != 0)
             $error("Cosim endpoint (%d) register failed: %d", ENDPOINT_ID, rc);
