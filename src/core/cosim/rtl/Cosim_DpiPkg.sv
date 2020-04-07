@@ -11,7 +11,7 @@
 //   DPI-exposed funcs for cosimserver cosimulation unit-test
 // =============================================================================
 
-package CosimCore_DpiPkg;
+package Cosim_DpiPkg;
 
 // --------------------- Cosim Socket Server ------------------------------
 

@@ -12,7 +12,7 @@
 //   Main cosim <--> dpi bridge module
 // =============================================================================
 
-import CosimCore_DpiPkg::*;
+import Cosim_DpiPkg::*;
 
 module Cosim_Endpoint
 #(
