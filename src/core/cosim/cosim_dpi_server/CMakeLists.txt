@@ -5,7 +5,7 @@ project(EsiCosimDpiServer VERSION 0.1.0)
 # enable_testing()
 
 include_directories(include)
-set(HEADERS include/svdpi.h include/dpi_generated.h)
+set(HEADERS include/svdpi.h include/dpi.hxx)
 set(SOURCES EsiCosimDpiServer.cpp)
 add_library(EsiCosimDpiServer SHARED ${HEADERS} ${SOURCES})
 

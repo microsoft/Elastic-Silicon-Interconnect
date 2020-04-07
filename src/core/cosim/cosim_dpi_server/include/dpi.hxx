@@ -7,7 +7,11 @@
 
 #include "svdpi.h"
 
+#ifdef _WIN32
 #define DPI extern "C" __declspec(dllexport)
+#else
+#define DPI extern "C"
+#endif
 
 // DPI IMPORTS
 // DPI import at CosimCore/CosimCore_DpiPkg.sv:51:17

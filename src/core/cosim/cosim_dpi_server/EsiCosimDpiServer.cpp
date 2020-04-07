@@ -1,4 +1,4 @@
-#include "dpi_generated.h"
+#include "dpi.hxx"
 
 
 DPI int sv2c_cosimserver_conn_connected(unsigned int endpoint_id)
