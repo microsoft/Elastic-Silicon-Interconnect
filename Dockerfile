@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     git \
     capnproto libcapnp-dev \
-    autoconf bc bison flex libfl-dev perl
+    autoconf bc bison flex libfl-dev perl \
+    cmake
 
 RUN python3 -m pip install -U pylint
 RUN python3 -m pip install -U pytest
