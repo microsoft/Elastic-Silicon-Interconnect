@@ -1,4 +1,4 @@
-#include "dpi.hxx"
+#include "dpi.hpp"
 
 // DPI entry points
 
