@@ -14,9 +14,8 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     git \
-    capnproto libcapnp-dev \
     autoconf bc bison flex libfl-dev perl \
-    cmake
+    cmake curl unzip tar
 
 RUN python3 -m pip install -U pylint
 RUN python3 -m pip install -U pytest
@@ -35,6 +34,15 @@ RUN git clone "${VERILATOR_REPO}" verilator && \
     cd .. && \
     rm -r verilator
 
-WORKDIR /esi
+# Compile vcpkg to get cross-platform C/C++ library management
+RUN cd / && git clone https://github.com/Microsoft/vcpkg.git
+WORKDIR /vcpkg
+RUN ./bootstrap-vcpkg.sh
+ENV VCPKG_ROOT=/vcpkg
 
+# Install libraries
+RUN ./vcpkg install capnproto:x64-linux
+
+# Set up working environment
+WORKDIR /esi
 CMD /bin/bash
