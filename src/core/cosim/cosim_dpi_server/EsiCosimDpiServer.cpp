@@ -1,5 +1,6 @@
 #include "dpi.hxx"
 
+// DPI entry points
 
 DPI int sv2c_cosimserver_conn_connected(unsigned int endpoint_id)
 {
