@@ -9,7 +9,9 @@ include_directories(include)
 set(HEADERS ${CAPNP_HDRS} include/svdpi.h include/dpi.hpp)
 set(SOURCES ${CAPNP_SRCS} DpiEntryPoints.cpp Server.cpp)
 add_library(EsiCosimDpiServer SHARED ${HEADERS} ${SOURCES})
-target_link_libraries(EsiCosimDpiServer PRIVATE CapnProto::kj CapnProto::kj-async CapnProto::capnp CapnProto::capnpc CapnProto::capnp-rpc CapnProto::kj-gzip)
+target_link_libraries(EsiCosimDpiServer PRIVATE
+    CapnProto::kj CapnProto::kj-async CapnProto::kj-gzip
+    CapnProto::capnp CapnProto::capnpc CapnProto::capnp-rpc)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
