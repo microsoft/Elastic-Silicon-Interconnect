@@ -1,27 +1,30 @@
 ###
 ###  Set up a build environment on Windows
 ###
+### Must have vcpkg (https://github.com/microsoft/vcpkg) or tell this script
+### where to install it.
+###     Set $env:VCPKG_ROOT to the install/clone
 ###  Must install Python3 w/ pip first
 
-# Change to "tools" dir
-$origDir = Get-Location
-mkdir "$PSScriptRoot/tools" -ErrorAction Ignore
-Set-Location "$PSScriptRoot/tools"
+param (
+    [Parameter(Mandatory=$false)]
+    [string]$VcpkgInstallPath=$null
+)
 
-# Install CapnProto
-$capnprotoVersion = "0.7.0"
-$capnprotoZip = "capnproto-c++-win32-$capnprotoVersion.zip"
-if (-not (Test-Path $capnprotoZip)) {
-    Invoke-WebRequest -Uri "https://capnproto.org/$capnprotoZip" -OutFile $capnprotoZip
-    Expand-Archive -Path $capnprotoZip -DestinationPath .
-    Move-Item "capnproto-tools-win32-$capnprotoVersion" capnproto-tools
+if ($null -ne $VcpkgInstallPath) {
+    $env:VCPKG_ROOT = $VcpkgInstallPath
+    if (-not (Test-Path "$env:VCPKG_ROOT/vcpkg.exe")) {
+        git clone https://github.com/Microsoft/vcpkg.git $env:VCPKG_ROOT
+        & "$env:VCPKG_ROOT/bootstrap-vcpkg.bat"
+    }
+    $env:VCPKG_ROOT = Resolve-Path $VcpkgInstallPath
 }
-$env:PATH="$env:PATH;$(Get-Location)/capnproto-tools"
 
-# Go back to whence we came
-Set-Location $origDir
-
-# Write string for GH build env var
-Write-Output "::set-env name=PATH::$env:PATH"
+if ($null -eq $env:VCPKG_ROOT) {
+    Write-Error "Install VCPKG and set the VCPKG_ROOT to it's root directory"
+} else {
+    & "$env:VCPKG_ROOT/vcpkg.exe" install capnproto:x64-windows
+    $env:PATH="$env:PATH;$env:VCPKG_ROOT/installed/x64-windows/tools/capnproto"
+}
 
 python -m pip install -U pytest
