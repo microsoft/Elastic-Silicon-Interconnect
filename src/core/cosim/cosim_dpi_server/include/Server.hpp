@@ -9,8 +9,6 @@
 #ifndef __COSIM_DPI_SERVER_HPP__
 #define __COSIM_DPI_SERVER_HPP__
 
-void Run(uint16_t port);
-
 class EndPointServer : public EsiDpiEndpoint::Server
 {
     EndPoint* _EndPoint;
@@ -35,13 +33,33 @@ public:
     { }
 
     kj::Promise<void> list(ListContext ctxt);
-
     kj::Promise<void> open (OpenContext ctxt);
 
     void RegisterEndPoint(int ep_id, EndPoint* ep)
     {
         _Endpoints[ep_id] = ep;
     }
+};
+
+class RpcServer
+{
+    capnp::EzRpcServer* _RpcServer;
+    std::thread* _MainThread;
+    volatile bool _Stop;
+
+    void MainLoop(uint16_t port);
+
+public:
+    RpcServer() :
+        _RpcServer(nullptr),
+        _MainThread(nullptr),
+        _Stop(false)
+    {   }
+
+    ~RpcServer();
+
+    void Run(uint16_t port);
+    void Stop();
 };
 
 #endif

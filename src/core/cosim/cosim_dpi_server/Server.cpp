@@ -4,26 +4,7 @@
 #include <stdexcept>
 
 using namespace std;
-// CosimServer* server = nullptr;
-
-capnp::EzRpcServer* RpcServer;
-thread MainThread;
-
-void MainLoop(uint16_t port)
-{
-    RpcServer = new capnp::EzRpcServer(kj::heap<CosimServer>(), "*", port);
-    auto& waitScope = RpcServer->getWaitScope();
-    kj::NEVER_DONE.wait(waitScope);
-}
-
-void Run(uint16_t port)
-{
-    // if (RpcServer != nullptr)
-    // {
-    //     throw std::runtime_error("Cannot start cosim rpc server twice!");
-    // }
-    MainThread = thread(MainLoop, port);
-}
+using namespace capnp;
 
 kj::Promise<void> CosimServer::list(ListContext context)
 {
@@ -50,4 +31,41 @@ kj::Promise<void> CosimServer::open (OpenContext ctxt)
 
     ctxt.getResults().setIface(EsiDpiEndpoint::Client(kj::heap<EndPointServer>(ep)));
     return kj::READY_NOW;
+}
+
+RpcServer::~RpcServer()
+{
+    Stop();
+}
+
+void RpcServer::MainLoop(uint16_t port)
+{
+    _RpcServer = new EzRpcServer(kj::heap<CosimServer>(), "*", port);
+    auto& waitScope = _RpcServer->getWaitScope();
+
+    // OK, this is hacky as shit, but it unblocks me and isn't too inefficient
+    while (!_Stop)
+    {
+        waitScope.poll();
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+}
+
+void RpcServer::Run(uint16_t port)
+{
+    if (_MainThread == nullptr) {
+        _MainThread = new thread(&RpcServer::MainLoop, this, port);
+    } else {
+        throw runtime_error("Cannot Run() RPC server more than once!");
+    }
+}
+
+void RpcServer::Stop()
+{
+    if (_MainThread == nullptr) {
+        throw runtime_error("RpcServer not Run()");
+    } else if (!_Stop) {
+        _Stop = true;
+        _MainThread->join();
+    }
 }
