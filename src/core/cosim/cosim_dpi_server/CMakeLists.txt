@@ -13,6 +13,3 @@ target_link_libraries(EsiCosimDpiServer PRIVATE
     CapnProto::kj CapnProto::kj-async CapnProto::kj-gzip
     CapnProto::capnp CapnProto::capnpc CapnProto::capnp-rpc)
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)

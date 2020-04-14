@@ -1,4 +1,4 @@
-import CosimCore_DpiPkg::*;
+import Cosim_DpiPkg::*;
 
 module cosim_test(
 );

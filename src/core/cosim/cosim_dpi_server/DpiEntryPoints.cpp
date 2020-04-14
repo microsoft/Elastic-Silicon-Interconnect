@@ -1,4 +1,6 @@
+#include "Server.hpp"
 #include "dpi.hpp"
+
 
 // DPI entry points
 
@@ -30,9 +32,21 @@ DPI int sv2c_cosimserver_ep_tryput(unsigned int endpoint_id, const svOpenArrayHa
 
 DPI void sv2c_cosimserver_fini()
 {
+    // if (server != nullptr)
+    // {
+    //     server->Stop();
+    //     server = nullptr;
+    // }
 }
 
 DPI int sv2c_cosimserver_init()
 {
+    std::cout << "init()" << std::endl;
+    Run(1111);
+    // if (server == nullptr)
+    // {
+    //     server = new CosimServer();
+    //     server->Run(1111);
+    // }
     return 0;
 }
