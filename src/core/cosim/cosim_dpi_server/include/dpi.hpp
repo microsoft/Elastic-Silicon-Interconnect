@@ -5,6 +5,9 @@
 // Manually include this file where DPI .c import functions are declared to ensure
 // the C functions match the expectations of the DPI imports.
 
+#ifndef __DPI_HPP__
+#define __DPI_HPP__
+
 #include "svdpi.h"
 
 #ifdef _WIN32
@@ -28,3 +31,5 @@ DPI int sv2c_cosimserver_ep_tryput(unsigned int endpoint_id, const svOpenArrayHa
 DPI void sv2c_cosimserver_fini();
 // DPI import at CosimCore/CosimCore_DpiPkg.sv:19:53
 DPI int sv2c_cosimserver_init();
+
+#endif
