@@ -8,26 +8,26 @@ using namespace capnp;
 
 kj::Promise<void> CosimServer::list(ListContext context)
 {
-    auto ifaces = context.getResults().initIfaces((unsigned int)_Endpoints.size());
+    auto ifaces = context.getResults().initIfaces((unsigned int)_Reg->EndPoints.size());
     unsigned int ctr = 0u;
-    for (auto i = _Endpoints.begin(); i != _Endpoints.end(); i++)
+    for (auto i = _Reg->EndPoints.begin(); i != _Reg->EndPoints.end(); i++)
     {
-        ifaces[ctr].setTypeID(i->second->GetEsiTypeId());
         ifaces[ctr].setEndpointID(i->first);
+        ifaces[ctr].setTypeID(i->second->GetEsiTypeId());
+        ctr++;
     }
-    context.getResults().setIfaces(ifaces);
     return kj::READY_NOW;
 }
 
 
 kj::Promise<void> CosimServer::open (OpenContext ctxt)
 {
-    auto epIter = _Endpoints.find(ctxt.getParams().getIface().getEndpointID());
-    KJ_REQUIRE(epIter != _Endpoints.end(), "Could not find endpoint");
+    auto epIter = _Reg->EndPoints.find(ctxt.getParams().getIface().getEndpointID());
+    KJ_REQUIRE(epIter != _Reg->EndPoints.end(), "Could not find endpoint");
 
-    auto ep = epIter->second;
-    auto inUse = !ep->SetInUse();
-    KJ_REQUIRE(inUse, "Endpoint in use");
+    auto& ep = epIter->second;
+    auto gotLock = ep->SetInUse();
+    KJ_REQUIRE(gotLock, "Endpoint in use");
 
     ctxt.getResults().setIface(EsiDpiEndpoint::Client(kj::heap<EndPointServer>(ep)));
     return kj::READY_NOW;
@@ -40,7 +40,7 @@ RpcServer::~RpcServer()
 
 void RpcServer::MainLoop(uint16_t port)
 {
-    _RpcServer = new EzRpcServer(kj::heap<CosimServer>(), "*", port);
+    _RpcServer = new EzRpcServer(kj::heap<CosimServer>(&EndPoints), "*", port);
     auto& waitScope = _RpcServer->getWaitScope();
 
     // OK, this is hacky as shit, but it unblocks me and isn't too inefficient

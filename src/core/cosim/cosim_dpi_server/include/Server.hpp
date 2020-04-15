@@ -11,14 +11,14 @@
 
 class EndPointServer : public EsiDpiEndpoint::Server
 {
-    EndPoint* _EndPoint;
+    std::unique_ptr<EndPoint>& _EndPoint;
 public:
 
-    EndPointServer(EndPoint* ep) :
+    EndPointServer(std::unique_ptr<EndPoint>& ep) :
         _EndPoint(ep)
     { }
 
-    EndPoint* GetEndPoint()
+    std::unique_ptr<EndPoint>& GetEndPoint()
     {
         return _EndPoint;
     }
@@ -26,19 +26,15 @@ public:
 
 class CosimServer : public CosimDpiServer::Server
 {
-    std::map<int, EndPoint*> _Endpoints;
+    EndPointRegistry* _Reg;
 
 public:
-    CosimServer()
+    CosimServer(EndPointRegistry* reg) :
+        _Reg(reg)
     { }
 
     kj::Promise<void> list(ListContext ctxt);
     kj::Promise<void> open (OpenContext ctxt);
-
-    void RegisterEndPoint(int ep_id, EndPoint* ep)
-    {
-        _Endpoints[ep_id] = ep;
-    }
 };
 
 class RpcServer
@@ -50,6 +46,8 @@ class RpcServer
     void MainLoop(uint16_t port);
 
 public:
+    EndPointRegistry EndPoints;
+
     RpcServer() :
         _RpcServer(nullptr),
         _MainThread(nullptr),
