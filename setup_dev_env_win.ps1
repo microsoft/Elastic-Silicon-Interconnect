@@ -28,3 +28,13 @@ if ($null -eq $env:VCPKG_ROOT) {
 }
 
 python -m pip install -U pytest
+python -m pip install -U cython
+python -m pip install -U setuptools
+python -m pip install -U pypandoc
+
+python -m pip install --global-option build_ext `
+    --global-option --force-system-libcapnp `
+    --global-option -I --global-option "$env:VCPKG_ROOT/installed/x64-windows/include" `
+    --global-option -L --global-option "$env:VCPKG_ROOT/installed/x64-windows/lib" `
+    --global-option -l --global-option Ws2_32,advapi32 `
+    pycapnp

@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN python3 -m pip install -U pylint
 RUN python3 -m pip install -U pytest
+RUN python3 -m pip install -U cython
+RUN python3 -m pip install -U setuptools
+RUN python3 -m pip install -U pycapnp
 
 # Compile Verilator so that we don't get a 3+ year old version
 WORKDIR /tmp_verilator
