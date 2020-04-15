@@ -12,16 +12,29 @@
 class EndPointServer : public EsiDpiEndpoint::Server
 {
     std::unique_ptr<EndPoint>& _EndPoint;
+    bool _Open;
+
 public:
 
     EndPointServer(std::unique_ptr<EndPoint>& ep) :
-        _EndPoint(ep)
+        _EndPoint(ep),
+        _Open(true)
     { }
+
+    ~EndPointServer()
+    {
+        if (_Open)
+            _EndPoint->ReturnForUse();
+    }
 
     std::unique_ptr<EndPoint>& GetEndPoint()
     {
         return _EndPoint;
     }
+
+    kj::Promise<void> send(SendContext);
+    kj::Promise<void> recv(RecvContext);
+    kj::Promise<void> close(CloseContext);
 };
 
 class CosimServer : public CosimDpiServer::Server

@@ -6,6 +6,36 @@
 using namespace std;
 using namespace capnp;
 
+kj::Promise<void> EndPointServer::close(CloseContext context)
+{
+    KJ_REQUIRE(_Open, "EndPoint closed already");
+    _Open = false;
+    _EndPoint->ReturnForUse();
+    return kj::READY_NOW;
+}
+
+kj::Promise<void> EndPointServer::send(SendContext context)
+{
+    KJ_REQUIRE(_Open, "EndPoint closed already");
+    auto& capnpBlob = context.getParams().getBlob();
+    EndPoint::BlobPtr blob = make_shared<EndPoint::Blob>(
+        capnpBlob.begin(), capnpBlob.end());
+    _EndPoint->PushMessageToSim(blob);
+    return kj::READY_NOW;
+}
+
+kj::Promise<void> EndPointServer::recv(RecvContext context)
+{
+    KJ_REQUIRE(_Open, "EndPoint closed already");
+    KJ_REQUIRE(!context.getParams().getBlock(), "Blocking recv() not supported yet");
+
+    EndPoint::BlobPtr blob;
+    auto msgPresent = _EndPoint->GetMessageToClient(blob);
+    if (msgPresent)
+        context.getResults().setResp(capnp::Data::Builder(blob->data(), blob->size()));
+    return kj::READY_NOW;
+}
+
 kj::Promise<void> CosimServer::list(ListContext context)
 {
     auto ifaces = context.getResults().initIfaces((unsigned int)_Reg->EndPoints.size());

@@ -39,7 +39,7 @@ DPI int sv2c_cosimserver_ep_tryget(unsigned int endpoint_id, const svOpenArrayHa
 
     try
     {
-        shared_ptr<capnp::Data> msg;
+        EndPoint::BlobPtr msg;
         if (server->EndPoints[endpoint_id]->GetMessageToSim(msg)) {
             return -1;
         } else {

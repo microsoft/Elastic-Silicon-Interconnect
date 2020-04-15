@@ -11,7 +11,7 @@ def rpc():
 
 def test_list():
     (cosim, dpi) = rpc()
-    ifaces = cosim.list().wait()
+    ifaces = cosim.list().wait().ifaces
     print (ifaces)
     assert len(ifaces) > 0
 
@@ -31,9 +31,31 @@ def test_write():
     ifaces = cosim.list().wait().ifaces
     print (ifaces)
     print (ifaces[0])
-    ep = cosim.open(ifaces[0]).wait()
-    print (ep)
-    assert ep.iface is not None
+    openResp = cosim.open(ifaces[0]).wait()
+    print (openResp)
+    assert openResp.iface is not None
+    ep = openResp.iface
+    ep.send("test data").wait()
+    ep.close().wait()
+
+def test_read():
+    (cosim, dpi) = rpc()
+    ifaces = cosim.list().wait().ifaces
+    print (ifaces)
+    print (ifaces[0])
+    openResp = cosim.open(ifaces[0]).wait()
+    print (openResp)
+    assert openResp.iface is not None
+    ep = openResp.iface
+    data = ep.recv(False).wait()
+    print (data)
+    assert data is not None
+    ep.close().wait()
 
 if __name__ == "__main__":
-    test_open_close()
+    print ("Testing writes")
+    test_write()
+
+    print ()
+    print ("Testing reads")
+    test_read()
