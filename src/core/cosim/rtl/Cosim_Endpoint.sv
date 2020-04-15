@@ -32,9 +32,9 @@ module Cosim_Endpoint
    output logic DataInReady,
    input  logic [TYPE_SIZE_BITS-1:0] DataIn
 );
-   localparam int TYPE_SIZE_BYTES = int'($ceil(TYPE_SIZE_BITS/8));
+   localparam int TYPE_SIZE_BYTES = int'((TYPE_SIZE_BITS+7)/8);
    localparam int TYPE_SIZE_BITS_DIFF = TYPE_SIZE_BITS % 8; // The number of bits over a byte
-   localparam int TYPE_SIZE_BYTES_FLOOR = int'($floor(TYPE_SIZE_BITS/8));
+   localparam int TYPE_SIZE_BYTES_FLOOR = int'(TYPE_SIZE_BITS/8);
    localparam int TYPE_SIZE_BYTES_FLOOR_IN_BITS = TYPE_SIZE_BYTES_FLOOR * 8;
    bit Initialized;
 
@@ -64,12 +64,16 @@ module Cosim_Endpoint
    begin
       if (rstn && Initialized)
       begin
-         if (DataOutReady)
+         if (DataOutValid && DataOutReady) // A transfer occurred
+         begin
+            DataOutValid = 1'b0;
+         end
+
+         if (!DataOutValid)
          begin
             int data_limit;
             int rc;
 
-            DataOutValid = 1'b0;
             data_limit = TYPE_SIZE_BYTES;
             rc = cosim_ep_tryget(ENDPOINT_ID, DataOutBuffer, data_limit);
             if (rc < 0)
@@ -109,7 +113,7 @@ module Cosim_Endpoint
    // Assign packed output bit array from unpacked byte array
    genvar iOut;
    generate
-      for (iOut=0; iOut<TYPE_SIZE_BYTES-1; iOut++)
+      for (iOut=0; iOut<TYPE_SIZE_BYTES; iOut++)
       begin
          assign DataOut[((iOut+1)*8)-1:iOut*8] = DataOutBuffer[iOut];
       end

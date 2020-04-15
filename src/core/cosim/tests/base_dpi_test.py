@@ -1,5 +1,6 @@
 import capnp
 import os
+import binascii
 
 cosimDir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -35,7 +36,9 @@ def test_write():
     print (openResp)
     assert openResp.iface is not None
     ep = openResp.iface
-    ep.send("test data").wait()
+    data = bytes.fromhex('D9 5E FF')
+    print (f'Sending: {binascii.hexlify(data)}')
+    ep.send(data).wait()
     ep.close().wait()
 
 def test_read():
@@ -47,8 +50,8 @@ def test_read():
     print (openResp)
     assert openResp.iface is not None
     ep = openResp.iface
-    data = ep.recv(False).wait()
-    print (data)
+    data = ep.recv(False).wait().resp
+    print (binascii.hexlify(data))
     assert data is not None
     ep.close().wait()
 

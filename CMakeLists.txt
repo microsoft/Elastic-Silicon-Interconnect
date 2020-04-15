@@ -20,7 +20,7 @@ find_package(CapnProto CONFIG REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(src/core/cosim/cosim_dpi_server)
-add_subdirectory(src/core/cosim/dummy_simulator)
+# add_subdirectory(src/core/cosim/dummy_simulator)
 
 # set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 # set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
