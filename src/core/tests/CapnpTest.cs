@@ -18,7 +18,7 @@ namespace Esi.Core.Tests
 
         public IReadOnlyList<EsiObject> ReadSchema(string resource)
         {
-            return EsiCapnpConvert.ConvertTextSchema(Context, ResolveResource(resource));
+            return EsiCapnpReader.ConvertTextSchema(Context, ResolveResource(resource));
         }
 
     }

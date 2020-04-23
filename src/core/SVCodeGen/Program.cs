@@ -49,11 +49,11 @@ namespace Esi.SVCodeGen
                 IEnumerable<EsiObject> esiTypes;
                 if (txt)
                 {
-                    esiTypes = EsiCapnpConvert.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
+                    esiTypes = EsiCapnpReader.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
                 }
                 else
                 {
-                    esiTypes = EsiCapnpConvert.ConvertFromCGRMessage(esiCtxt, input);
+                    esiTypes = EsiCapnpReader.ConvertFromCGRMessage(esiCtxt, input);
                 }
                 esiCtxt.Log.Information("Completed reading capnp message");
                 esiCtxt.Log.Information("Starting SV interface output");
