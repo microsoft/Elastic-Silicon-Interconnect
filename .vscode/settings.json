@@ -3,4 +3,5 @@
         "./src"
     ],
     "files.eol": "\n",
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
 }
