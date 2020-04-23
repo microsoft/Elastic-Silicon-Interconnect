@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="../common.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../core/core.csproj"/>
+    <ProjectReference Include="../capnp.convert/capnp.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="support_includes/*.hpp">
+      <Link>CppCodeGen/support_includes/%(Filename)%(Extension)</Link>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+</Project>
