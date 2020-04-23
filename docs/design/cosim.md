@@ -26,7 +26,7 @@ to the ESI schema.
 ```mermaid
 graph TB;
     C[Client code]
-    API["ESI typed<br/>(generated) API"]
+    API["ESI typed<br/>CapnProto API"]
     UnAPI["ESI hardware serializer"]
     C --> API
     API --> UnAPI
@@ -44,20 +44,15 @@ graph TB;
 The ESI-generated C++ API has several backend plugins, one of which is the
 cosim backend which talks to a cosim server.
 
-## CapnProto RPC interface
+## ESI-annotated CapnProto schema to normal Capnp schema
 
 ```mermaid
 graph LR;
-    RPC["CapnProto RPC server C++ API"]
-    TypeConv["CapnProto to ESI C struct converter"]
-    FuncMap["RPC to ESI function mapping"]
-    API["ESI typed API"]
-
-    RPC --> TypeConv
-    RPC --> FuncMap
-    FuncMap --> API
-    TypeConv --> API
+    EC["ESI-annotated Capnp schema"]
+    EsiConv["ESI schema model"]
+    CS["ESI-generated Capnp schema"]
+    EC --> EsiConv --> CS
 ```
 
-The CapnProto RPC interface is simply a shim to the ESI generated API. It can
-thus act as a proxy to cosim or hardware.
+Basic idea: write a Capnp-schema to Capnp-schema translator which goes
+through the ESI Type Schema. It would necessarily be lossy.
