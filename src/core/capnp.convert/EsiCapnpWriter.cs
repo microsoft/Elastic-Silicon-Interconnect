@@ -56,13 +56,12 @@ namespace Esi.Capnp
         private void CreateImplicit(EsiSystem sys)
         {
             sys.Traverse(obj => {
-                switch (obj) {
-                    case EsiCompound c:
-                        AddlObjects.Add(c);
-                    break;
-                }
+                // switch (obj) {
+                //     case EsiCompound c:
+                //         AddlObjects.Add(c);
+                //     break;
+                // }
             });
-            // throw new NotImplementedException();
         }
 
         private void AssignIDs(IEnumerable<EsiObject> objs)
@@ -76,20 +75,87 @@ namespace Esi.Capnp
 
         private IReadOnlyList<Node> GetNodes(IEnumerable<EsiObject> objs)
         {
-            return objs.Select(obj =>
-                obj switch {
+            var nameNodes = GetNames(objs);
+            var annotations = GetAnnotations();
+            var typeNodes = objs.Select(obj =>
+                obj switch
+                {
                     EsiStruct st => GetNode(st),
-                    EsiCompound c => GetNode(c),
                     EsiInterface i => GetNode(i),
                 }).ToList();
+            return nameNodes.Concat(annotations).Concat(typeNodes).ToList();
         }
 
-#region ESI Type write methods
+        private IEnumerable<Node> GetAnnotations()
+        {
+            return EsiCapnpConvert.ESIAnnotations.Select(a =>
+                new Node() {
+                    Id = a,
+                    DisplayName = Enum.GetName(typeof(AnnotationIDs), a),
+                    Annotation = new Node.annotation() {
+                        TargetsEnum = true,
+                        TargetsStruct = true,
+                        TargetsField = true,
+                        TargetsUnion = true,
+                    }
+                }
+            );
+        }
+
+        private IEnumerable<Node> GetNames(IEnumerable<EsiObject> objs)
+        {
+            var nameNodes = new Node()
+            {
+                Id = 0xa90c8c4dfeabe4c0,
+                NestedNodes = objs.Select(o => o switch
+                {
+                    EsiNamedType named when !string.IsNullOrWhiteSpace(named.Name) =>
+                        new Node.NestedNode()
+                        {
+                            Id = ObjectToID[named],
+                            Name = named.Name
+                        },
+                    _ => null
+                }).Where(n => n != null).ToList(),
+            };
+            var annotationNames = new Node()
+            {
+                Id = 0xb90c8c4dfeabe4c1,
+                NestedNodes = EsiCapnpConvert.ESIAnnotations.Select(a =>
+                    new Node.NestedNode() {
+                        Id = a,
+                        Name = Enum.GetName(typeof(EsiCapnpConvert.AnnotationIDs), a),
+                    }).Where(n => n != null).ToList(),
+            };
+            return new Node[] { annotationNames, nameNodes };
+        }
+
+        #region ESI Type write methods
         private Node GetNode(EsiCompound c)
         {
-            // TODO
+            var fields = new List<Field>();
+            if (c.Signed)
+                fields.Append(new Field() {
+                    Name = "sign",
+                    Slot = new Field.slot() { Type = GetType(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool)) }
+                });
+            if (c.Whole > 0)
+                fields.Append(new Field() {
+                    Name = c.Type == EsiCompound.CompoundType.EsiFloat ? "exp" : "whole",
+                    Slot = new Field.slot() { Type = GetType(new EsiInt(c.Whole, false)) }
+                });
+            if (c.Fractional > 0)
+                fields.Append(new Field() {
+                    Name = c.Type == EsiCompound.CompoundType.EsiFloat ? "mant" : "fract",
+                    Slot = new Field.slot() { Type = GetType(new EsiInt(c.Fractional, false)) }
+                });
+
             return new Node() {
-                Id = ObjectToID[c]
+                Id = ObjectToID[c],
+                DisplayName = c.GetDescriptionTree(),
+                Struct = new Node.@struct() {
+                    Fields = fields
+                }
             };
         }
 
@@ -97,6 +163,7 @@ namespace Esi.Capnp
         {
             return new Node() {
                 Id = ObjectToID[st],
+                DisplayName = $"struct:{st.Name}",
                 Struct = new Node.@struct() {
                     Fields = st.Fields.Select(f => GetField(f)).ToList()
                 }
@@ -129,7 +196,15 @@ namespace Esi.Capnp
                     break;
                 // In the general case, refer to a pre-created struct
                 case EsiCompound c:
-                    ret.Group = new Field.group() { TypeId = ObjectToID[c] };
+                    ret.Slot = new Field.slot () {
+                        Type = new CapnpGen.Type() {
+                            Struct = new CapnpGen.Type.@struct() {
+                                TypeId = c.Type == EsiCompound.CompoundType.EsiFloat ?
+                                    (ulong)AnnotationIDs.FLOATING_POINT_VALUE :
+                                    (ulong)AnnotationIDs.FIXED_POINT_VALUE
+                            }
+                        }
+                    };
                     break;
 
                 case EsiStruct st:
@@ -142,7 +217,32 @@ namespace Esi.Capnp
                     ret.Slot = new Field.slot() { Type = GetType(refType) };
                     break;
             }
+
+            ret.Annotations = GetAnnotations(f.Type);
             return ret;
+        }
+
+        private IReadOnlyList<Annotation> GetAnnotations(EsiType type)
+        {
+            var ret = new List<Annotation>();
+            void Add(AnnotationIDs id, Value v)
+            {
+                if (v == null)
+                    v = new Value () { which = Value.WHICH.Void };
+                ret.Add(new Annotation() {
+                    Id = (ulong)id,
+                    Value = v
+                });
+            }
+            switch (type) {
+                case EsiInt i:
+                    Add(AnnotationIDs.BITS, new Value() { Uint64 = i.Bits } );
+                    break;
+                case EsiStruct st:
+                    Add(AnnotationIDs.INLINE, null);
+                    break;
+            };
+            return ret.Count == 0 ? null : ret;
         }
 
         private CapnpGen.Type GetType(EsiValueType valueType)

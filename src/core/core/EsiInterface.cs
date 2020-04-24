@@ -55,7 +55,7 @@ namespace Esi.Schema
 
         public void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
         {
-            throw new System.NotImplementedException();
+            // throw new System.NotImplementedException();
         }
 
         public bool StructuralEquals(EsiInterface that)

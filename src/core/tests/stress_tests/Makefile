@@ -2,10 +2,15 @@
 include ../capnp.mk
 
 
-investData: stress1_synth.capnp.txt stress1.capnp.txt stress1_fail.capnp.txt schema1_synth.esi.capnp.txt
+investData: stress1_synth.capnp.txt stress1.capnp.txt stress1_fail.capnp.txt
 
 run: stress1_synth.capnp.bin
 	dotnet run --project ../../SVCodeGen -- -i stress1_synth.capnp.bin
+
+write:
+	-dotnet test ../../ --filter name=ReadWriteCompareStress1Synth
+	capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest < schema1_synth.esi.capnp > schema1_synth.esi.capnp.txt
+	capnpc-c++ < schema1_synth.esi.capnp
 
 clean:
 	rm -f *.txt *.bin *.esi.svh *.esi.sv

@@ -55,5 +55,19 @@ namespace Esi
         {
             Objects.ForEach(obj => {obj.Traverse(A);});
         }
+
+        public string GetDescriptionTree()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("EsiSystem objects [");
+            Objects.ForEach(o => {
+                sb.Append("  ");
+                o.GetDescriptionTree(sb, 1);
+                sb.AppendLine();
+                sb.AppendLine();
+            });
+            sb.AppendLine("]");
+            return sb.ToString();
+        }
     }
 }
