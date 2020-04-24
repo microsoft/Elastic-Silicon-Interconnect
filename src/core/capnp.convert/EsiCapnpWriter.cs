@@ -36,7 +36,10 @@ namespace Esi.Capnp
 
         private CodeGeneratorRequest GetCGR(EsiSystem sys)
         {
-            throw new NotImplementedException();
+            return new CodeGeneratorRequest()
+            {
+
+            };
         }
     }
 }

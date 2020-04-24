@@ -30,6 +30,18 @@ namespace Esi.Schema
                 this.Params = Params.ToArray();
                 this.Returns = Returns.ToArray();
             }
+
+            public bool StructuralEquals(Method that)
+            {
+                return this.Name == that.Name &&
+                    this.Params.ZipAllTrue(that.Params, ParamReturnEqual) &&
+                    this.Returns.ZipAllTrue(that.Returns, ParamReturnEqual);
+            }
+
+            private bool ParamReturnEqual((string Name, EsiType Type) a, (string Name, EsiType Type) b)
+            {
+                return a.Name == b.Name && a.Type.StructuralEquals(b.Type);
+            }
         }
 
         public string Name { get; }
@@ -44,6 +56,12 @@ namespace Esi.Schema
         public void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
         {
             throw new System.NotImplementedException();
+        }
+
+        public bool StructuralEquals(EsiInterface that)
+        {
+            return this.Name == that.Name &&
+                this.Methods.ZipAllTrue(that.Methods, (a, b) => a.StructuralEquals(b));
         }
     }
 }

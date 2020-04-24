@@ -34,14 +34,20 @@ namespace Esi
             this.Objects = Objects.ToArray();
         }
 
+        /// <summary>
+        /// This currently assumes the 'Objects' collections are in the same
+        /// order, which is only true in select cases.
+        /// </summary>
         public bool StructuralEquals(EsiSystem that)
         {
             if (this.Objects.Count() != that.Objects.Count())
                 return false;
-            return Objects.Zip(that.Objects, (a, b) => 
+            return Objects.ZipAllTrue(that.Objects, (a, b) => 
                 (a, b) switch {
-                    (EsiType at, EsiType bt) => at.StructuralEquals(bt)
-                }).All(x => x);
+                    (EsiType at, EsiType bt) => at.StructuralEquals(bt),
+                    (EsiInterface ai, EsiInterface bi) => ai.StructuralEquals(bi),
+                    _ when a.GetType() != b.GetType() => false
+                });
         }
     }
 }

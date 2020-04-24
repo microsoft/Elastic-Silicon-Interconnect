@@ -61,5 +61,12 @@ namespace Esi
                 F(i);
             }
         }
+
+        public static bool ZipAllTrue<T>(this IEnumerable<T> a, IEnumerable<T> b, Func<T, T, bool> F)
+        {
+            return a.Count() == b.Count() &&
+                a.Zip(b, F).All(x => x);
+        }
+
     }
 }

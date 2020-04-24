@@ -25,9 +25,9 @@ namespace Esi.Core.Tests
             writer.Write(origSys, file);
 
             var newSys = EsiCapnpReader.ReadFromCGR(C, file);
+            Assert.True(newSys.StructuralEquals(newSys));
+            Assert.True(origSys.StructuralEquals(origSys));
             Assert.True(origSys.StructuralEquals(newSys));
         }
-
-
     }
 }
