@@ -74,5 +74,11 @@ namespace Esi.Schema
     public abstract partial class EsiTypeParent : EsiType
     {
         public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
+        public string GetDescriptionTree()
+        {
+            var sb = new StringBuilder();
+            GetDescriptionTree(sb, 0);
+            return sb.ToString();
+        }
     }
 }

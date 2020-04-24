@@ -170,12 +170,11 @@ namespace Esi.Capnp
                 case Node.WHICH.Interface:
                     return ConvertInterface(node.Id);
                 default:
-                    return new CapnpEsiErrorType(() => {
-                        C.Log.Error(
-                            "Type {type} not yet supported. ({loc})",
-                            Enum.GetName(typeof(Node.WHICH), node.which),
-                            IDtoNames[node.Id]);
-                    });
+                    C.Log.Warning(
+                        "Type {type} not yet supported. ({loc})",
+                        Enum.GetName(typeof(Node.WHICH), node.which),
+                        IDtoNames[node.Id]);
+                    return null;
             }
         }
 
@@ -518,6 +517,7 @@ namespace Esi.Capnp
         public CapnpEsiErrorType(Action A)
         {
             this.A = A;
+            A();
         }
 
         public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
