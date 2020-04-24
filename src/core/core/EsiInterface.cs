@@ -63,5 +63,10 @@ namespace Esi.Schema
             return this.Name == that.Name &&
                 this.Methods.ZipAllTrue(that.Methods, (a, b) => a.StructuralEquals(b));
         }
+
+        public void Traverse(Action<EsiObject> action)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

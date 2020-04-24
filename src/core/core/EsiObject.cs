@@ -2,6 +2,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Esi.Schema;
+using System;
 
 #nullable enable
 namespace Esi
@@ -18,5 +19,7 @@ namespace Esi
             GetDescriptionTree(sb, indent);
             return sb.ToString();
         }
+
+        void Traverse(Action<EsiObject> action);
     }
 }

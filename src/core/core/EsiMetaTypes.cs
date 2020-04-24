@@ -80,5 +80,10 @@ namespace Esi.Schema
             GetDescriptionTree(sb, 0);
             return sb.ToString();
         }
+
+        public virtual void Traverse(Action<EsiObject> action)
+        {
+            action(this);
+        }
     }
 }

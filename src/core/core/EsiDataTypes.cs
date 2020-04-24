@@ -164,6 +164,12 @@ namespace Esi.Schema
             Inner.GetDescriptionTree(stringBuilder, indent);
             stringBuilder.Append($" [{Length}] ");
         }
+
+        public override void Traverse(Action<EsiObject> action)
+        {
+            Inner.Traverse(action);
+            action(this);
+        }
     }
 
     /// <summary>
@@ -211,6 +217,13 @@ namespace Esi.Schema
                 Type.GetDescriptionTree(stringBuilder, indent);
                 stringBuilder.AppendLine(";");
             }
+
+            public override void Traverse(Action<EsiObject> action)
+            {
+                Type.Traverse(action);
+                action(this);
+            }
+
         }
 
         public string? Name { get; }
@@ -239,6 +252,13 @@ namespace Esi.Schema
             }
             stringBuilder.Indent(indent).Append("}");
         }
+
+        public override void Traverse(Action<EsiObject> action)
+        {
+            Fields.ForEach(f => {f.Traverse(action);});
+            action(this);
+        }
+
     }
 
     /// <summary>
@@ -313,6 +333,12 @@ namespace Esi.Schema
         {
             Inner.GetDescriptionTree(stringBuilder, indent);
             stringBuilder.Append($" [{(IsFixed ? "fixed" : "")}] ");
+        }
+
+        public override void Traverse(Action<EsiObject> action)
+        {
+            Inner.Traverse(action);
+            action(this);
         }
     }
 

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Esi.Schema;
+using System;
 
 #nullable enable
 namespace Esi
@@ -48,6 +49,11 @@ namespace Esi
                     (EsiInterface ai, EsiInterface bi) => ai.StructuralEquals(bi),
                     _ when a.GetType() != b.GetType() => false
                 });
+        }
+
+        public void Traverse(Action<EsiObject> A)
+        {
+            Objects.ForEach(A);
         }
     }
 }
