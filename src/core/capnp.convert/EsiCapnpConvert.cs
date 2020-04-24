@@ -43,7 +43,16 @@ namespace Esi.Capnp
         // Construct a set of all the known Annotations
         public readonly static ISet<ulong> ESIAnnotations = new HashSet<ulong>(
             Enum.GetValues(typeof(AnnotationIDs)).Cast<ulong>());
-        
+
+        /// <summary>
+        /// ESI context member variables are generally called 'C' so it's easier to log stuff
+        /// </summary>
+        protected EsiContext C;
+
+        public EsiCapnpConvert(EsiContext ctxt)
+        {
+            this.C = ctxt;
+        }
     }
 
 }

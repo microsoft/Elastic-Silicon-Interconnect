@@ -127,9 +127,9 @@ namespace Esi.Core.Tests
             ShouldFail = true;
 
             var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(11, Context.Errors);
-            Assert.AreEqual(0, Context.Fatals);
-            Assert.True(Context.Failed);
+            Assert.AreEqual(11, C.Errors);
+            Assert.AreEqual(0, C.Fatals);
+            Assert.True(C.Failed);
 
             // Assert.Fail("Dummy fail to print out stdout");
         }

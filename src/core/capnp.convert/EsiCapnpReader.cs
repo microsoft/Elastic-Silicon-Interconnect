@@ -41,6 +41,15 @@ namespace Esi.Capnp
             return Convert(ctxt, reader);
         }
 
+        public static EsiSystem ReadFromCGR(EsiContext context, FileInfo file)
+        {
+            using (var stream = file.OpenRead())
+            {
+                var objs = ConvertFromCGRMessage(context, stream);
+                return new EsiSystem(objs);
+            }
+        }
+
         public static IReadOnlyList<EsiObject> ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
             var exeDir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
@@ -94,15 +103,10 @@ namespace Esi.Capnp
         protected Dictionary<UInt64, EsiObject> IDtoType
             = new Dictionary<UInt64, EsiObject>();
 
-        /// <summary>
-        /// ESI context member variables are generally called 'C' so it's easier to log stuff
-        /// </summary>
-        protected EsiContext C;
 
-        public EsiCapnpReader(EsiContext ctxt)
-        {
-            this.C = ctxt;
-        }
+
+        public EsiCapnpReader(EsiContext ctxt) : base(ctxt)
+        {    }
         
         /// <summary>
         /// Main entry point. Convert a CodeGeneratorRequest to a list of EsiTypes.

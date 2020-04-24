@@ -33,5 +33,15 @@ namespace Esi
         {
             this.Objects = Objects.ToArray();
         }
+
+        public bool StructuralEquals(EsiSystem that)
+        {
+            if (this.Objects.Count() != that.Objects.Count())
+                return false;
+            return Objects.Zip(that.Objects, (a, b) => 
+                (a, b) switch {
+                    (EsiType at, EsiType bt) => at.StructuralEquals(bt)
+                }).All(x => x);
+        }
     }
 }
