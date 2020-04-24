@@ -66,7 +66,7 @@ namespace Esi.Schema
 
         public void Traverse(Action<EsiObject> action)
         {
-            throw new NotImplementedException();
+            action(this);
         }
     }
 }

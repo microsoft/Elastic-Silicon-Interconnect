@@ -53,7 +53,7 @@ namespace Esi
 
         public void Traverse(Action<EsiObject> A)
         {
-            Objects.ForEach(A);
+            Objects.ForEach(obj => {obj.Traverse(A);});
         }
     }
 }

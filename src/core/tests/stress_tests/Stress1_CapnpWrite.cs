@@ -21,7 +21,7 @@ namespace Esi.Core.Tests
         {
             var origSys = new EsiSystem(ReadSchema("stress_tests/stress1_synth.capnp"));
             var writer = new EsiCapnpWriter(C);
-            var file = new FileInfo("schema1_synth.esi.capnp");
+            var file =   new FileInfo("schema1_synth.esi.capnp");
             writer.Write(origSys, file);
 
             var newSys = EsiCapnpReader.ReadFromCGR(C, file);

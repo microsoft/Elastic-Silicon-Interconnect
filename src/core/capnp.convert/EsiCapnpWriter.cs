@@ -15,6 +15,8 @@ namespace Esi.Capnp
     {
         protected Dictionary<EsiObject, UInt64> ObjectToID =
             new Dictionary<EsiObject, ulong>();
+        protected HashSet<EsiObject> AddlObjects =
+            new HashSet<EsiObject>();
 
         public EsiCapnpWriter(EsiContext ctxt): base(ctxt)
         {    }
@@ -43,37 +45,54 @@ namespace Esi.Capnp
         private CodeGeneratorRequest GetCGR(EsiSystem sys)
         {
             CreateImplicit(sys);
-            AssignIDs(sys);
+            var objs = sys.Objects.Concat(AddlObjects);
+            AssignIDs(objs);
             return new CodeGeneratorRequest()
             {
-                Nodes = GetNodes(sys)
+                Nodes = GetNodes(objs)
             };
         }
 
         private void CreateImplicit(EsiSystem sys)
         {
+            sys.Traverse(obj => {
+                switch (obj) {
+                    case EsiCompound c:
+                        AddlObjects.Add(c);
+                    break;
+                }
+            });
             // throw new NotImplementedException();
         }
 
-        private void AssignIDs(EsiSystem sys)
+        private void AssignIDs(IEnumerable<EsiObject> objs)
         {
             UInt64 ctr = 0xc2c4418e9ca66d10;
-            sys.Objects.ForEach(obj => {
+            objs.ForEach(obj => {
                 ctr += ctr * ctr;
                 ObjectToID[obj] = ctr;
             });
         }
 
-        private IReadOnlyList<Node> GetNodes(EsiSystem sys)
+        private IReadOnlyList<Node> GetNodes(IEnumerable<EsiObject> objs)
         {
-            return sys.Objects.Select(obj =>
+            return objs.Select(obj =>
                 obj switch {
                     EsiStruct st => GetNode(st),
+                    EsiCompound c => GetNode(c),
                     EsiInterface i => GetNode(i),
                 }).ToList();
         }
 
 #region ESI Type write methods
+        private Node GetNode(EsiCompound c)
+        {
+            // TODO
+            return new Node() {
+                Id = ObjectToID[c]
+            };
+        }
+
         private Node GetNode(EsiStruct st)
         {
             return new Node() {
@@ -134,7 +153,18 @@ namespace Esi.Capnp
                     return new CapnpGen.Type() {
                         Struct = new CapnpGen.Type.@struct() { TypeId = ObjectToID[st] }
                     };
-
+                case EsiInt i when i.Bits > 64:
+                    C.Log.Warning($"No CapnProto type can fit {i.GetDescriptionTree()}");
+                    return null;
+                case EsiArray a:
+                    C.Log.Warning("There currently does not exist an inline array type in CapnProto");
+                    return null;
+                case EsiList l:
+                    C.Log.Warning("There does not exist an inline list type in CapnProto. Must use a pointer to it.");
+                    return null;
+                case EsiCompound c:
+                    C.Log.Error("Internal error: EsiCompounds are not handled here!");
+                    return null;
             }
             return new CapnpGen.Type() {
                 which = valueType switch {
@@ -153,11 +183,7 @@ namespace Esi.Capnp
                     EsiInt i when !i.Signed && i.Bits <= 32 => CapnpGen.Type.WHICH.Uint32,
                     EsiInt i when !i.Signed && i.Bits <= 64 => CapnpGen.Type.WHICH.Uint64,
 
-                    EsiInt i => throw new EsiCapnpConvertException($"No CapnProto type can fit {i.GetDescriptionTree()}"),
-                    EsiArray a => throw new EsiCapnpConvertException("There currently does not exist an inline array type in CapnProto"),
-                    EsiList l => throw new EsiCapnpConvertException("There does not exist an inline list type in CapnProto. Must use a pointer to it."),
-                    EsiCompound c => throw new EsiCapnpConvertException("Internal error: EsiCompounds are not handled here!"),
-                    EsiStruct st => throw new EsiCapnpConvertException("Internal error: structs are not handled here!"),
+
                 }
             };
         }
