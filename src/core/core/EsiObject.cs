@@ -20,6 +20,6 @@ namespace Esi
             return sb.ToString();
         }
 
-        void Traverse(Action<EsiObject> action);
+        void Traverse(Action<EsiObject> pre, Action<EsiObject> post);
     }
 }

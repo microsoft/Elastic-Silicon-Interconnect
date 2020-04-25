@@ -31,17 +31,18 @@ namespace Esi.Schema
                 this.Returns = Returns.ToArray();
             }
 
-            public bool StructuralEquals(Method that)
+            public bool StructuralEquals(Method that, bool includeNames)
             {
+                bool ParamReturnEqual((string Name, EsiType Type) a, (string Name, EsiType Type) b)
+                {
+                    return a.Name == b.Name && a.Type.StructuralEquals(b.Type, includeNames);
+                }
+
                 return this.Name == that.Name &&
                     this.Params.ZipAllTrue(that.Params, ParamReturnEqual) &&
                     this.Returns.ZipAllTrue(that.Returns, ParamReturnEqual);
             }
 
-            private bool ParamReturnEqual((string Name, EsiType Type) a, (string Name, EsiType Type) b)
-            {
-                return a.Name == b.Name && a.Type.StructuralEquals(b.Type);
-            }
         }
 
         public string Name { get; }
@@ -58,15 +59,16 @@ namespace Esi.Schema
             // throw new System.NotImplementedException();
         }
 
-        public bool StructuralEquals(EsiInterface that)
+        public bool StructuralEquals(EsiInterface that, bool includeNames = false)
         {
             return this.Name == that.Name &&
-                this.Methods.ZipAllTrue(that.Methods, (a, b) => a.StructuralEquals(b));
+                this.Methods.ZipAllTrue(that.Methods, (a, b) => a.StructuralEquals(b, includeNames));
         }
 
-        public void Traverse(Action<EsiObject> action)
+        public void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
         {
-            action(this);
+            pre(this);
+            post(this);
         }
     }
 }

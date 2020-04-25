@@ -168,7 +168,7 @@ namespace Esi.Core.Tests
             // Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
 
             Assert.True(ComputeParam1Type.StructuralEquals(comp.Params[0].Type));
-            Assert.True(ComputeParam2Type.StructuralEquals(comp.Params[1].Type));
+            Assert.True(ComputeParam2Type.StructuralEquals(comp.Params[1].Type, includeNames: true));
             Assert.True(comp.Returns[0].Type.StructuralEquals(EsiCompound.SingletonFor(
                 Type: EsiCompound.CompoundType.EsiFloat,
                 Signed: true,

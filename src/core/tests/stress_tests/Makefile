@@ -9,7 +9,7 @@ run: stress1_synth.capnp.bin
 
 write:
 	-dotnet test ../../ --filter name=ReadWriteCompareStress1Synth
-	capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest < schema1_synth.esi.capnp > schema1_synth.esi.capnp.txt
+	# capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest < schema1_synth.esi.capnp > schema1_synth.esi.capnp.txt
 	capnpc-c++ < schema1_synth.esi.capnp
 
 clean:

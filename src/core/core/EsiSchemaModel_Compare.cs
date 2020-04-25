@@ -14,6 +14,7 @@ namespace Esi.Schema
         /// </summary>
         public virtual bool StructuralEquals(
             EsiType that,
+            bool includeNames = false,
             IDictionary<EsiType, EsiType?>? objMap = null)
         {
             if (that == null)
@@ -49,7 +50,7 @@ namespace Esi.Schema
                         else
                         {
                             objMap[thisFieldEsi] = thatFieldEsi;
-                            if (!thisFieldEsi.StructuralEquals(thatFieldEsi, objMap))
+                            if (!thisFieldEsi.StructuralEquals(thatFieldEsi, includeNames, objMap))
                                 return false;
                         }
                     }
@@ -68,12 +69,19 @@ namespace Esi.Schema
                         IEnumerator e2 = thatCollection.GetEnumerator();
                         while (e1.MoveNext())
                         {
-                            if (!(e2.MoveNext() && StructuralEquals(e1.Current, e2.Current, objMap)))
+                            if (!(e2.MoveNext() && StructuralEquals(e1.Current, e2.Current, includeNames, objMap)))
                                 return false;
                         }
                         if (e2.MoveNext())
                             return false;
                     }
+                }
+                else if (this is EsiNamedType &&
+                         that is EsiNamedType &&
+                         prop.Name == "Name" &&
+                         !includeNames)
+                {
+                    // Don't include names
                 }
                 else
                 {
@@ -87,12 +95,12 @@ namespace Esi.Schema
             return true;
         }
 
-        protected static bool StructuralEquals(object thisValue, object thatValue, IDictionary<EsiType, EsiType?> objMap)
+        protected static bool StructuralEquals(object thisValue, object thatValue, bool includeNames, IDictionary<EsiType, EsiType?> objMap)
         {
             if (thisValue is EsiType e1 &&
                 thatValue is EsiType e2)
             {
-                return e1.StructuralEquals(e2, objMap);
+                return e1.StructuralEquals(e2, includeNames, objMap);
             }
             if ((thisValue != null || thatValue != null) &&
                  thisValue?.Equals(thatValue) != true)

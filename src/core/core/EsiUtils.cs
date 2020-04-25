@@ -68,5 +68,11 @@ namespace Esi
                 a.Zip(b, F).All(x => x);
         }
 
+        public static void For(this long Iters, Action<long> action)
+        {
+            for (long i=0; i<Iters; i++)
+                action(i);
+        }
+
     }
 }

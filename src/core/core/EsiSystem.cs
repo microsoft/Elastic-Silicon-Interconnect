@@ -39,21 +39,17 @@ namespace Esi
         /// This currently assumes the 'Objects' collections are in the same
         /// order, which is only true in select cases.
         /// </summary>
-        public bool StructuralEquals(EsiSystem that)
+        public bool StructuralEquals(EsiSystem that, bool includeNames = false)
         {
-            if (this.Objects.Count() != that.Objects.Count())
+            if (this.NamedTypes.Count() != that.NamedTypes.Count())
                 return false;
-            return Objects.ZipAllTrue(that.Objects, (a, b) => 
-                (a, b) switch {
-                    (EsiType at, EsiType bt) => at.StructuralEquals(bt),
-                    (EsiInterface ai, EsiInterface bi) => ai.StructuralEquals(bi),
-                    _ when a.GetType() != b.GetType() => false
-                });
+            return this.NamedTypes.Values.ZipAllTrue(that.NamedTypes.Values, (a, b) => 
+                a.StructuralEquals(b, includeNames));
         }
 
-        public void Traverse(Action<EsiObject> A)
+        public void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
         {
-            Objects.ForEach(obj => {obj.Traverse(A);});
+            Objects.ForEach(obj => obj.Traverse(pre, post) );
         }
 
         public string GetDescriptionTree()

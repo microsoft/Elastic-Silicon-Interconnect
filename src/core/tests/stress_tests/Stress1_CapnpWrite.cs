@@ -29,7 +29,7 @@ namespace Esi.Core.Tests
             writer.Write(origSys, file);
 
             C.Log.Information("Reading mutated cgr");
-            var newSys = EsiCapnpReader.ReadFromCGR(C, file);
+            var newSys = new EsiSystem(ReadSchema("stress_tests/schema1_synth.esi.capnp"));
             var newSysFile = ResolveResource("stress_tests/stress1_synth.trans.esimodel.txt");
             File.WriteAllText(newSysFile.FullName, newSys.GetDescriptionTree());
             Assert.True(newSys.StructuralEquals(newSys));

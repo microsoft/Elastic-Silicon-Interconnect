@@ -28,7 +28,7 @@ namespace Esi.Schema
     /// </summary>
     public interface EsiType : EsiObject
     {
-        bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+        bool StructuralEquals(EsiType that, bool includeNames = false, IDictionary<EsiType, EsiType?>? objMap = null);
     }
     
     /// <summary>
@@ -81,9 +81,10 @@ namespace Esi.Schema
             return sb.ToString();
         }
 
-        public virtual void Traverse(Action<EsiObject> action)
+        public virtual void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
         {
-            action(this);
+            pre(this);
+            post(this);
         }
     }
 }
