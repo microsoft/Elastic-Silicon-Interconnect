@@ -7,15 +7,22 @@ struct Example {
 
     exampleGroup :group {
         houseNumber @1 :UInt32;
+        apt @3 :UInt32;
         #street @2 :Text;
         #city @3 :Text $ESI.inline;
     }
+
+    after @2 :UInt16;
 }
 
 struct Polynomial3 { # ax^2 + bx + c
     a @0 :Int32 $ESI.bits(24);
     b @1 :UInt32 $ESI.bits(40);
-    c @2 :Float32 $ESI.float(signed = true, exp = 3, mant = 10);
+        c @2 :Float32 $ESI.float(signed = true, exp = 3, mant = 10);
+        d @3 :Float32 $ESI.float(signed = true, exp = 3, mant = 10);
+    g :group { 
+        e @4 :Float32 $ESI.float(signed = true, exp = 3, mant = 10);
+    }
 }
 
 struct Shape {
