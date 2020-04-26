@@ -12,6 +12,10 @@ namespace Esi.Schema
         /// <summary>
         /// Reflection-based equality comparison which handles cycles
         /// </summary>
+        /// <param name="that">Object against which to compare</param>
+        /// <param name="includeNames">Match names as well?</param>
+        /// <param name="objMap">Cache results thus far to be able to handle cycles</param>
+        /// <returns></returns>
         public virtual bool StructuralEquals(
             EsiType that,
             bool includeNames = false,

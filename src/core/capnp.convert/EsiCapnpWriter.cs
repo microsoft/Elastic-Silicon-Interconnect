@@ -10,7 +10,7 @@ using Esi.Schema;
 namespace Esi.Capnp
 {
     /// <summary>
-    /// Write a capnp schema message from an ESI schema
+    /// Write a capnp schema message from a textual ESI schema
     /// </summary>
     public class EsiCapnpWriter : EsiCapnpConvert
     {
@@ -47,6 +47,8 @@ namespace Esi.Capnp
 
         public void Write(EsiSystem sys)
         {
+            // Write the header
+            // FIXME: Hardcoded ID
             Writer.WriteLine(
 @"####################
 #### ESI-compatible auto-generated schema
@@ -59,16 +61,22 @@ using ESI = import ""/EsiCoreAnnotations.capnp"";
 
             sys.Objects.ForEach(obj => {
                 switch (obj) {
-                    case EsiNamedType named when !string.IsNullOrWhiteSpace(named.Name):
-                        Write(named, 0);
+                    case EsiStruct st when !string.IsNullOrWhiteSpace(st.Name):
+                        Write(st, 0);
                         break;
                 }
             });
         }
 
-        protected void Write(EsiType type, ushort codeOrder)
+        /// <summary>
+        /// Write a type as capnp text
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="codeOrder"></param>
+        protected void Write(EsiStruct st, ushort codeOrder)
         {
-            type.Traverse (
+            // Use the traverse method to do the recursion
+            st.Traverse (
                 pre: obj => {
                     switch (obj)
                     {
@@ -89,11 +97,27 @@ using ESI = import ""/EsiCoreAnnotations.capnp"";
                         case EsiStruct.StructField f:
                             W($"{f.Name} @{codeOrder++} :");
                             break;
+                        case EsiContainerType containerType when containerType.Inner is EsiNamedType:
+                            containerType = containerType.WithInner(new EsiReferenceType(containerType.Inner));
+                            Writer.Write($"{GetSimpleKeyword(containerType)} {GetAnnotation(containerType)} $ESI.inline()");
+                            Writer.WriteLine(";");
+                            break;
+                        case EsiContainerType containerType when containerType.Inner is EsiReferenceType refType:
+                            if (refType is EsiNamedType named)
+                            {
+                                Writer.Write($"{named.Name} $ESI.inline()");
+                                Writer.WriteLine(";");
+                            } else
+                            {
+                                C.Log.Error("References to unnamed types are not supported by CapnProto schemas!");
+                            }
+                            break;
                         case EsiValueType valueType:
-                            Writer.Write(GetSimpleKeyword(valueType));
+                            Writer.Write($"{GetSimpleKeyword(valueType)} {GetAnnotation(valueType)}");
                             Writer.WriteLine(";");
                             break;
                     }
+                    return !(obj is EsiContainerType);
                 },
                 post: obj => {
                     switch (obj)
@@ -116,14 +140,14 @@ using ESI = import ""/EsiCoreAnnotations.capnp"";
                     EsiPrimitive p when p.Type == EsiPrimitive.PrimitiveType.EsiByte => "UInt8",
                     EsiPrimitive p when p.Type == EsiPrimitive.PrimitiveType.EsiVoid => "Void",
 
-                    EsiInt i when i.Signed && i.Bits <= 8 => $"Int8 $ESI.bits({i.Bits})",
-                    EsiInt i when i.Signed && i.Bits <= 16 => $"Int16 $ESI.bits({i.Bits})",
-                    EsiInt i when i.Signed && i.Bits <= 32 => $"Int32 $ESI.bits({i.Bits})",
-                    EsiInt i when i.Signed && i.Bits <= 64 => $"Int64 $ESI.bits({i.Bits})",
-                    EsiInt i when !i.Signed && i.Bits <= 8 => $"UInt8 $ESI.bits({i.Bits})",
-                    EsiInt i when !i.Signed && i.Bits <= 16 => $"UInt16 $ESI.bits({i.Bits})",
-                    EsiInt i when !i.Signed && i.Bits <= 32 => $"UInt32 $ESI.bits({i.Bits})",
-                    EsiInt i when !i.Signed && i.Bits <= 64 => $"UInt64 $ESI.bits({i.Bits})",
+                    EsiInt i when i.Signed && i.Bits <= 8 => $"Int8",
+                    EsiInt i when i.Signed && i.Bits <= 16 => $"Int16",
+                    EsiInt i when i.Signed && i.Bits <= 32 => $"Int32",
+                    EsiInt i when i.Signed && i.Bits <= 64 => $"Int64",
+                    EsiInt i when !i.Signed && i.Bits <= 8 => $"UInt8",
+                    EsiInt i when !i.Signed && i.Bits <= 16 => $"UInt16",
+                    EsiInt i when !i.Signed && i.Bits <= 32 => $"UInt32",
+                    EsiInt i when !i.Signed && i.Bits <= 64 => $"UInt64",
 
                     EsiCompound c when
                         c.Type == EsiCompound.CompoundType.EsiFloat && c.Signed &&
@@ -134,9 +158,36 @@ using ESI = import ""/EsiCoreAnnotations.capnp"";
                         c.Whole == 11 && c.Fractional == 52 =>
                             "Float64",
                     EsiCompound c when c.Type == EsiCompound.CompoundType.EsiFloat =>
-                        $"ESI.FloatingPointValue $ESI.float(signed = {(c.Signed?"true":"false")}, exp = {c.Whole}, mant = {c.Fractional})",
+                        $"ESI.FloatingPointValue",
                     EsiCompound c when c.Type == EsiCompound.CompoundType.EsiFixed =>
-                        $"ESI.FixedPointValue $ESI.fixed(signed = {(c.Signed?"true":"false")}, whole = {c.Whole}, fraction = {c.Fractional})",
+                        $"ESI.FixedPointValue",
+
+                    EsiArray a when a.Inner is EsiNamedType st => $"List({st.Name})",
+                    EsiArray a when a.Inner is EsiValueType vt => $"List({GetSimpleKeyword(vt)})",
+            };
+        }
+
+        private string GetAnnotation(EsiValueType valueType)
+        {
+            return valueType switch {
+                    EsiPrimitive p => "",
+                    EsiInt i => $"$ESI.bits({i.Bits})",
+                    EsiStruct st => "$ESI.inline()",
+
+                    EsiCompound c when
+                        c.Type == EsiCompound.CompoundType.EsiFloat && c.Signed &&
+                        c.Whole == 8 && c.Fractional == 23 =>
+                            "",
+                    EsiCompound c when
+                        c.Type == EsiCompound.CompoundType.EsiFloat && c.Signed &&
+                        c.Whole == 11 && c.Fractional == 52 =>
+                            "",
+                    EsiCompound c when c.Type == EsiCompound.CompoundType.EsiFloat =>
+                        $"$ESI.float(signed = {(c.Signed?"true":"false")}, exp = {c.Whole}, mant = {c.Fractional})",
+                    EsiCompound c when c.Type == EsiCompound.CompoundType.EsiFixed =>
+                        $"$ESI.fixed(signed = {(c.Signed?"true":"false")}, whole = {c.Whole}, fraction = {c.Fractional})",
+
+                    EsiArray a when a.Inner is EsiValueType vt => $"{GetAnnotation(vt)} $ESI.array({a.Length})",
             };
         }
     }

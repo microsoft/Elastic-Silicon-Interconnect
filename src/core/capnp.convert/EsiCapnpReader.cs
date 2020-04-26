@@ -517,7 +517,6 @@ namespace Esi.Capnp
         public CapnpEsiErrorType(Action A)
         {
             this.A = A;
-            A();
         }
 
         public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)

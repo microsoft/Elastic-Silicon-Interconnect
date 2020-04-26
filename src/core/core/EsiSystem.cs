@@ -36,7 +36,7 @@ namespace Esi
         }
 
         /// <summary>
-        /// This currently assumes the 'Objects' collections are in the same
+        /// FIXME: This currently assumes the 'Objects' collections are in the same
         /// order, which is only true in select cases.
         /// </summary>
         public bool StructuralEquals(EsiSystem that, bool includeNames = false)
@@ -47,7 +47,7 @@ namespace Esi
                 a.StructuralEquals(b, includeNames));
         }
 
-        public void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+        public void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
         {
             Objects.ForEach(obj => obj.Traverse(pre, post) );
         }

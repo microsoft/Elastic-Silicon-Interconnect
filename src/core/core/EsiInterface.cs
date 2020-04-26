@@ -56,6 +56,7 @@ namespace Esi.Schema
 
         public void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
         {
+            // TODO
             // throw new System.NotImplementedException();
         }
 
@@ -65,7 +66,7 @@ namespace Esi.Schema
                 this.Methods.ZipAllTrue(that.Methods, (a, b) => a.StructuralEquals(b, includeNames));
         }
 
-        public void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+        public void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
         {
             pre(this);
             post(this);

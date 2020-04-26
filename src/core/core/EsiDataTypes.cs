@@ -165,10 +165,10 @@ namespace Esi.Schema
             stringBuilder.Append($" [{Length}] ");
         }
 
-        public override void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
         {
-            pre(this);
-            Inner.Traverse(pre, post);
+            if (pre(this))
+                Inner.Traverse(pre, post);
             post(this);
         }
     }
@@ -219,10 +219,10 @@ namespace Esi.Schema
                 stringBuilder.AppendLine(";");
             }
 
-            public override void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+            public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
             {
-                pre(this);
-                Type.Traverse(pre, post);
+                if (pre(this))
+                    Type.Traverse(pre, post);
                 post(this);
             }
 
@@ -255,10 +255,10 @@ namespace Esi.Schema
             stringBuilder.Indent(indent).Append("}");
         }
 
-        public override void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
         {
-            pre(this);
-            Fields.ForEach(f => {f.Traverse(pre, post);});
+            if (pre(this))
+                Fields.ForEach(f => {f.Traverse(pre, post);});
             post(this);
         }
     }
@@ -337,10 +337,10 @@ namespace Esi.Schema
             stringBuilder.Append($" [{(IsFixed ? "fixed" : "")}] ");
         }
 
-        public override void Traverse(Action<EsiObject> pre, Action<EsiObject> post)
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
         {
-            pre(this);
-            Inner.Traverse(pre, post);
+            if (pre(this))
+                Inner.Traverse(pre, post);
             post(this);
         }
     }
