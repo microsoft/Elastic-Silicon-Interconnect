@@ -46,19 +46,18 @@ namespace Esi.SVCodeGen
             using (var esiCtxt = new EsiContext())
             {
                 esiCtxt.Log.Information("Starting conversion to EsiTypes");
-                IEnumerable<EsiObject> esiTypes;
+                EsiSystem sys;
                 if (txt)
                 {
-                    esiTypes = EsiCapnpReader.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
+                    sys = EsiCapnpReader.ConvertTextSchema(esiCtxt, new FileInfo(opts.InputFile));
                 }
                 else
                 {
-                    esiTypes = EsiCapnpReader.ConvertFromCGRMessage(esiCtxt, input);
+                    sys = EsiCapnpReader.ConvertFromCGRMessage(esiCtxt, input);
                 }
                 esiCtxt.Log.Information("Completed reading capnp message");
                 esiCtxt.Log.Information("Starting SV interface output");
-                var esiSys = new EsiSystem(esiTypes);
-                var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, esiSys);
+                var sv = new EsiSystemVerilogInterfaceWriter(esiCtxt, sys);
                 sv.WriteSV();
                 esiCtxt.Log.Information("Completed SV interface output");
             }

@@ -16,11 +16,11 @@ namespace Esi.Capnp
     {
         StreamWriter Writer = null;
         long indent = 0;
-        protected void WL(string s) {
+        protected void WL(string s="") {
             indent.For(_ => Writer.Write("  "));
             Writer.WriteLine(s);
         }
-        protected void W(string s) {
+        protected void W(string s="") {
             indent.For(_ => Writer.Write("  "));
             Writer.Write(s);
         }
@@ -55,9 +55,11 @@ namespace Esi.Capnp
 ###########
 
 using ESI = import ""/EsiCoreAnnotations.capnp"";
-
-@0xb0d0343dd82755a3;
 ");
+
+            var CapnpID = BitConverter.ToUInt64(sys.SystemHash, 0) | 0x80000000_00000000;
+            WL($"@0x{CapnpID:X};");
+            WL();
 
             sys.Objects.ForEach(obj => {
                 switch (obj) {

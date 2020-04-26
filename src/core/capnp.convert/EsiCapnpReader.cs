@@ -27,13 +27,13 @@ namespace Esi.Capnp
         // ########
         // Various entry points
         //
-        public static IReadOnlyList<EsiObject> Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
+        public static EsiSystem Convert(EsiContext ctxt, CodeGeneratorRequest.READER request)
         {
             var convert = new EsiCapnpReader(ctxt);
             return convert.Read(request);
         }
 
-        public static IReadOnlyList<EsiObject> ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
+        public static EsiSystem ConvertFromCGRMessage(EsiContext ctxt, Stream stream)
         {
             var frame = Framing.ReadSegments(stream);
             var deserializer = DeserializerState.CreateRoot(frame);
@@ -45,12 +45,11 @@ namespace Esi.Capnp
         {
             using (var stream = file.OpenRead())
             {
-                var objs = ConvertFromCGRMessage(context, stream);
-                return new EsiSystem(objs);
+                return ConvertFromCGRMessage(context, stream);
             }
         }
 
-        public static IReadOnlyList<EsiObject> ConvertTextSchema(EsiContext ctxt, FileInfo file)
+        public static EsiSystem ConvertTextSchema(EsiContext ctxt, FileInfo file)
         {
             var exeDir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             using (var memstream = new MemoryStream() )
@@ -113,8 +112,9 @@ namespace Esi.Capnp
         /// </summary>
         /// <param name="cgr"></param>
         /// <returns></returns>
-        protected IReadOnlyList<EsiObject> Read(CodeGeneratorRequest.READER cgr)
+        protected EsiSystem Read(CodeGeneratorRequest.READER cgr)
         {
+            ulong CapnpSchemaID = cgr.RequestedFiles.FirstOrDefault().Id;
 
             // First pass: get all the filenames
             var IDtoFile = new Dictionary<ulong, string>();
@@ -146,7 +146,11 @@ namespace Esi.Capnp
                     EsiObject o => o,
                     null => null,
             }).Where(t => t != null).ToList();
-            return esiObjects;
+
+            // Assemble the esi system
+            EsiSystem sys = new EsiSystem(esiObjects);
+            sys.ComputeHash(CapnpSchemaID);
+            return sys;
         }
 
         /// <summary>

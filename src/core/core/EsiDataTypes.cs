@@ -181,7 +181,7 @@ namespace Esi.Schema
         /// <summary>
         /// A struct field
         /// </summary>
-        public class StructField : EsiTypeParent
+        public class StructField : EsiTypeParent, EsiNamedType
         {
             /// <summary>
             /// field name
@@ -225,7 +225,6 @@ namespace Esi.Schema
                     Type.Traverse(pre, post);
                 post(this);
             }
-
         }
 
         public string? Name { get; }

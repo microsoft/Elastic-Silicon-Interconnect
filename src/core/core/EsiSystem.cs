@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using System.Text;
 using Esi.Schema;
 using System;
+using System.Diagnostics;
+using System.Security.Cryptography;
 
 #nullable enable
 namespace Esi
 {
     public class EsiSystem
     {
+        public byte[]? SystemHash = null;
+
         public IEnumerable<EsiObject> Objects { get; }
         public IReadOnlyDictionary<string, EsiNamedType> NamedTypes {
             get
@@ -45,6 +49,15 @@ namespace Esi
                 return false;
             return this.NamedTypes.Values.ZipAllTrue(that.NamedTypes.Values, (a, b) => 
                 a.StructuralEquals(b, includeNames));
+        }
+
+        public void ComputeHash(ulong hash = 0xcc08db7c276d81d8)
+        {
+            List<byte> bytes = new List<byte>();
+            bytes.AddRange(BitConverter.GetBytes(hash));
+            Objects.ForEach(o => bytes.AddRange(o.GetDeterministicHash(false)));
+
+            SystemHash = SHA256.Create().ComputeHash(bytes.ToArray());
         }
 
         public void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Esi.Schema;
 using System;
+using System.Diagnostics;
 
 #nullable enable
 namespace Esi
@@ -28,5 +29,7 @@ namespace Esi
         /// false, do not continue down</param>
         /// <param name="post">Call this on on the way back up</param>
         void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post);
+
+        byte[] GetDeterministicHash(bool includeNames=false);
     }
 }

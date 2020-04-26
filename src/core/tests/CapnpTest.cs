@@ -16,7 +16,7 @@ namespace Esi.Core.Tests
             return Esi.Utils.ResolveResource(Path.Combine("tests", resource));
         }
 
-        public IReadOnlyList<EsiObject> ReadSchema(string resource)
+        public EsiSystem ReadSchema(string resource)
         {
             return EsiCapnpReader.ConvertTextSchema(C, ResolveResource(resource));
         }

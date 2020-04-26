@@ -71,5 +71,11 @@ namespace Esi.Schema
             pre(this);
             post(this);
         }
+
+        public byte[] GetDeterministicHash(bool includeNames = false)
+        {
+            // FIXME: obviously wrong
+            return new byte[] {};
+        }
     }
 }

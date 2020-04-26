@@ -21,7 +21,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1a()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -44,7 +44,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Compare()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -61,7 +61,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Incorrect()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -126,7 +126,7 @@ namespace Esi.Core.Tests
         {
             ShouldFail = true;
 
-            var types = ReadSchema("stress_tests/stress1_fail.capnp");
+            var types = ReadSchema("stress_tests/stress1_fail.capnp").Objects.ToList();
             Assert.AreEqual(11, C.Errors);
             Assert.AreEqual(0, C.Fatals);
             Assert.True(C.Failed);
@@ -146,7 +146,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Interfaces()
         {
-            var types = ReadSchema("stress_tests/stress1_synth.capnp");
+            var types = ReadSchema("stress_tests/stress1_synth.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
