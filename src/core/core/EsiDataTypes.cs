@@ -21,7 +21,12 @@ namespace Esi.Schema
 
         public PrimitiveType Type { get; }
 
-        public EsiPrimitive(PrimitiveType Type)
+        public static EsiPrimitive Void = new EsiPrimitive(PrimitiveType.EsiVoid);
+        public static EsiPrimitive Bool = new EsiPrimitive(PrimitiveType.EsiBool);
+        public static EsiPrimitive Byte = new EsiPrimitive(PrimitiveType.EsiByte);
+        public static EsiPrimitive Bit = new EsiPrimitive(PrimitiveType.EsiBit);
+
+        private EsiPrimitive(PrimitiveType Type)
             : base()
         {
             this.Type = Type;
@@ -164,6 +169,13 @@ namespace Esi.Schema
             Inner.GetDescriptionTree(stringBuilder, indent);
             stringBuilder.Append($" [{Length}] ");
         }
+
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
+        {
+            if (pre(this))
+                Inner.Traverse(pre, post);
+            post(this);
+        }
     }
 
     /// <summary>
@@ -174,7 +186,7 @@ namespace Esi.Schema
         /// <summary>
         /// A struct field
         /// </summary>
-        public class StructField : EsiTypeParent
+        public class StructField : EsiTypeParent, EsiNamedType
         {
             /// <summary>
             /// field name
@@ -211,6 +223,13 @@ namespace Esi.Schema
                 Type.GetDescriptionTree(stringBuilder, indent);
                 stringBuilder.AppendLine(";");
             }
+
+            public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
+            {
+                if (pre(this))
+                    Type.Traverse(pre, post);
+                post(this);
+            }
         }
 
         public string? Name { get; }
@@ -238,6 +257,13 @@ namespace Esi.Schema
                 f.GetDescriptionTree(stringBuilder, indent+1);
             }
             stringBuilder.Indent(indent).Append("}");
+        }
+
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
+        {
+            if (pre(this))
+                Fields.ForEach(f => {f.Traverse(pre, post);});
+            post(this);
         }
     }
 
@@ -313,6 +339,13 @@ namespace Esi.Schema
         {
             Inner.GetDescriptionTree(stringBuilder, indent);
             stringBuilder.Append($" [{(IsFixed ? "fixed" : "")}] ");
+        }
+
+        public override void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
+        {
+            if (pre(this))
+                Inner.Traverse(pre, post);
+            post(this);
         }
     }
 

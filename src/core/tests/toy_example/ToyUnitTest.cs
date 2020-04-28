@@ -14,8 +14,8 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadSchemaTest()
         {
-            var types = ReadSchema("toy_example/toy.capnp");
-            Assert.Greater(types.Count, 0);
+            var types = ReadSchema("toy_example/toy.capnp").Objects;
+            Assert.Greater(types.Count(), 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
             Assert.Greater(structs.Count(), 0);
             var poly3s = structs.Where(s => s.Name == "Polynomial3");

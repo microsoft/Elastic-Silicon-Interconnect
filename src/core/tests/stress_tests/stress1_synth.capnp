@@ -10,6 +10,8 @@ struct Example {
         #street @2 :Text;
         #city @3 :Text $ESI.inline;
     }
+
+    after @2 :UInt16;
 }
 
 struct Polynomial3 { # ax^2 + bx + c

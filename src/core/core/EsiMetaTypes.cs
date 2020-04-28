@@ -28,7 +28,7 @@ namespace Esi.Schema
     /// </summary>
     public interface EsiType : EsiObject
     {
-        bool StructuralEquals(EsiType that, IDictionary<EsiType, EsiType?>? objMap = null);
+        bool StructuralEquals(EsiType that, bool includeNames = false, IDictionary<EsiType, EsiType?>? objMap = null);
     }
     
     /// <summary>
@@ -58,13 +58,12 @@ namespace Esi.Schema
     /// Abstraction for things which contain another type (struct fields, lists,
     /// arrays, etc.)
     /// </summary>
-    public interface EsiContainerType : EsiTypeCollection
+    public interface EsiContainerType : EsiTypeCollection, EsiValueType
     {
         EsiType Inner { get; }
 
         EsiContainerType WithInner(EsiType newInner);
     }
-
 
 
     /// <summary>
@@ -74,5 +73,25 @@ namespace Esi.Schema
     public abstract partial class EsiTypeParent : EsiType
     {
         public abstract void GetDescriptionTree(StringBuilder stringBuilder, uint indent);
+        public string GetDescriptionTree()
+        {
+            var sb = new StringBuilder();
+            GetDescriptionTree(sb, 0);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Traverse the type tree. Terminate at EsiReferenceType (which contains
+        /// a mutable pointer) so as to avoid infinite recursion (cycles).
+        /// 
+        /// This default implementation assumes this object is a leaf.
+        /// </summary>
+        /// <param name="pre">Call this action before proceeding down</param>
+        /// <param name="post">Call this on on the way back up</param>
+        public virtual void Traverse(Func<EsiObject, bool> pre, Action<EsiObject> post)
+        {
+            pre(this);
+            post(this);
+        }
     }
 }
