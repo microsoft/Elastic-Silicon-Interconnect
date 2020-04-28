@@ -110,8 +110,8 @@ namespace Esi.Core.Tests
                             null,
                             new EsiStruct.StructField[] {
                                 new EsiStruct.StructField("houseNumber", new EsiInt(32, false)),
-                                new EsiStruct.StructField("street", new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte)))),
-                                new EsiStruct.StructField("city", new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte))),
+                                new EsiStruct.StructField("street", new EsiReferenceType(new EsiList(EsiPrimitive.Byte))),
+                                new EsiStruct.StructField("city", new EsiList(EsiPrimitive.Byte)),
                             }
                         )
                     ),

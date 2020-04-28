@@ -312,7 +312,10 @@ namespace Esi.Capnp
                 case Field.WHICH.Group:
                     return new EsiStruct.StructField(
                         Name: field.Name,
-                        Type: GetNamedType(field.Group.TypeId));
+                        Type: AddAnnotations(
+                            GetNamedType(field.Group.TypeId),
+                            structNameFile.AppendField(field.Name),
+                            field.Annotations));
 
                 case Field.WHICH.Slot:
                     return new EsiStruct.StructField(
@@ -339,8 +342,8 @@ namespace Esi.Capnp
             IReadOnlyList<Annotation.READER> annotations)
         {
             var esiType = type.which switch {
-                CapnpGen.Type.WHICH.Void => (EsiType) new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiVoid),
-                CapnpGen.Type.WHICH.Bool => new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiBool),
+                CapnpGen.Type.WHICH.Void => (EsiType) EsiPrimitive.Void,
+                CapnpGen.Type.WHICH.Bool => EsiPrimitive.Bool,
                 CapnpGen.Type.WHICH.Int8 => new EsiInt(8, true),
                 CapnpGen.Type.WHICH.Int16 => new EsiInt(16, true),
                 CapnpGen.Type.WHICH.Int32 => new EsiInt(32, true),
@@ -351,8 +354,8 @@ namespace Esi.Capnp
                 CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
                 CapnpGen.Type.WHICH.Float32 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
                 CapnpGen.Type.WHICH.Float64 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-                CapnpGen.Type.WHICH.Text => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
-                CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte), true)),
+                CapnpGen.Type.WHICH.Text => new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
+                CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
 
                 CapnpGen.Type.WHICH.List => new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
                 CapnpGen.Type.WHICH.Enum => GetNamedType(type.Enum.TypeId),
@@ -443,6 +446,8 @@ namespace Esi.Capnp
                 // ARRAY annotation
                 case (EsiList list, AnnotationIDs.ARRAY):
                     return new EsiArray(list.Inner, a.Value.Uint64);
+                case (EsiStruct st, AnnotationIDs.ARRAY):
+                    return EsiStructToArray(st, a.Value.Uint64);
                 case (_, AnnotationIDs.ARRAY):
                     C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
                     return esiType;
@@ -493,6 +498,23 @@ namespace Esi.Capnp
                     C.Log.Error("Annotation not recognized (annotationID)", a.Id);
                     return esiType;
             }
+        }
+
+        protected EsiType EsiStructToArray(EsiStruct st, ulong length)
+        {
+            if ((ulong)st.Fields.Length != length)
+            {
+                C.Log.Error("Groups annotated with $array({n}) need to have a number of elements equal to {n}, not {actual}",
+                    length, st.Fields.Length);
+                return st;
+            }
+            if (length == 0)
+            {
+                // Special case where internal type cannot be determined
+                return new EsiArray(EsiPrimitive.Void, 0);
+            }
+            var inner = st.Fields[0].Type;
+            return new EsiArray(inner, length);
         }
     }
 

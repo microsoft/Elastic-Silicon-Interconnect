@@ -11,7 +11,7 @@ annotation bits @0xac112269228ad38c (struct, union, field, enum) :UInt64;
 annotation inline @0x83f1b26b0188c1bb (field) :Void;
 
 # A fixed-size array of certain length (inline implied)
-annotation array @0x93ce43d5fd6478ee (field) :UInt64;
+annotation array @0x93ce43d5fd6478ee (field, group) :UInt64;
 
 # A non-discriminated union
 annotation cUnion @0xed2e4e8a596d00a5 (union) :Void;

@@ -21,7 +21,12 @@ namespace Esi.Schema
 
         public PrimitiveType Type { get; }
 
-        public EsiPrimitive(PrimitiveType Type)
+        public static EsiPrimitive Void = new EsiPrimitive(PrimitiveType.EsiVoid);
+        public static EsiPrimitive Bool = new EsiPrimitive(PrimitiveType.EsiBool);
+        public static EsiPrimitive Byte = new EsiPrimitive(PrimitiveType.EsiByte);
+        public static EsiPrimitive Bit = new EsiPrimitive(PrimitiveType.EsiBit);
+
+        private EsiPrimitive(PrimitiveType Type)
             : base()
         {
             this.Type = Type;

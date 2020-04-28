@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Capnp;
 using CapnpGen;
+using Esi;
 using Esi.Schema;
 
 namespace Esi.Capnp
@@ -78,60 +79,89 @@ using ESI = import ""/EsiCoreAnnotations.capnp"";
         protected void Write(EsiStruct st, ushort codeOrder)
         {
             // Use the traverse method to do the recursion
-            st.Traverse (
-                pre: obj => {
-                    switch (obj)
-                    {
-                        case EsiStruct st:
-                            if (indent == 0) {
-                                WL($"struct {st.Name} {{");
-                            } else {
-                                Writer.WriteLine($"group {{");
-                            }
-                            indent++;
-                            break;
-                        case EsiReferenceType refTy when refTy.Reference is EsiStruct stRef:
-                            Writer.WriteLine($"{stRef.Name};");
-                            break;
-                        case EsiStruct.StructField f when f.Type is EsiStruct:
-                            W($"{f.Name} :");
-                            break;
-                        case EsiStruct.StructField f:
-                            W($"{f.Name} @{codeOrder++} :");
-                            break;
-                        case EsiContainerType containerType when containerType.Inner is EsiNamedType:
-                            containerType = containerType.WithInner(new EsiReferenceType(containerType.Inner));
-                            Writer.Write($"{GetSimpleKeyword(containerType)} {GetAnnotation(containerType)} $ESI.inline()");
-                            Writer.WriteLine(";");
-                            break;
-                        case EsiContainerType containerType when containerType.Inner is EsiReferenceType refType:
-                            if (refType is EsiNamedType named)
-                            {
-                                Writer.Write($"{named.Name} $ESI.inline()");
-                                Writer.WriteLine(";");
-                            } else
-                            {
-                                C.Log.Error("References to unnamed types are not supported by CapnProto schemas!");
-                            }
-                            break;
-                        case EsiValueType valueType:
-                            Writer.Write($"{GetSimpleKeyword(valueType)} {GetAnnotation(valueType)}");
-                            Writer.WriteLine(";");
-                            break;
-                    }
-                    return !(obj is EsiContainerType);
-                },
-                post: obj => {
-                    switch (obj)
-                    {
-                        case EsiStruct st:
-                            indent--;
-                            WL("}");
-                            break;
-                    }
-                }
+            st.Traverse(
+                pre: o => TypeWriteTraversePre(o, ref codeOrder),
+                post: TypeWriteTraversePost
             );
             Debug.Assert(indent == 0);
+        }
+
+        private bool TypeWriteTraversePre(EsiObject obj, ref ushort codeOrder)
+        {
+            switch (obj)
+            {
+                case EsiStruct st:
+                    if (indent == 0)
+                    {
+                        WL($"struct {st.Name} {{");
+                    }
+                    else
+                    {
+                        Writer.WriteLine($"group {{");
+                    }
+                    indent++;
+                    break;
+                case EsiReferenceType refTy when refTy.Reference is EsiStruct stRef:
+                    Writer.WriteLine($"{stRef.Name};");
+                    break;
+                case EsiStruct.StructField f when f.Type is EsiStruct || f.Type is EsiArray:
+                    W($"{f.Name} :");
+                    break;
+                case EsiStruct.StructField f:
+                    W($"{f.Name} @{codeOrder++} :");
+                    break;
+                case EsiArray array:
+                    WriteArray(array, ref codeOrder);
+                    break;
+                case EsiContainerType containerType when containerType.Inner is EsiNamedType:
+                    containerType = containerType.WithInner(new EsiReferenceType(containerType.Inner));
+                    Writer.Write($"{GetSimpleKeyword(containerType)} {GetAnnotation(containerType)} $ESI.inline()");
+                    Writer.WriteLine(";");
+                    break;
+                case EsiContainerType containerType when containerType.Inner is EsiReferenceType refType:
+                    if (refType is EsiNamedType named)
+                    {
+                        Writer.Write($"{named.Name} $ESI.inline()");
+                        Writer.WriteLine(";");
+                    }
+                    else
+                    {
+                        C.Log.Error("References to unnamed types are not supported by CapnProto schemas!");
+                    }
+                    break;
+                case EsiValueType valueType:
+                    Writer.Write($"{GetSimpleKeyword(valueType)} {GetAnnotation(valueType)}");
+                    Writer.WriteLine(";");
+                    break;
+            }
+            return !(obj is EsiContainerType);
+        }
+
+        private void TypeWriteTraversePost(EsiObject obj) {
+            switch (obj)
+            {
+                case EsiStruct st:
+                    indent--;
+                    WL("}");
+                    break;
+            }
+        }
+
+        private void WriteArray(EsiArray array, ref ushort codeOrder)
+        {
+            ushort lclCodeOrder = codeOrder;
+            Writer.WriteLine($"group $ESI.array({array.Length}) {{");
+            indent++;
+            for(ulong i = 0; i < array.Length; i++) {
+                W($"item{i} @{lclCodeOrder++} :");
+                array.Inner.Traverse(
+                    pre: o => TypeWriteTraversePre(o, ref lclCodeOrder),
+                    post: TypeWriteTraversePost
+                );
+            };
+            indent--;
+            WL("}");
+            codeOrder = lclCodeOrder;
         }
 
         private string GetSimpleKeyword(EsiValueType valueType)
