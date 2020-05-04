@@ -28,6 +28,7 @@ static int validate_sv_open_array(const svOpenArrayHandle data, int expected_ele
     if (num_elems * expected_elem_size != total_bytes) {
         printf("DPI-C: ERROR: passed array argument that doesn't have expected element-size: expected=%d actual=%d\n",
                 expected_elem_size, elem_size);
+        err++;
     }
     return err;
 }
@@ -65,7 +66,7 @@ DPI int sv2c_cosimserver_ep_tryget(unsigned int endpoint_id, const svOpenArrayHa
         return -3;
 
     if (validate_sv_open_array(data, sizeof(int8_t)) != 0) {
-        printf("ERROR: DPI-func=%s line=%d event=invalid-sv-array", __func__, __LINE__);
+        printf("ERROR: DPI-func=%s line=%d event=invalid-sv-array\n", __func__, __LINE__);
         return -1;
     }
 
@@ -74,7 +75,7 @@ DPI int sv2c_cosimserver_ep_tryget(unsigned int endpoint_id, const svOpenArrayHa
     }
   
     if (*data_limit > (unsigned)svSizeOfArray(data)) {
-        printf("ERROR: DPI-func=%s line %d event=invalid-size", __func__,__LINE__);
+        printf("ERROR: DPI-func=%s line %d event=invalid-size (max %d)\n", __func__,__LINE__, (unsigned)svSizeOfArray(data));
         return -2;
     }
 
@@ -85,7 +86,7 @@ DPI int sv2c_cosimserver_ep_tryget(unsigned int endpoint_id, const svOpenArrayHa
             uint8_t* databuf = (uint8_t*)svGetArrayPtr(data);
             if (msg->size() > *data_limit)
             {
-                printf("ERROR: Message size too big to fit in RTL buffer");
+                printf("ERROR: Message size too big to fit in RTL buffer\n");
                 return -4;
             }
 
@@ -111,7 +112,7 @@ DPI int sv2c_cosimserver_ep_tryput(unsigned int endpoint_id, const svOpenArrayHa
         return -1;
 
     if (validate_sv_open_array(data, sizeof(int8_t)) != 0) {
-        printf("ERROR: DPI-func=%s line=%d event=invalid-sv-array", __func__, __LINE__);
+        printf("ERROR: DPI-func=%s line=%d event=invalid-sv-array\n", __func__, __LINE__);
         return -3;
     }
 

@@ -17,7 +17,7 @@ kj::Promise<void> EndPointServer::close(CloseContext context)
 kj::Promise<void> EndPointServer::send(SendContext context)
 {
     KJ_REQUIRE(_Open, "EndPoint closed already");
-    auto& capnpBlob = context.getParams().getBlob();
+    auto capnpBlob = context.getParams().getBlob();
     EndPoint::BlobPtr blob = make_shared<EndPoint::Blob>(
         capnpBlob.begin(), capnpBlob.end());
     _EndPoint->PushMessageToSim(blob);
