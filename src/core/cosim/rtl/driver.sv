@@ -1,14 +1,27 @@
 import Cosim_DpiPkg::*;
 
 module cosim_test(
+    `ifdef VERILATOR
+    input logic clk,
+    input logic rstn
+    `endif
 );
+    // initial begin
+    //     if ($test$plusargs("trace") != 0) begin
+    //         $display("[%0t] Tracing to sim.vcd...\n", $time);
+    //         $dumpfile("sim.vcd");
+    //         $dumpvars();
+    //     end
+    // end
 
-    localparam int TYPE_SIZE_BITS = 64;
+    localparam int TYPE_SIZE_BITS = 23;
+    `ifndef VERILATOR
     logic clk;
     logic rstn;
+    `endif
 
     logic DataOutValid;
-    logic DataOutReady;
+    logic DataOutReady = 1;
     logic[TYPE_SIZE_BITS-1:0] DataOut;
     
     logic DataInValid;
@@ -23,40 +36,52 @@ module cosim_test(
         .*
     );
 
-`ifndef VERILATOR
-
-    initial
+    always@(posedge clk)
     begin
-        rstn = 0;
-        // No I/O activity
-        DataOutReady = 0;
-        DataInValid = 0;
-        #17
-        // Run!
-        rstn = 1;
-        #12
+        if (rstn)
+        begin
+            if (DataOutValid && DataOutReady)
+            begin
+                $display("Recv'd: %h", DataOut);
+                DataIn <= DataOut;
+                DataInValid <= 1;
+            end
 
-        #10
-        // Accept 1 token
-        DataOutReady = 1;
-        #1
-        @(posedge clk && DataOutValid);
-        #1
-        $display("Recv'd: %h", DataOut);
-        DataOutReady = 0;
-        #8
-
-        #10
-        // Send a token
-        DataIn = 1024'hDEADBEEF;
-        DataInValid = 1;
-        @(posedge clk && DataInReady);
-        #1
-        DataInValid = 0;
-        #9
-        $finish();
+            if (DataInValid && DataInReady)
+            begin
+                $display("Sent: %h", DataIn);
+                DataInValid <= 0;
+                DataIn <= 'x;
+            end
+        end
+        else
+        begin
+            DataInValid <= 0;
+        end
     end
 
+    //     #10
+    //     // Accept 1 token
+    //     DataOutReady = 1;
+    //     #1
+    //     @(posedge clk && DataOutValid);
+    //     #1
+    //     $display("Recv'd: %h", DataOut);
+    //     DataOutReady = 0;
+    //     #8
+
+    //     #10
+    //     // Send a token
+    //     DataIn = 1024'hDEADBEEF;
+    //     DataInValid = 1;
+    //     @(posedge clk && DataInReady);
+    //     #1
+    //     DataInValid = 0;
+    //     #9
+    //     $finish();
+    // end
+
+`ifndef VERILATOR
     // Clock
     initial
     begin
@@ -66,6 +91,14 @@ module cosim_test(
             #5;
             clk = !clk;
         end
+    end
+
+    initial
+    begin
+        rstn = 0;
+        #17
+        // Run!
+        rstn = 1;
     end
 `endif
 

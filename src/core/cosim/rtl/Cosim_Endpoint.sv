@@ -113,7 +113,7 @@ module Cosim_Endpoint
    // Assign packed output bit array from unpacked byte array
    genvar iOut;
    generate
-      for (iOut=0; iOut<TYPE_SIZE_BYTES; iOut++)
+      for (iOut=0; iOut<TYPE_SIZE_BYTES_FLOOR; iOut++)
       begin
          assign DataOut[((iOut+1)*8)-1:iOut*8] = DataOutBuffer[iOut];
       end
@@ -122,7 +122,14 @@ module Cosim_Endpoint
             = DataOutBuffer[TYPE_SIZE_BYTES-1][TYPE_SIZE_BITS_DIFF-1:0];
    endgenerate
 
-
+   initial
+   begin
+   $display("TYPE_SIZE_BITS: %d", TYPE_SIZE_BITS);
+   $display("TYPE_SIZE_BYTES: %d", TYPE_SIZE_BYTES);
+   $display("TYPE_SIZE_BITS_DIFF: %d", TYPE_SIZE_BITS_DIFF);
+   $display("TYPE_SIZE_BYTES_FLOOR: %d", TYPE_SIZE_BYTES_FLOOR);
+   $display("TYPE_SIZE_BYTES_FLOOR_IN_BITS: %d", TYPE_SIZE_BYTES_FLOOR_IN_BITS);
+   end
 
 
    /// **********************
@@ -151,7 +158,7 @@ module Cosim_Endpoint
    // Assign packed input bit array to unpacked byte array
    genvar iIn;
    generate
-      for (iIn=0; iIn<TYPE_SIZE_BYTES-1; iIn++)
+      for (iIn=0; iIn<TYPE_SIZE_BYTES_FLOOR; iIn++)
       begin
          assign DataInBuffer[iIn] = DataIn[((iIn+1)*8)-1:iIn*8];
       end
