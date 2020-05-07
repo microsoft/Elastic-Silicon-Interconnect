@@ -1,13 +1,13 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.  
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // =============================================================================
 // Package: CosimCore_EndpointBasePkg
-//     
+//
 // Authors:
 // - John Demme (john.demme@microsoft.com)
 //
 // Based on code written by:
 // - Andrew Lenharth (andrew.lenharth@microsoft.com)
-// 
+//
 // Description:
 //   Main cosim <--> dpi bridge module
 // =============================================================================
@@ -55,7 +55,6 @@ module Cosim_Endpoint
       end
    end
 
-
    /// *******************
    /// Data out management
    ///
@@ -66,10 +65,10 @@ module Cosim_Endpoint
       begin
          if (DataOutValid && DataOutReady) // A transfer occurred
          begin
-            DataOutValid = 1'b0;
+            DataOutValid <= 1'b0;
          end
 
-         if (!DataOutValid)
+         if (!DataOutValid || DataOutReady)
          begin
             int data_limit;
             int rc;
@@ -90,7 +89,7 @@ module Cosim_Endpoint
             begin
                if (data_limit == TYPE_SIZE_BYTES)
                begin
-                  DataOutValid = 1'b1;
+                  DataOutValid <= 1'b1;
                end
                else if (data_limit == 0)
                begin
@@ -106,7 +105,7 @@ module Cosim_Endpoint
       end
       else
       begin
-         DataOutValid = 1'b0;
+         DataOutValid <= 1'b0;
       end
    end
    
