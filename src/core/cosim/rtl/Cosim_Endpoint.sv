@@ -32,6 +32,7 @@ module Cosim_Endpoint
    output logic DataInReady,
    input  logic [TYPE_SIZE_BITS-1:0] DataIn
 );
+
    localparam int TYPE_SIZE_BYTES = int'((TYPE_SIZE_BITS+7)/8);
    localparam int TYPE_SIZE_BITS_DIFF = TYPE_SIZE_BITS % 8; // The number of bits over a byte
    localparam int TYPE_SIZE_BYTES_FLOOR = int'(TYPE_SIZE_BITS/8);
@@ -108,7 +109,7 @@ module Cosim_Endpoint
          DataOutValid <= 1'b0;
       end
    end
-   
+
    // Assign packed output bit array from unpacked byte array
    genvar iOut;
    generate

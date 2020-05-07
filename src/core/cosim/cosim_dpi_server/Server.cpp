@@ -31,6 +31,7 @@ kj::Promise<void> EndPointServer::recv(RecvContext context)
 
     EndPoint::BlobPtr blob;
     auto msgPresent = _EndPoint->GetMessageToClient(blob);
+    context.getResults().setHasData(msgPresent);
     if (msgPresent)
         context.getResults().setResp(capnp::Data::Builder(blob->data(), blob->size()));
     return kj::READY_NOW;
