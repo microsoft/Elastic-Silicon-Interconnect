@@ -7,7 +7,7 @@ import shutil
 
 workDir = os.path.join(os.path.dirname(__file__), "test_tmp")
 def setup_module():
-    os.chdir(os.path.dirname(__file__))
+    cmd.cd_filedir(__file__)
 
 class TestStress:
     @pytest.mark.nolic
