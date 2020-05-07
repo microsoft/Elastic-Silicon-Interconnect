@@ -83,16 +83,23 @@ DPI int sv2c_cosimserver_ep_tryget(unsigned int endpoint_id, const svOpenArrayHa
     {
         EndPoint::BlobPtr msg;
         if (server->EndPoints[endpoint_id]->GetMessageToSim(msg)) {
-            uint8_t* databuf = (uint8_t*)svGetArrayPtr(data);
             if (msg->size() > *data_limit)
             {
                 printf("ERROR: Message size too big to fit in RTL buffer\n");
                 return -4;
             }
 
-            copy_n(msg->data(), msg->size(), databuf);
-            memset(databuf + msg->size(), 0, *data_limit - msg->size());
-            // *data_limit = msg->size();
+            long i;
+            for (i=0; i<msg->size(); i++)
+            {
+                auto b = msg->at(i);
+                *(char*)svGetArrElemPtr1(data, i) = b;
+            }
+            for ( ; i<(*data_limit); i++)
+            {
+                *(char*)svGetArrElemPtr1(data, i) = 0;
+            }
+            *data_limit = msg->size();
             return 0;
         } else {
             *data_limit = 0;
@@ -126,8 +133,12 @@ DPI int sv2c_cosimserver_ep_tryput(unsigned int endpoint_id, const svOpenArrayHa
 
     try
     {
-        uint8_t* databuf = (uint8_t*)svGetArrayPtr(data);
-        EndPoint::BlobPtr blob = make_shared<EndPoint::Blob>(databuf, databuf + data_limit);
+
+        EndPoint::BlobPtr blob = make_shared<EndPoint::Blob>(data_limit);
+        for (long i=0; i<data_limit;i++)
+        {
+            blob->at(i) = *(char*)svGetArrElemPtr1(data, i);
+        }
         server->EndPoints[endpoint_id]->PushMessageToClient(blob);
         return 0;
     }
