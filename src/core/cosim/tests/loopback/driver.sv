@@ -44,14 +44,12 @@ module cosim_test(
             begin
                 $display("[%d] Recv'd: %h", $time(), DataOut);
                 DataIn <= DataOut;
-                DataInValid <= 1;
             end
+            DataInValid <= DataOutValid && DataOutReady;
 
             if (DataInValid && DataInReady)
             begin
                 $display("[%d] Sent: %h", $time(), DataIn);
-                DataInValid <= 0;
-                DataIn <= 'x;
             end
         end
         else

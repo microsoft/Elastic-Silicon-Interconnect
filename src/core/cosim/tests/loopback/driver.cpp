@@ -47,7 +47,7 @@ int main(int argc, char** argv)
         if (timeStamp & 1)
             dut.clk = !dut.clk;
         tfp->dump(timeStamp);
-        usleep(100000);
+        usleep(10000);
     }
     cmdLineThread.join();
     dut.final();

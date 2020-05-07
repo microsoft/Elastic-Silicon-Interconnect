@@ -69,8 +69,7 @@ class TestLoopbackBaseDPI:
         print (binascii.hexlify(data.resp))
         return data.resp
 
-    @pytest.mark.nolic
-    def test_write_read(self):
+    def openEP(self):
         cosim = self.rpc()
         ifaces = cosim.list().wait().ifaces
         print (ifaces)
@@ -78,19 +77,34 @@ class TestLoopbackBaseDPI:
         openResp = cosim.open(ifaces[0]).wait()
         print (openResp)
         assert openResp.iface is not None
-        ep = openResp.iface
+        return openResp.iface
 
+    @pytest.mark.nolic
+    def test_write_read(self):
+        ep = self.openEP()
         print ("Testing writes")
         dataSent = self.write(ep)
         print ()
-
         print ("Testing reads")
         dataRecv = self.read(ep)
-
         ep.close().wait()
+        assert dataSent == dataRecv
 
+    @pytest.mark.nolic
+    def test_write_read_many(self):
+        ep = self.openEP()
+        print ("Testing writes")
+        dataSent = list()
+        for _ in range(50):
+            dataSent.append(self.write(ep))
+        print ()
+        print ("Testing reads")
+        dataRecv = list()
+        for _ in range(50):
+            dataRecv.append(self.read(ep))
+        ep.close().wait()
         assert dataSent == dataRecv
 
 if __name__ == "__main__":
     test = TestLoopbackBaseDPI()
-    test.test_write_read()
+    test.test_write_read_many()
