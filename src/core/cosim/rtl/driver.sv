@@ -14,15 +14,15 @@ module cosim_test(
     //     end
     // end
 
-    localparam int TYPE_SIZE_BITS = 23;
+    localparam int TYPE_SIZE_BITS = 24;
     `ifndef VERILATOR
     logic clk;
     logic rstn;
     `endif
 
-    logic DataOutValid;
-    logic DataOutReady = 1;
-    logic[TYPE_SIZE_BITS-1:0] DataOut;
+    wire DataOutValid;
+    wire DataOutReady = 1;
+    wire [TYPE_SIZE_BITS-1:0] DataOut;
     
     logic DataInValid;
     logic DataInReady;
@@ -42,14 +42,14 @@ module cosim_test(
         begin
             if (DataOutValid && DataOutReady)
             begin
-                $display("Recv'd: %h", DataOut);
+                $display("[%d] Recv'd: %h", $time(), DataOut);
                 DataIn <= DataOut;
                 DataInValid <= 1;
             end
 
             if (DataInValid && DataInReady)
             begin
-                $display("Sent: %h", DataIn);
+                $display("[%d] Sent: %h", $time(), DataIn);
                 DataInValid <= 0;
                 DataIn <= 'x;
             end

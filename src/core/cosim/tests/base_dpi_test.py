@@ -1,6 +1,9 @@
+#!/usr/bin/python3
+
 import capnp
 import os
 import binascii
+import random
 
 cosimDir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -36,7 +39,9 @@ def test_write():
     print (openResp)
     assert openResp.iface is not None
     ep = openResp.iface
-    data = bytes.fromhex('D9 5E FF')
+    # data = bytes.fromhex('D9 5E FF')
+    r = random.randrange(0, 2**24)
+    data = r.to_bytes(3, 'big')
     print (f'Sending: {binascii.hexlify(data)}')
     ep.send(data).wait()
     ep.close().wait()
