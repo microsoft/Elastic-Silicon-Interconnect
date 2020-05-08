@@ -1,13 +1,13 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.  
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // =============================================================================
 // Package: CosimCore_EndpointBasePkg
-//     
+//
 // Authors:
 // - John Demme (john.demme@microsoft.com)
 //
 // Based on code written by:
 // - Andrew Lenharth (andrew.lenharth@microsoft.com)
-// 
+//
 // Description:
 //   Main cosim <--> dpi bridge module
 // =============================================================================
@@ -32,6 +32,7 @@ module Cosim_Endpoint
    output logic DataInReady,
    input  logic [TYPE_SIZE_BITS-1:0] DataIn
 );
+
    localparam int TYPE_SIZE_BYTES = int'((TYPE_SIZE_BITS+7)/8);
    localparam int TYPE_SIZE_BITS_DIFF = TYPE_SIZE_BITS % 8; // The number of bits over a byte
    localparam int TYPE_SIZE_BYTES_FLOOR = int'(TYPE_SIZE_BITS/8);
@@ -55,7 +56,6 @@ module Cosim_Endpoint
       end
    end
 
-
    /// *******************
    /// Data out management
    ///
@@ -66,10 +66,10 @@ module Cosim_Endpoint
       begin
          if (DataOutValid && DataOutReady) // A transfer occurred
          begin
-            DataOutValid = 1'b0;
+            DataOutValid <= 1'b0;
          end
 
-         if (!DataOutValid)
+         if (!DataOutValid || DataOutReady)
          begin
             int data_limit;
             int rc;
@@ -90,7 +90,7 @@ module Cosim_Endpoint
             begin
                if (data_limit == TYPE_SIZE_BYTES)
                begin
-                  DataOutValid = 1'b1;
+                  DataOutValid <= 1'b1;
                end
                else if (data_limit == 0)
                begin
@@ -106,14 +106,14 @@ module Cosim_Endpoint
       end
       else
       begin
-         DataOutValid = 1'b0;
+         DataOutValid <= 1'b0;
       end
    end
-   
+
    // Assign packed output bit array from unpacked byte array
    genvar iOut;
    generate
-      for (iOut=0; iOut<TYPE_SIZE_BYTES; iOut++)
+      for (iOut=0; iOut<TYPE_SIZE_BYTES_FLOOR; iOut++)
       begin
          assign DataOut[((iOut+1)*8)-1:iOut*8] = DataOutBuffer[iOut];
       end
@@ -122,7 +122,14 @@ module Cosim_Endpoint
             = DataOutBuffer[TYPE_SIZE_BYTES-1][TYPE_SIZE_BITS_DIFF-1:0];
    endgenerate
 
-
+   initial
+   begin
+   $display("TYPE_SIZE_BITS: %d", TYPE_SIZE_BITS);
+   $display("TYPE_SIZE_BYTES: %d", TYPE_SIZE_BYTES);
+   $display("TYPE_SIZE_BITS_DIFF: %d", TYPE_SIZE_BITS_DIFF);
+   $display("TYPE_SIZE_BYTES_FLOOR: %d", TYPE_SIZE_BYTES_FLOOR);
+   $display("TYPE_SIZE_BYTES_FLOOR_IN_BITS: %d", TYPE_SIZE_BYTES_FLOOR_IN_BITS);
+   end
 
 
    /// **********************
@@ -151,7 +158,7 @@ module Cosim_Endpoint
    // Assign packed input bit array to unpacked byte array
    genvar iIn;
    generate
-      for (iIn=0; iIn<TYPE_SIZE_BYTES-1; iIn++)
+      for (iIn=0; iIn<TYPE_SIZE_BYTES_FLOOR; iIn++)
       begin
          assign DataInBuffer[iIn] = DataIn[((iIn+1)*8)-1:iIn*8];
       end

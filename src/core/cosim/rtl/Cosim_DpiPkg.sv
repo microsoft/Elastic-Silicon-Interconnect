@@ -1,12 +1,12 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.  
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // =============================================================================
 // Package: CosimCore_DpiPkg
-//     
+//
 // Authors:
 // - John Demme (john.demme@microsoft.com)
 // - Hari Angepat (hari.angepat@microsoft.com)
 // - Andrew Lenharth (andrew.lenharth@microsoft.com)
-// 
+//
 // Description:
 //   DPI-exposed funcs for cosimserver cosimulation unit-test
 // =============================================================================
@@ -30,7 +30,7 @@ import "DPI-C" sv2c_cosimserver_ep_register =
       input int endpoint_id,
       input longint esi_type_id,
       input int type_size);
-   
+
 // --------------------- Endpoint Accessors ------------------------------
 
 // Access a simulated device endpoint (only 1 active client supported per endpoint)
@@ -66,9 +66,8 @@ import "DPI-C" sv2c_cosimserver_ep_tryput =
 import "DPI-C" sv2c_cosimserver_ep_tryget = 
   function int cosim_ep_tryget(
     input  int unsigned endpoint_id,
-    output byte unsigned data[],
+    inout byte unsigned data[], // This should be 'output', but Verilator doesn't seem to have a way to do this
     inout  int unsigned size_bytes
     );
 
 endpackage // CoSim_Dpi
-     

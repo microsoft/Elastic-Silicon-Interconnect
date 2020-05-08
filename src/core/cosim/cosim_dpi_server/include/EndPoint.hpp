@@ -106,7 +106,7 @@ public:
     std::unique_ptr<EndPoint>& operator[](int ep_id)
     {
         Lock g(_M);
-        auto& ep = EndPoints.find(ep_id);
+        auto ep = EndPoints.find(ep_id);
         if (ep == EndPoints.end())
             throw std::runtime_error("Could not find endpoint");
         return ep->second;
