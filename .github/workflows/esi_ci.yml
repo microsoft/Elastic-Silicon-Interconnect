@@ -39,6 +39,10 @@ jobs:
     container:
       image: ubuntu:16.04
     steps:
+      - name: Install package deps
+        run: |
+          apt update
+          apt install libssl1.0.0
       - name: Download executable
         uses: actions/download-artifact@v1
         with:
@@ -48,8 +52,5 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - run: |
-          pwd
-          find
       - name: Test SVCodeGen
         run: esi_core_linux/SVCodeGen -i src/src/core/tests/stress_tests/stress1_synth.capnp
