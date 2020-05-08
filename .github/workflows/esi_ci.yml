@@ -11,7 +11,7 @@ jobs:
     name: Build and test on Ubuntu
     runs-on: ubuntu-latest
     container:
-      image: teqdruid/esi:devenv-0.3
+      image: teqdruid/esi:devenv-0.4
     steps:
     - uses: actions/checkout@v2
     - name: Build with dotnet

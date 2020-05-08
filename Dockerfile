@@ -34,7 +34,7 @@ ENV VCPKG_ROOT=/vcpkg
 
 # Install libraries
 RUN ./vcpkg install capnproto:x64-linux
-
+ENV PATH=/vcpkg/installed/x64-linux/tools/capnproto/:$PATH
 
 # Compile Verilator so that we don't get a 3+ year old version
 WORKDIR /verilator_src
