@@ -1,0 +1,34 @@
+@using Esi.Schema
+@using Esi.SVCodeGen
+@using System.Linq
+@model (EsiInterface IFace, EsiSystemVerilogTypeWriter TypeWriter)
+@{
+    DisableEncoding = true;
+    var iface = Model.IFace;
+}
+////////////////////
+// ESI auto-generated file!
+//    Do NOT edit as this file WILL be overwritten
+/////////
+
+@{
+    var usedTypes = new List<EsiType>();
+    usedTypes.AddRange(iface.Methods.SelectMany(m => m.Params.Select(p => p.Type)));
+    usedTypes.AddRange(iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type)));
+    foreach (var t in usedTypes.Distinct())
+    {
+        var header = t.GetSVHeaderName();
+        if (!string.IsNullOrWhiteSpace(header))
+        {
+@:`include "@header"
+        }
+    }
+}
+
+@helper InterfaceMethod(EsiInterface.Method method) {
+
+Interface '@iface.Name' method '@method.Name'
+
+}
+
+

@@ -80,27 +80,19 @@ namespace Esi.SVCodeGen
 
         public void WriteSVInterface(EsiInterface iface, FileInfo to)
         {
-            if (to.Exists)
-                to.Delete();
+            C.Log.Information("Starting SV interface generation for {iface} to file {file}",
+                iface, to.Name);
+
+            var model = (IFace: iface, TypeWriter: new EsiSystemVerilogTypeWriter(C, null));
+            RazorEngine.Engine.RenderToFile("sv/full_interface.sv", model, to);
+            return;
 
             using (var write = new StreamWriter(to.OpenWrite()))
             {
                 var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
-                C.Log.Information("Starting SV interface generation for {iface} to file {file}",
-                    iface, to.Name);
+
                 write.WriteLine(EsiSystemVerilogConsts.Header);
 
-                write.WriteLine();
-
-                var usedTypes = new List<EsiType>();
-                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Params.Select(p => p.Type)));
-                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type)));
-                foreach (var usedNamedType in usedTypes.Distinct())
-                {
-                    var header = usedNamedType.GetSVHeaderName();
-                    if (!string.IsNullOrWhiteSpace(header))
-                        write.WriteLine($"`include \"{header}\"");
-                }
                 write.WriteLine();
 
 
