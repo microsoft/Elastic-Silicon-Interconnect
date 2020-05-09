@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Collections;
+using System.Security.Cryptography;
+using System.Text;
 
 #nullable enable
 namespace Esi.Schema
@@ -12,8 +14,13 @@ namespace Esi.Schema
         /// <summary>
         /// Reflection-based equality comparison which handles cycles
         /// </summary>
+        /// <param name="that">Object against which to compare</param>
+        /// <param name="includeNames">Match names as well?</param>
+        /// <param name="objMap">Cache results thus far to be able to handle cycles</param>
+        /// <returns></returns>
         public virtual bool StructuralEquals(
             EsiType that,
+            bool includeNames = false,
             IDictionary<EsiType, EsiType?>? objMap = null)
         {
             if (that == null)
@@ -49,7 +56,7 @@ namespace Esi.Schema
                         else
                         {
                             objMap[thisFieldEsi] = thatFieldEsi;
-                            if (!thisFieldEsi.StructuralEquals(thatFieldEsi, objMap))
+                            if (!thisFieldEsi.StructuralEquals(thatFieldEsi, includeNames, objMap))
                                 return false;
                         }
                     }
@@ -68,12 +75,19 @@ namespace Esi.Schema
                         IEnumerator e2 = thatCollection.GetEnumerator();
                         while (e1.MoveNext())
                         {
-                            if (!(e2.MoveNext() && StructuralEquals(e1.Current, e2.Current, objMap)))
+                            if (!(e2.MoveNext() && StructuralEquals(e1.Current, e2.Current, includeNames, objMap)))
                                 return false;
                         }
                         if (e2.MoveNext())
                             return false;
                     }
+                }
+                else if (this is EsiNamedType &&
+                         that is EsiNamedType &&
+                         prop.Name == "Name" &&
+                         !includeNames)
+                {
+                    // Don't include names
                 }
                 else
                 {
@@ -87,12 +101,12 @@ namespace Esi.Schema
             return true;
         }
 
-        protected static bool StructuralEquals(object thisValue, object thatValue, IDictionary<EsiType, EsiType?> objMap)
+        protected static bool StructuralEquals(object thisValue, object thatValue, bool includeNames, IDictionary<EsiType, EsiType?> objMap)
         {
             if (thisValue is EsiType e1 &&
                 thatValue is EsiType e2)
             {
-                return e1.StructuralEquals(e2, objMap);
+                return e1.StructuralEquals(e2, includeNames, objMap);
             }
             if ((thisValue != null || thatValue != null) &&
                  thisValue?.Equals(thatValue) != true)
@@ -100,6 +114,69 @@ namespace Esi.Schema
                 return false;
             }
             return true;
+        }
+
+        public byte[] GetDeterministicHash(bool includeNames)
+        {
+            var seen = new HashSet<EsiType>();
+            var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA512);
+            AppendHashData(hash, includeNames, seen);
+            return hash.GetHashAndReset();
+        }
+
+        public virtual void AppendHashData (
+            IncrementalHash hash,
+            bool includeNames,
+            ISet<EsiType> seen)
+        {
+            seen.Add(this);
+
+            Type thisType = this.GetType();
+            foreach (var prop in thisType.GetProperties())
+            {
+                var thisValue = prop.GetValue(this);
+                if (!thisType.IsPublic)
+                {
+                    // Only look at public fields
+                }
+                else if (thisValue is IEnumerable thisCollection)
+                {
+                    foreach (var o in thisCollection)
+                    {
+                        hash.AppendData(H(o));
+                    }
+                }
+                else if (this is EsiNamedType &&
+                         prop.Name == "Name" &&
+                         !includeNames)
+                {
+                    // Don't include names
+                }
+                else
+                {
+                    hash.AppendData(H(thisValue));
+                }
+            }
+
+            byte[] H(object o)
+            {
+                if (o == null)
+                    return new byte[]{};
+                var ty = o.GetType();
+                if (ty.IsPrimitive)
+                    return BitConverter.GetBytes((dynamic)o);
+                switch (o) {
+                    case string s:
+                        return Encoding.UTF8.GetBytes(s);
+                    case EsiTypeParent esiType:
+                        if (!seen.Contains(esiType))
+                        esiType.AppendHashData(hash, includeNames, seen);
+                        break;
+                    case EsiObject esiObject:
+                        return esiObject.GetDeterministicHash();
+                }
+                return new byte[]{};
+            }
         }
     }
 }

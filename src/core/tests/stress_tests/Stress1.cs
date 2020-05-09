@@ -21,7 +21,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1a()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -44,7 +44,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Compare()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -61,7 +61,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Incorrect()
         {
-            var types = ReadSchema("stress_tests/stress1.capnp");
+            var types = ReadSchema("stress_tests/stress1.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -110,8 +110,8 @@ namespace Esi.Core.Tests
                             null,
                             new EsiStruct.StructField[] {
                                 new EsiStruct.StructField("houseNumber", new EsiInt(32, false)),
-                                new EsiStruct.StructField("street", new EsiReferenceType(new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte)))),
-                                new EsiStruct.StructField("city", new EsiList(new EsiPrimitive(EsiPrimitive.PrimitiveType.EsiByte))),
+                                new EsiStruct.StructField("street", new EsiReferenceType(new EsiList(EsiPrimitive.Byte))),
+                                new EsiStruct.StructField("city", new EsiList(EsiPrimitive.Byte)),
                             }
                         )
                     ),
@@ -126,10 +126,10 @@ namespace Esi.Core.Tests
         {
             ShouldFail = true;
 
-            var types = ReadSchema("stress_tests/stress1_fail.capnp");
-            Assert.AreEqual(11, Context.Errors);
-            Assert.AreEqual(0, Context.Fatals);
-            Assert.True(Context.Failed);
+            var types = ReadSchema("stress_tests/stress1_fail.capnp").Objects.ToList();
+            Assert.AreEqual(11, C.Errors);
+            Assert.AreEqual(0, C.Fatals);
+            Assert.True(C.Failed);
 
             // Assert.Fail("Dummy fail to print out stdout");
         }
@@ -146,7 +146,7 @@ namespace Esi.Core.Tests
         [Test]
         public void ReadStress1Interfaces()
         {
-            var types = ReadSchema("stress_tests/stress1_synth.capnp");
+            var types = ReadSchema("stress_tests/stress1_synth.capnp").Objects.ToList();
 
             Assert.Greater(types.Count, 0);
             var structs = types.Where(t => t is EsiStruct).Select(t => t as EsiStruct);
@@ -168,7 +168,7 @@ namespace Esi.Core.Tests
             // Context.Log.Information("Actual   model: {model}", comp.Param.GetDescriptionTree());
 
             Assert.True(ComputeParam1Type.StructuralEquals(comp.Params[0].Type));
-            Assert.True(ComputeParam2Type.StructuralEquals(comp.Params[1].Type));
+            Assert.True(ComputeParam2Type.StructuralEquals(comp.Params[1].Type, includeNames: true));
             Assert.True(comp.Returns[0].Type.StructuralEquals(EsiCompound.SingletonFor(
                 Type: EsiCompound.CompoundType.EsiFloat,
                 Signed: true,

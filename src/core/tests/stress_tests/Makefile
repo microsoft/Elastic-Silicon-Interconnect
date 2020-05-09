@@ -7,6 +7,11 @@ investData: stress1_synth.capnp.txt stress1.capnp.txt stress1_fail.capnp.txt
 run: stress1_synth.capnp.bin
 	dotnet run --project ../../SVCodeGen -- -i stress1_synth.capnp.bin
 
+write:
+	-dotnet test ../../ --filter name=ReadWriteCompareStress1Synth
+	capnp compile -I../../capnp.convert/ -o- schema1_synth.esi.capnp > schema1_synth.esi.capnp.bin
+	capnp decode ../../capnp.convert/CapnpSchema.capnp CodeGeneratorRequest < schema1_synth.esi.capnp.bin  > schema1_synth.esi.capnp.txt
+
 clean:
 	rm -f *.txt *.bin *.esi.svh *.esi.sv
 	rm -rf obj_dir work __pycache__

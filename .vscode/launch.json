@@ -21,6 +21,20 @@
             "request": "attach",
             "processId": "${command:pickProcess}"
         },
-
+        {
+            "name": "CosimTest",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/core/cosim/rtl/obj_dir/Vcosim_test",
+            "args": ["+trace"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                // {
+                //     "name": "LD_LIBRARY_PATH",
+                //     "value": "/workspace/esi/bin/src/core/cosim/cosim_dpi_server"
+                // }
+            ],
+        }
     ]
 }

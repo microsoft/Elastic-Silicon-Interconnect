@@ -4,21 +4,21 @@ namespace Esi.Core.Tests
 {
     public class EsiTest
     {
-        public EsiContext Context { get; set; }
+        public EsiContext C { get; set; }
         public bool ShouldFail { get; set; } = false;
 
         [SetUp]
         public void BuildContext()
         {
             ShouldFail = false;
-            Context = new EsiContext();
+            C = new EsiContext();
         }
 
         [TearDown]
         public void CloseContext()
         {
-            Assert.AreEqual(ShouldFail, Context.Failed);
-            Context = null;
+            Assert.AreEqual(ShouldFail, C.Failed);
+            C = null;
         }
     }
 }
