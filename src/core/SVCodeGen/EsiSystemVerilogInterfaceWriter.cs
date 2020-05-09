@@ -75,7 +75,7 @@ namespace Esi.SVCodeGen
             C.Log.Information("Starting SV interface generation for {type} to file {file}",
                 type, fileInfo.Name);
             var model = (Type: type, HeaderFile: headerFile);
-            RazorEngine.Engine.RenderToFile("sv/interface.sv", model, fileInfo);
+            RazorEngine.Engine.RenderToFile("sv/type_interface.sv", model, fileInfo);
         }
 
         public void WriteSVInterface(EsiInterface iface, FileInfo to)
