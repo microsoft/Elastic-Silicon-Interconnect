@@ -38,6 +38,9 @@ namespace Esi
             }
         }
 
+        public static DirectoryInfo SupportDir =>
+            new DirectoryInfo(Path.Join(RootDir.FullName, "support"));
+
         public static FileInfo FileUnder(this DirectoryInfo me, string filename)
         {
             return new FileInfo(Path.Combine(me.FullName, filename));

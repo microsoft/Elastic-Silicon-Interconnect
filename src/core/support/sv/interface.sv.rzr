@@ -1,0 +1,35 @@
+@model (Esi.Schema.EsiNamedType Type, System.IO.FileInfo Header)
+@{
+    DisableEncoding = true;
+}
+@using Esi.SVCodeGen
+
+////////////////////
+// ESI auto-generated file!
+//    Do NOT edit as this file WILL be overwritten
+/////////
+
+`include "@Model.Header.Name"
+
+interface I@(Model.Type.GetSVIdentifier())Type_ValidReady ();
+
+    logic valid;
+    logic ready;
+
+    @Model.Type.GetSVIdentifier() data;
+
+    modport Source (
+        output valid,
+        input ready,
+
+        output data
+    );
+    
+    modport Sink (
+        input valid,
+        output ready,
+
+        input data
+    );
+
+endinterface

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Esi.Schema;
+using RazorLight;
+
 
 namespace Esi.SVCodeGen
 {
@@ -67,42 +69,13 @@ namespace Esi.SVCodeGen
             }
         }
 
+
         public void WriteSVTypeInterface(EsiNamedType type, FileInfo fileInfo, FileInfo headerFile)
         {
-            if (fileInfo.Exists)
-                fileInfo.Delete();
-            using (var write = new StreamWriter(fileInfo.OpenWrite()))
-            {
-                C.Log.Information("Starting SV interface generation for {type} to file {file}",
-                    type, fileInfo.Name);
-                write.WriteLine(EsiSystemVerilogConsts.Header);
-                write.Write($@"
-`include ""{headerFile.Name}""
-
-interface I{type.GetSVIdentifier()}Type_ValidReady ();
-
-    logic valid;
-    logic ready;
-
-    {type.GetSVIdentifier()} data;
-
-    modport Source (
-        output valid,
-        input ready,
-
-        output data
-    );
-    
-    modport Sink (
-        input valid,
-        output ready,
-
-        input data
-    );
-
-endinterface
-");
-            }
+            C.Log.Information("Starting SV interface generation for {type} to file {file}",
+                type, fileInfo.Name);
+            var model = (Type: type, HeaderFile: headerFile);
+            RazorEngine.Engine.RenderToFile("sv/interface.sv", model, fileInfo);
         }
 
         public void WriteSVInterface(EsiInterface iface, FileInfo to)
