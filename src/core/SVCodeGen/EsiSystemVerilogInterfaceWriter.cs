@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Esi.Schema;
+using Scriban.Runtime;
 
 namespace Esi.SVCodeGen
 {
@@ -56,133 +57,48 @@ namespace Esi.SVCodeGen
 
         public ISet<EsiType> WriteSVType(EsiNamedType type, FileInfo fileInfo)
         {
-            if (fileInfo.Exists)
-                fileInfo.Delete();
-            using (var write = new StreamWriter(fileInfo.OpenWrite()))
-            {
-                C.Log.Information("Starting SV type generation for {type} to file {file}",
-                    type, fileInfo.Name);
-                var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
-                return svTypeWriter.WriteSV(type, fileInfo);
-            }
+            C.Log.Information("Starting SV type generation for {type} to file {file}",
+                type, fileInfo.Name);
+            var svTypeWriter = new EsiSystemVerilogTypeWriter(C);
+            return svTypeWriter.WriteSVHeader(type, fileInfo);
         }
 
-        public void WriteSVTypeInterface(EsiNamedType type, FileInfo fileInfo, FileInfo headerFile)
+        public void WriteSVTypeInterface(EsiNamedType type, FileInfo to, FileInfo headerFile)
         {
-            if (fileInfo.Exists)
-                fileInfo.Delete();
-            using (var write = new StreamWriter(fileInfo.OpenWrite()))
-            {
-                C.Log.Information("Starting SV interface generation for {type} to file {file}",
-                    type, fileInfo.Name);
-                write.WriteLine(EsiSystemVerilogConsts.Header);
-                write.Write($@"
-`include ""{headerFile.Name}""
-
-interface I{type.GetSVIdentifier()}Type_ValidReady ();
-
-    logic valid;
-    logic ready;
-
-    {type.GetSVIdentifier()} data;
-
-    modport Source (
-        output valid,
-        input ready,
-
-        output data
-    );
-    
-    modport Sink (
-        input valid,
-        output ready,
-
-        input data
-    );
-
-endinterface
-");
-            }
+            var s = new ScriptObject();
+            s.Add("header", headerFile);
+            s.Add("type", type);
+            SVUtils.RenderTemplate("sv/type_interface.sv.sbntxt", s, to);
         }
 
         public void WriteSVInterface(EsiInterface iface, FileInfo to)
         {
-            if (to.Exists)
-                to.Delete();
-
-            using (var write = new StreamWriter(to.OpenWrite()))
+            var svTypeWriter = new EsiSystemVerilogTypeWriter(C);
+            string SimpleTypeString(EsiType type)
             {
-                var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
-                C.Log.Information("Starting SV interface generation for {iface} to file {file}",
-                    iface, to.Name);
-                write.WriteLine(EsiSystemVerilogConsts.Header);
-
-                write.WriteLine();
-
-                var usedTypes = new List<EsiType>();
-                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Params.Select(p => p.Type)));
-                usedTypes.AddRange(iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type)));
-                foreach (var usedNamedType in usedTypes.Distinct())
+                try {
+                    return svTypeWriter.GetSVTypeSimple(type, useName: true);
+                } catch (Exception e)
                 {
-                    var header = usedNamedType.GetSVHeaderName();
-                    if (!string.IsNullOrWhiteSpace(header))
-                        write.WriteLine($"`include \"{header}\"");
+                    C.Log.Error("Exception in getting a typestring for '{type}': {e}",
+                        type, e);
+                    return "<exception>";
                 }
-                write.WriteLine();
-
-
-                foreach (var method in iface.Methods)
-                {
-                    write.WriteLine();
-                    write.WriteLine($"///");
-                    write.WriteLine($"/// Interface '{iface.Name}' method '{method.Name}'");
-                    write.WriteLine($"///");
-                    write.WriteLine($"interface I{iface.GetSVIdentifier()}_{method.Name}_ValidReady ();");
-                    write.WriteLine();
-                    if (method.Params?.Count() > 0)
-                    {
-                        write.WriteLine("    // Input parameters (all signals are prefixed with 'p')");
-                        WriteParamReturn(method.Params, true);
-                    }
-                    if (method.Returns?.Count() > 0)
-                    {
-                        write.WriteLine();
-                        write.WriteLine("    // Output returns (all signals are prefixed with 'r')");
-                        WriteParamReturn(method.Returns, false);
-                    }
-
-                    write.WriteLine("endinterface");
-                }
-
-                void WriteParamReturn((string Name, EsiType Type)[] pr, bool isParam)
-                {
-                    var pvChar = isParam ? "p" : "r";
-                    var pvString = isParam ? "Param" : "Return";
-                    write.WriteLine($"    logic {pvChar}Valid;");
-                    write.WriteLine($"    logic {pvChar}Ready;");
-                    foreach (var p in pr)
-                        write.WriteLine($"    {svTypeWriter.GetSVTypeSimple(p.Type, useName: true)} {pvChar}{p.Name};");
-
-                    write.WriteLine();
-                    write.WriteLine($"    modport {pvString}Source (");
-                    foreach (var p in pr)
-                        write.WriteLine($"        output {pvChar}{p.Name},");
-
-                    write.WriteLine($"        output {pvChar}Valid,");
-                    write.WriteLine($"        input {pvChar}Ready");
-                    write.WriteLine( "    );");
-
-                    write.WriteLine($"    modport {pvString}Sink (");
-                    foreach (var p in pr)
-                        write.WriteLine($"        input {pvChar}{p.Name},");
-
-                    write.WriteLine($"        input {pvChar}Valid,");
-                    write.WriteLine($"        output {pvChar}Ready");
-                    write.WriteLine( "    );");
-                    write.WriteLine();
-                }
-
             }
+
+            C.Log.Information("Starting SV interface generation for {iface} to file {file}",
+                iface, to.Name);
+
+            var paramTypes = iface.Methods.SelectMany(m => m.Params.Select(p => p.Type));
+            var returnTypes = iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type));
+            var usedTypes = paramTypes.Concat(returnTypes).Distinct();
+
+            var s = new ScriptObject();
+            s.Add("iface", iface);
+            s.Add("usedTypes", usedTypes);
+            s.Import("SimpleTypeString", new Func<EsiType, string>(SimpleTypeString));
+
+            SVUtils.RenderTemplate("sv/full_interface.sv.sbntxt", s, to);
         }
     }
 }

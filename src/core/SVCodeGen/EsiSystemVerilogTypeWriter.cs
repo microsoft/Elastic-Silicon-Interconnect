@@ -5,27 +5,21 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Esi.Schema;
+using Scriban.Runtime;
 
 namespace Esi.SVCodeGen
 {
     public class EsiSystemVerilogTypeWriter
     {
         protected EsiContext C;
-        protected StreamWriter Writer;
         protected ISet<EsiType> Includes;
         protected IList<(EsiNamedType type, string name, string svType)> DependentAnonymousTypes;
 
-        public EsiSystemVerilogTypeWriter(EsiContext C, StreamWriter Writer)
+        public EsiSystemVerilogTypeWriter(EsiContext C)
         {
             this.C = C;
-            this.Writer = Writer;
             Includes = new HashSet<EsiType>();
             DependentAnonymousTypes = new List<(EsiNamedType type, string name, string svType)>();
-        }
-
-        protected void W(string line = "")
-        {
-            Writer.WriteLine(line);
         }
 
         /// <summary>
@@ -34,70 +28,36 @@ namespace Esi.SVCodeGen
         /// <param name="type"></param>
         /// <param name="headerFile"></param>
         /// <returns>A set of the used types</returns>
-        public ISet<EsiType> WriteSV(EsiNamedType type, FileInfo headerFile)
+        public ISet<EsiType> WriteSVHeader(EsiNamedType type, FileInfo to)
         {
-            W(EsiSystemVerilogConsts.Header);
-
-            W();
-            W("// ---");
-            W("// Type description plain text");
-            W("//");
-            var textDescriptionBuilder = new StringBuilder();
-            type.GetDescriptionTree(textDescriptionBuilder, 0);
-            foreach (var line in textDescriptionBuilder
-                .ToString()
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries))
-            {
-                W($"// {line.TrimEnd()}");
-            }
-            W();
+            var s = new ScriptObject();
+            s["Type"] = type;
+            s["File"] = to;
 
             // Run this first to populate 'Includes'
             var svTypeString = GetStructField(
                 new EsiStruct.StructField(type.GetSVIdentifier(), type),
                 new List<EsiStruct.StructField>(),
                 false);
-            foreach (var incl in Includes
+            s["TypeString"] = svTypeString;
+
+            s["Includes"] = Includes
                 .Select(i => i.GetSVHeaderName())
                 .Where(i => !string.IsNullOrWhiteSpace(i))
-                .Distinct())
-            {
-                W($"`include \"{incl}\"");
-            }
-            W();
+                .Distinct();
 
-            var macro = $"__{headerFile.Name.Replace('.', '_')}__";
-            W($"`ifndef {macro}");
-            W($"`define {macro}");
-            W();
+            var textDescriptionBuilder = new StringBuilder();
+            type.GetDescriptionTree(textDescriptionBuilder, 0);
+            s["TxtDesc"] = textDescriptionBuilder.ToString();
+            s["DependentAnonymousTypes"] = DependentAnonymousTypes;
+            SVUtils.RenderTemplate("sv/type_header.sv.sbntxt", s, to);
 
-            if (DependentAnonymousTypes.Count() > 0)
-            {
-                W( "// ****");
-                W($"// Types which '{type}' depends upon");
-            }
-            foreach (var dat in DependentAnonymousTypes)
-            {
-                W($"typedef {dat.svType} {dat.name};");
-            }
-            if (DependentAnonymousTypes.Count() > 0)
-            {
-                W( "// ****");
-                W();
-                W();
-            }
-
-            W( "// *****");
-            W($"// {type}");
-            W( "//");
-            W($"typedef {svTypeString}");
-            
-            W();
-            W("`endif");
-            W();
             return Includes;
         }
 
+        // ******
+        // From here down is kept in C# since it is _very_ control heavy
+        //
 
         public string GetSVType(
             EsiType type,

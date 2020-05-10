@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Scriban.Runtime;
 
 
 #nullable enable
@@ -22,7 +23,7 @@ namespace Esi
                     var dir = assem.Directory;
                     while (dir != null)
                     {
-                        if (dir.GetDirectories("capnp.convert").Length > 0)
+                        if (dir.GetDirectories("support").Length > 0)
                         {
                             _Rootdir = dir;
                             break;
@@ -46,6 +47,32 @@ namespace Esi
         public static FileInfo ResolveResource(string resource)
         {
             return new FileInfo(Path.Combine(RootDir.FullName, resource));
+        }
+
+        public static string RenderTemplate(string tmplName, ScriptObject scriptObject)
+        {
+            var templateContext = new Scriban.TemplateContext {
+                MemberRenamer = m => m.Name,
+                StrictVariables = true,
+                RegexTimeOut = new TimeSpan(0, 0, seconds: 1),
+            };
+            templateContext.PushGlobal(scriptObject);
+
+            var tmplFile = ResolveResource(Path.Combine("support", tmplName));
+            if (!tmplFile.Exists)
+                throw new ArgumentException($"Cannot find template '{tmplFile.FullName}'");
+            var template = Scriban.Template.Parse (
+                File.ReadAllText(tmplFile.FullName),
+                sourceFilePath: tmplFile.FullName );
+            return template.Render(templateContext);
+        }
+
+        public static void RenderTemplate(string tmplName, ScriptObject scriptObject, FileInfo to)
+        {
+            if (to.Exists)
+                to.Delete();
+            using (var w = new StreamWriter(to.OpenWrite()))
+                w.Write(RenderTemplate(tmplName, scriptObject));
         }
 
         // ------ More LINQ methods
