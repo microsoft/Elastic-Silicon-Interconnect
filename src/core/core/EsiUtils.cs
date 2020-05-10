@@ -23,7 +23,7 @@ namespace Esi
                     var dir = assem.Directory;
                     while (dir != null)
                     {
-                        if (dir.GetDirectories("capnp.convert").Length > 0)
+                        if (dir.GetDirectories("support").Length > 0)
                         {
                             _Rootdir = dir;
                             break;
