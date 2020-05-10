@@ -1,0 +1,29 @@
+////////////////////
+// ESI auto-generated file!
+//    Do NOT edit as this file WILL be overwritten
+/////////
+
+`include "{{ header.Name }}"
+
+interface I{{ GetSVIdentifier type }}Type_ValidReady ();
+
+    logic valid;
+    logic ready;
+
+    {{ GetSVIdentifier type }} data;
+
+    modport Source (
+        output valid,
+        input ready,
+
+        output data
+    );
+    
+    modport Sink (
+        input valid,
+        output ready,
+
+        input data
+    );
+
+endinterface

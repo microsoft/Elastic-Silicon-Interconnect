@@ -1,0 +1,64 @@
+{{
+func ParamReturn
+    if $1
+        pvChar = "p"
+        pvString = "Param"
+    else
+        pvChar = "r"
+        pvString = "Return"
+    end
+~}}
+    logic {{pvChar}}Valid;
+    logic {{pvChar}}Ready;
+    {{~for $p in $0~}}
+    {{ SimpleTypeString $p.Item2 }} {{pvChar}}{{$p.Item1}};
+    {{~end~}}
+
+    modport {{pvString}}Source (
+        {{~for $p in $0~}}
+        output {{pvChar}}{{$p.Item1}},
+        {{end}}
+        output {{pvChar}}Valid,
+        input {{pvChar}}Ready
+    );
+
+    modport {{pvString}}Sink (
+        {{~for $p in $0~}}
+        input {{pvChar}}{{$p.Item1}},
+        {{~end~}}
+
+        input {{pvChar}}Valid,
+        output {{pvChar}}Ready
+    );
+{{
+end
+~}}
+
+
+////////////////////
+// ESI auto-generated file!
+//    Do NOT edit as this file WILL be overwritten
+/////////
+
+{{ for used in usedTypes
+    hdr = GetSVHeaderName used
+    if hdr != "" ~}}
+`include "{{ hdr }}"
+ {{~ end
+end ~}}
+
+{{ for method in iface.Methods ~}}
+///
+/// Interface '{{iface.Name}}' method '{{method.Name}}'
+///
+interface I{{ GetSVIdentifierIFace iface }}_{{method.Name}}_ValidReady ();
+
+    // Input parameters (all signals are prefixed with 'p')
+    {{~ ParamReturn method.Params true ~}}
+
+    // Output returns (all signals are prefixed with 'r')
+    {{~ ParamReturn method.Returns false ~}}
+
+endinterface;
+{{ end }}
+

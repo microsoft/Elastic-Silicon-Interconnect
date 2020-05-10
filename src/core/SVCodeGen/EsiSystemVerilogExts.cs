@@ -37,6 +37,5 @@ namespace Esi.SVCodeGen
                 _ => throw new ArgumentException($"Unhandled Compound type {Enum.GetName(typeof(EsiStruct.StructField), c.Type)}")
             };
         }
-
     }
 }
