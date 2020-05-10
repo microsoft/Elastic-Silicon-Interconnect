@@ -57,15 +57,10 @@ namespace Esi.SVCodeGen
 
         public ISet<EsiType> WriteSVType(EsiNamedType type, FileInfo fileInfo)
         {
-            if (fileInfo.Exists)
-                fileInfo.Delete();
-            using (var write = new StreamWriter(fileInfo.OpenWrite()))
-            {
-                C.Log.Information("Starting SV type generation for {type} to file {file}",
-                    type, fileInfo.Name);
-                var svTypeWriter = new EsiSystemVerilogTypeWriter(C, write);
-                return svTypeWriter.WriteSV(type, fileInfo);
-            }
+            C.Log.Information("Starting SV type generation for {type} to file {file}",
+                type, fileInfo.Name);
+            var svTypeWriter = new EsiSystemVerilogTypeWriter(C);
+            return svTypeWriter.WriteSVHeader(type, fileInfo);
         }
 
         public void WriteSVTypeInterface(EsiNamedType type, FileInfo to, FileInfo headerFile)
@@ -78,7 +73,7 @@ namespace Esi.SVCodeGen
 
         public void WriteSVInterface(EsiInterface iface, FileInfo to)
         {
-            var svTypeWriter = new EsiSystemVerilogTypeWriter(C, null);
+            var svTypeWriter = new EsiSystemVerilogTypeWriter(C);
             string SimpleTypeString(EsiType type)
             {
                 try {
@@ -98,7 +93,6 @@ namespace Esi.SVCodeGen
             var returnTypes = iface.Methods.SelectMany(m => m.Returns.Select(p => p.Type));
             var usedTypes = paramTypes.Concat(returnTypes).Distinct();
 
-            Console.WriteLine(svTypeWriter.GetSVTypeSimple(iface.Methods.First().Params.First().Type));
             var s = new ScriptObject();
             s.Add("iface", iface);
             s.Add("usedTypes", usedTypes);

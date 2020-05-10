@@ -1,0 +1,36 @@
+////////////////////
+// ESI auto-generated file!
+//    Do NOT edit as this file WILL be overwritten
+/////////
+
+// ---
+// Type description plain text
+//
+{{~for line in (TxtDesc | string.split '\n')~}}
+//  {{string.rstrip line}}
+{{end~}}
+
+{{~capture macro}}__{{~string.replace File.Name "." "_"~}}__{{end~}}
+
+`ifdef {{macro}}
+`define {{macro}}
+
+{{for inc in Includes~}}
+`include "{{inc}}"
+{{~end}}
+
+{{~if (array.size DependentAnonymousTypes) > 0 ~}}
+// *******
+// Anonymous types have to be named in SystemVerilog
+{{~for dat in DependentAnonymousTypes~}}
+typedef {{dat.Item3}} {{dat.Item2}};
+{{~end~}}
+// ***
+{{end}}
+
+// ******
+// {{Type.Name}}
+//
+typedef {{TypeString}}
+
+`endif // {{macro}}
