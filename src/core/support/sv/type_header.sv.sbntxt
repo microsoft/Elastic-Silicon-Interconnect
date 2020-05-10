@@ -12,7 +12,7 @@
 
 {{~capture macro}}__{{~string.replace File.Name "." "_"~}}__{{end~}}
 
-`ifdef {{macro}}
+`ifndef {{macro}}
 `define {{macro}}
 
 {{for inc in Includes~}}

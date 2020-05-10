@@ -42,7 +42,7 @@ end
 
 {{ for used in usedTypes
     hdr = GetSVHeaderName used
-    if hdr != "" ~}}
+    if hdr != "" && hdr != null ~}}
 `include "{{ hdr }}"
  {{~ end
 end ~}}
