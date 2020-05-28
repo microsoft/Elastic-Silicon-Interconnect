@@ -4,4 +4,8 @@
     ],
     "files.eol": "\n",
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+    "cmake.environment": {
+        "VCPKG_ROOT": "${env:HOME}/vcpkg",
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}"
 }

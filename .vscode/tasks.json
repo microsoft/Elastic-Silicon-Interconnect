@@ -11,7 +11,10 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "options": {
-                "cwd": "${workspaceRoot}/src/core"
+                "cwd": "${workspaceRoot}/src/core",
+                "env": {
+                    "PATH": "${env:HOME}/vcpkg/installed/x64-linux/tools/capnproto:${env:PATH}"
+                }
             },
             "group": {
                 "kind": "build",
