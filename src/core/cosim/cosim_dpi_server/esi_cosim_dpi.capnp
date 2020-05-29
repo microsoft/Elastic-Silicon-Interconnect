@@ -11,8 +11,12 @@ struct EsiDpiInterfaceDesc {
 }
 
 interface EsiDpiEndpoint {
-    send @0 (blob :Data);
-    recv @1 (block :Bool = true) -> (hasData :Bool, resp :Data); # If 'resp' null, no data
+    send @0 (msg :AnyPointer);
+    recv @1 (block :Bool = true) -> (hasData :Bool, resp :AnyPointer); # If 'resp' null, no data
 
     close @2 ();
+}
+
+struct UntypedData {
+    data @0 :Data;
 }

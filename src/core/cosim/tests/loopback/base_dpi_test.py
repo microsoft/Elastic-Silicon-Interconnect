@@ -8,12 +8,12 @@ import time
 import subprocess
 import io
 import pytest
-from test_utils import cmd
 
 cosimDir = os.path.join(os.path.dirname(__file__), "..", "..")
 
 class TestLoopbackBaseDPI:
     def setup_class(self):
+        from test_utils import cmd
         cmd.cd_filedir(__file__)
         cmd.run("make")
         self.simPro = subprocess.Popen(["make", "run"], stdin=subprocess.PIPE)
@@ -26,10 +26,10 @@ class TestLoopbackBaseDPI:
         self.simPro.wait(1.0)
 
     def rpc(self):
-        dpi = capnp.load(os.path.join(cosimDir, "cosim_dpi_server", "esi_cosim_dpi.capnp"))
-        rpc = capnp.TwoPartyClient("localhost:1111")
-        cosim = rpc.bootstrap().cast_as(dpi.CosimDpiServer)
-        return cosim
+        self.dpi = capnp.load(os.path.join(cosimDir, "cosim_dpi_server", "esi_cosim_dpi.capnp"))
+        self.rpc = capnp.TwoPartyClient("localhost:1111")
+        self.cosim = self.rpc.bootstrap().cast_as(self.dpi.CosimDpiServer)
+        return self.cosim
 
     @pytest.mark.nolic
     def test_list(self):
@@ -54,20 +54,23 @@ class TestLoopbackBaseDPI:
         r = random.randrange(0, 2**24)
         data = r.to_bytes(3, 'big')
         print (f'Sending: {binascii.hexlify(data)}')
-        ep.send(data).wait()
+        ep.send(self.dpi.UntypedData.new_message(data = data)).wait()
         return data
 
     def read(self, ep):
         while True:
-            data = ep.recv(False).wait()
-            if data.hasData:
+            recvResp = ep.recv(False).wait()
+            if recvResp.hasData:
                 break
             else:
                 time.sleep(0.1)
-        assert data.resp is not None
-        print (data)
-        print (binascii.hexlify(data.resp))
-        return data.resp
+        assert recvResp.resp is not None
+        # print (recvResp)
+        dataMsg = recvResp.resp.as_struct(self.dpi.UntypedData)
+        # print (dataMsg)
+        data = dataMsg.data
+        print (binascii.hexlify(data))
+        return data
 
     def openEP(self):
         cosim = self.rpc()
@@ -91,20 +94,20 @@ class TestLoopbackBaseDPI:
         assert dataSent == dataRecv
 
     @pytest.mark.nolic
-    def test_write_read_many(self):
+    def test_write_read_many(self, num_msgs=50):
         ep = self.openEP()
         print ("Testing writes")
         dataSent = list()
-        for _ in range(50):
+        for _ in range(num_msgs):
             dataSent.append(self.write(ep))
         print ()
         print ("Testing reads")
         dataRecv = list()
-        for _ in range(50):
+        for _ in range(num_msgs):
             dataRecv.append(self.read(ep))
         ep.close().wait()
         assert dataSent == dataRecv
 
 if __name__ == "__main__":
     test = TestLoopbackBaseDPI()
-    test.test_write_read_many()
+    test.test_write_read_many(5)

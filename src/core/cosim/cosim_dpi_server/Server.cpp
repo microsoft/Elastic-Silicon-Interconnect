@@ -2,6 +2,8 @@
 #include "Server.hpp"
 #include <kj/debug.h>
 #include <stdexcept>
+#include <capnp/message.h>
+#include <capnp/layout.h>
 
 using namespace std;
 using namespace capnp;
@@ -17,10 +19,21 @@ kj::Promise<void> EndPointServer::close(CloseContext context)
 kj::Promise<void> EndPointServer::send(SendContext context)
 {
     KJ_REQUIRE(_Open, "EndPoint closed already");
-    auto capnpBlob = context.getParams().getBlob();
-    EndPoint::BlobPtr blob = make_shared<EndPoint::Blob>(
-        capnpBlob.begin(), capnpBlob.end());
+    auto capnpMsgPointer = context.getParams().getMsg();
+    KJ_REQUIRE(capnpMsgPointer.isStruct(), "Only messages can go in the 'msg' parameter");
+    auto msgSize = capnpMsgPointer.targetSize();
+    auto builder = make_unique<MallocMessageBuilder>(msgSize.wordCount + 1, AllocationStrategy::FIXED_SIZE);
+    builder->setRoot(capnpMsgPointer);
+    auto segments = builder->getSegmentsForOutput();
+    KJ_ASSERT(segments.size() == 1);
+    auto fstSegmentData = segments[0].asBytes();
+
+    auto blob = std::make_shared<EndPoint::Blob>(fstSegmentData.begin(), fstSegmentData.end());
     _EndPoint->PushMessageToSim(blob);
+    // for (uint8_t b : *blob) {
+    //     printf("%02X ", b);
+    // }
+    // printf("\n");
     return kj::READY_NOW;
 }
 
@@ -32,8 +45,12 @@ kj::Promise<void> EndPointServer::recv(RecvContext context)
     EndPoint::BlobPtr blob;
     auto msgPresent = _EndPoint->GetMessageToClient(blob);
     context.getResults().setHasData(msgPresent);
-    if (msgPresent)
-        context.getResults().setResp(capnp::Data::Builder(blob->data(), blob->size()));
+    if (msgPresent) {
+        auto segment = kj::ArrayPtr<word>((word*)blob->data(), blob->size() / 8).asConst();
+        auto segments = kj::heapArray({segment});
+        auto msgReader = make_unique<SegmentArrayMessageReader>(segments);
+        context.getResults().getResp().set(msgReader->getRoot<AnyPointer>());
+    }
     return kj::READY_NOW;
 }
 
