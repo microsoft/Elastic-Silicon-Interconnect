@@ -14,7 +14,10 @@ module cosim_test(
     //     end
     // end
 
-    localparam int TYPE_SIZE_BITS = 24;
+    localparam int TYPE_SIZE_BITS =
+        (1 * 64) + // root message
+        (1 * 64) + // list header
+        (1 * 64);  // list of length 3 bytes, rounded up to multiples of 8 bytes
     `ifndef VERILATOR
     logic clk;
     logic rstn;

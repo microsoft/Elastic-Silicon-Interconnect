@@ -27,7 +27,7 @@ RUN python3 -m pip install -U pycapnp
 RUN cd / && \
     git clone https://github.com/Microsoft/vcpkg.git && \
     cd vcpkg && \
-    git checkout 7db401cb1ef1fc559ec9f9ce814d064c328fd767
+    git checkout d9b4acf02d8c784927f89d23edb677408ec428af
 WORKDIR /vcpkg
 RUN ./bootstrap-vcpkg.sh
 ENV VCPKG_ROOT=/vcpkg
