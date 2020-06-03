@@ -1,6 +1,7 @@
 #include "esi_cosim_dpi.capnp.h"
 #include "EndPoint.hpp"
 #include <capnp/ez-rpc.h>
+#include <capnp/any.h>
 #include <kj/async.h>
 #include <map>
 #include <thread>
@@ -9,7 +10,7 @@
 #ifndef __COSIM_DPI_SERVER_HPP__
 #define __COSIM_DPI_SERVER_HPP__
 
-class EndPointServer : public EsiDpiEndpoint::Server
+class EndPointServer : public EsiDpiEndpoint<capnp::AnyPointer, capnp::AnyPointer>::Server
 {
     std::unique_ptr<EndPoint>& _EndPoint;
     bool _Open;

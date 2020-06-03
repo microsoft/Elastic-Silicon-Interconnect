@@ -27,8 +27,8 @@ class TestLoopbackBaseDPI:
 
     def rpc(self):
         self.dpi = capnp.load(os.path.join(cosimDir, "cosim_dpi_server", "esi_cosim_dpi.capnp"))
-        self.rpc = capnp.TwoPartyClient("localhost:1111")
-        self.cosim = self.rpc.bootstrap().cast_as(self.dpi.CosimDpiServer)
+        self.rpc_client = capnp.TwoPartyClient("localhost:1111")
+        self.cosim = self.rpc_client.bootstrap().cast_as(self.dpi.CosimDpiServer)
         return self.cosim
 
     @pytest.mark.nolic

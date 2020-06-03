@@ -2,7 +2,7 @@
 
 interface CosimDpiServer {
     list @0 () -> (ifaces :List(EsiDpiInterfaceDesc));
-    open @1 (iface :EsiDpiInterfaceDesc) -> (iface :EsiDpiEndpoint);
+    open @1 [S, T] (iface :EsiDpiInterfaceDesc) -> (iface :EsiDpiEndpoint(S, T));
 }
 
 struct EsiDpiInterfaceDesc {
@@ -10,9 +10,9 @@ struct EsiDpiInterfaceDesc {
     endpointID @1 :Int32;
 }
 
-interface EsiDpiEndpoint {
-    send @0 (msg :AnyPointer);
-    recv @1 (block :Bool = true) -> (hasData :Bool, resp :AnyPointer); # If 'resp' null, no data
+interface EsiDpiEndpoint(SendMsgType, RecvMsgType) {
+    send @0 (msg :SendMsgType);
+    recv @1 (block :Bool = true) -> (hasData :Bool, resp :RecvMsgType); # If 'resp' null, no data
 
     close @2 ();
 }
