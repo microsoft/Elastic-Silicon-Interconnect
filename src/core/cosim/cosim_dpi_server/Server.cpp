@@ -46,6 +46,7 @@ kj::Promise<void> EndPointServer::recv(RecvContext context)
     auto msgPresent = _EndPoint->GetMessageToClient(blob);
     context.getResults().setHasData(msgPresent);
     if (msgPresent) {
+        KJ_REQUIRE(blob->size() % 8 == 0, "Response msg was malformed. Size of response was not a multiple of 8 bytes.");
         auto segment = kj::ArrayPtr<word>((word*)blob->data(), blob->size() / 8).asConst();
         auto segments = kj::heapArray({segment});
         auto msgReader = make_unique<SegmentArrayMessageReader>(segments);
