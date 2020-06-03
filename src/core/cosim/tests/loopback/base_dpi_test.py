@@ -15,7 +15,9 @@ class TestLoopbackBaseDPI:
     def setup_class(self):
         from test_utils import cmd
         cmd.cd_filedir(__file__)
+        print("Running make")
         cmd.run("make", timeout=600.0)
+        print("Running make run")
         self.simPro = subprocess.Popen(["make", "run"], stdin=subprocess.PIPE)
         time.sleep(2.0)
 
@@ -27,7 +29,8 @@ class TestLoopbackBaseDPI:
 
     def rpc(self):
         self.dpi = capnp.load(os.path.join(cosimDir, "cosim_dpi_server", "esi_cosim_dpi.capnp"))
-        self.rpc_client = capnp.TwoPartyClient("localhost:1111")
+        hostname = os.uname()[1]
+        self.rpc_client = capnp.TwoPartyClient(f"{hostname}:1111")
         self.cosim = self.rpc_client.bootstrap().cast_as(self.dpi.CosimDpiServer)
         return self.cosim
 
