@@ -15,15 +15,15 @@ class TestLoopbackBaseDPI:
     def setup_class(self):
         from test_utils import cmd
         cmd.cd_filedir(__file__)
-        cmd.run("make")
+        cmd.run("make", timeout=600.0)
         self.simPro = subprocess.Popen(["make", "run"], stdin=subprocess.PIPE)
-        time.sleep(1.0)
+        time.sleep(2.0)
 
     def teardown_class(self):
         stdin = io.TextIOWrapper(self.simPro.stdin, 'ascii')
-        stdin.write("\n")
+        stdin.write("\n\n")
         stdin.flush()
-        self.simPro.wait(1.0)
+        self.simPro.wait(30.0)
 
     def rpc(self):
         self.dpi = capnp.load(os.path.join(cosimDir, "cosim_dpi_server", "esi_cosim_dpi.capnp"))
