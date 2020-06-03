@@ -6,7 +6,7 @@ build:
 	verilator --cc --trace --top-module cosim_test ../../rtl/Cosim_DpiPkg.sv ../../rtl/Cosim_Endpoint.sv driver.sv --exe driver.cpp ${ESI_ROOT}/../build/src/core/cosim/cosim_dpi_server/libEsiCosimDpiServer.so -LDFLAGS "-lpthread"
 	make USER_CPPFLAGS="-DVL_USER_STOP -O0 -ggdb" -j -C obj_dir -f Vcosim_test.mk Vcosim_test
 
-run: build
+run:
 	LD_LIBRARY_PATH=${ESI_ROOT}/build/src/core/cosim/cosim_dpi_server/ ./obj_dir/Vcosim_test +trace
 
 valgrind:
