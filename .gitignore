@@ -2,8 +2,8 @@
 ## Project specific ignores
 ##
 
-# Ignore 'tools', a directory created by the setup script to contain build tools
-/tools/
+# Ignore the build binary directory
+/build
 
 # Captnproto output files
 *.capnp.cs
