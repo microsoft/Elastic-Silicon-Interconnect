@@ -21,25 +21,25 @@ jobs:
     #   with:
     #     name: esi_core_linux
     #     path: src/core/bin/esi_core_linux.tar.gz
-  linux_docker_run:
-    name: Test on bare Ubuntu image
-    needs: linux_build
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:16.04
-    steps:
-      - name: Install package deps
-        run: |
-          apt update
-          apt install libssl1.0.0
-      - name: Download executable
-        uses: actions/download-artifact@v1
-        with:
-          name: esi_core_linux
-          path: tarballs
-      - run: tar -zxvf tarballs/esi_core_linux.tar.gz
-      - uses: actions/checkout@v2
-        with:
-          path: src
-      - name: Test SVCodeGen
-        run: esi_core_linux/SVCodeGen -i src/src/core/tests/stress_tests/stress1_synth.capnp
+  # linux_docker_run:
+  #   name: Test on bare Ubuntu image
+  #   needs: linux_build
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: ubuntu:16.04
+  #   steps:
+  #     - name: Install package deps
+  #       run: |
+  #         apt update
+  #         apt install libssl1.0.0
+  #     - name: Download executable
+  #       uses: actions/download-artifact@v1
+  #       with:
+  #         name: esi_core_linux
+  #         path: tarballs
+  #     - run: tar -zxvf tarballs/esi_core_linux.tar.gz
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         path: src
+  #     - name: Test SVCodeGen
+  #       run: esi_core_linux/SVCodeGen -i src/src/core/tests/stress_tests/stress1_synth.capnp
