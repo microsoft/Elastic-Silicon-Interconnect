@@ -6,6 +6,8 @@
 
 include "mlir/IR/OpBase.td"
 
+// Provide a definition of the 'toy' dialect in the ODS framework so that we
+// can define our operations.
 def Esi_Dialect : Dialect {
     let name = "esi";
     let cppNamespace = "esi";
