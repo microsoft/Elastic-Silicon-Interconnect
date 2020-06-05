@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 
 set(HEADERS ${CAPNP_HDRS} )
 set(SOURCES ${CAPNP_SRCS} dummy.cpp)

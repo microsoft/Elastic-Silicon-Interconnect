@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 cgt.Name = "esi_interface"
 cgt.Description = "Generate SystemVerilog interfaces from a spec using Elastic Silicon Interfaces"
 

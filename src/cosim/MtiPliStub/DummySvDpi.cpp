@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // Based on code from Verilator:
