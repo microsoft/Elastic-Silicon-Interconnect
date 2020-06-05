@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "esi_cosim_dpi.capnp.h"
 #include <queue>
 #include <map>

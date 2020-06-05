@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using NUnit.Framework;
 
 namespace Esi.Core.Tests

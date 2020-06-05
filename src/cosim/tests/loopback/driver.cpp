@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #include "obj_dir/Vcosim_test.h"
 #include "verilated_vcd_c.h"
 

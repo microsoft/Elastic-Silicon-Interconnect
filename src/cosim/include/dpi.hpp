@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Prototypes for DPI import and export functions.
 //

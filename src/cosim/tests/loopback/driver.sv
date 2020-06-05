@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 import Cosim_DpiPkg::*;
 
 module cosim_test(

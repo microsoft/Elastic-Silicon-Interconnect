@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 
 set(HEADERS ${CAPNP_HDRS} ${COSIM_INCLUDE}/svdpi.h)
 set(SOURCES ${CAPNP_SRCS} DummySvDpi.cpp )

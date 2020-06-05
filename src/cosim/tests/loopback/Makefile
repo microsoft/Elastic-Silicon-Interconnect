@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 ESI_ROOT = ../../../../
 ESI_BIN = /tmp/esibuild
 build:

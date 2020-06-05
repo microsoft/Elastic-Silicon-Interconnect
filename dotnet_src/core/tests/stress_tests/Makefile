@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # include $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/../capnp.mk
 include ../capnp.mk
 

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 
 #include "Server.hpp"
 #include <kj/debug.h>
