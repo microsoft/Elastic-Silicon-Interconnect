@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "Dialects/Esi/EsiDialect.hpp"
-#include "Dialects/Esi/EsiOpsBasicTypes.hpp"
+#include "Dialects/Esi/EsiOpsTypes.hpp"
 
 namespace mlir {
 namespace esi {
