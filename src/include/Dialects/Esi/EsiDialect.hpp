@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#ifndef __ESI_DIALECT_HPP__
+#define __ESI_DIALECT_HPP__
+
 #include <mlir/IR/Dialect.h>
 
 namespace mlir {
@@ -32,3 +35,5 @@ namespace esi {
 
 }
 }
+
+#endif

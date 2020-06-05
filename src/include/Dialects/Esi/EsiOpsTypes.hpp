@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#ifndef __ESI_TYPES_HPP__
+#define __ESI_TYPES_HPP__
+
 #include <tuple>
 
 #include <mlir/IR/Operation.h>
@@ -92,3 +95,5 @@ public:
 
 }
 }
+
+#endif
