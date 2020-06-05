@@ -1,3 +1,7 @@
+<!--
+  Copyright (c) Microsoft Corporation.
+  Licensed under the MIT License.
+-->
 [Back to table of contents](index.md#Table-of-contents)
 
 # ESI Memory Mapped (Read/Write) Interfaces

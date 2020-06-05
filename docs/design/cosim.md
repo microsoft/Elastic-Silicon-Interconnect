@@ -1,3 +1,7 @@
+<!--
+  Copyright (c) Microsoft Corporation.
+  Licensed under the MIT License.
+-->
 # ESI Co-simulation design doc
 
 ## Core cosim.dll
