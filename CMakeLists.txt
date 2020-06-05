@@ -69,8 +69,7 @@ link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 add_subdirectory(src)
-# add_subdirectory(src/core/cosim)
-# add_subdirectory(src/core/cosim/dummy_simulator)
+add_subdirectory(tests)
 
 # set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 # set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
