@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-add_mlir_dialect_library(EsiOps
+add_mlir_dialect_library(MLIREsi
     EsiDialect.cpp
     EsiOps.cpp
     ${EsiDialactHeaders}
