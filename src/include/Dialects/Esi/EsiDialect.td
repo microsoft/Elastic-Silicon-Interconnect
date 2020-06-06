@@ -13,4 +13,6 @@ def Esi_Dialect : Dialect {
     let cppNamespace = "esi";
 }
 
+def Esi_CompoundType: Type<CPred<"$_self.isa<CompoundType>()">, "ESI compound type">;
+
 #endif

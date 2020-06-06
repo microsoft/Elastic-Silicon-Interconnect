@@ -5,7 +5,7 @@
 #define __ESI_OPS_HPP__
 
 #include "Dialects/Esi/EsiDialect.hpp"
-#include "Dialects/Esi/EsiOpsTypes.hpp"
+#include "Dialects/Esi/EsiTypes.hpp"
 
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 

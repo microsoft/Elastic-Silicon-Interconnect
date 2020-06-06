@@ -6,6 +6,7 @@
 
 #include <tuple>
 
+#include <mlir/IR/Dialect.h>
 #include <mlir/IR/Operation.h>
 
 namespace mlir {
@@ -61,6 +62,8 @@ public:
     /// and dyn_cast.
     static bool kindof(unsigned kind) { return kind == Types::Compound; }
 
+    static StringRef getKeyword() { return "compound"; }
+
     /// This method is used to get an instance of the 'ComplexType'. This method
     /// asserts that all of the construction invariants were satisfied. To
     /// gracefully handle failed construction, getChecked should be used instead.
@@ -80,17 +83,8 @@ public:
         return success();
     }
 
-    /// Return the parameter value.
-    // unsigned getParameter() {
-    //     // 'getImpl' returns a pointer to our internal storage instance.
-    //     return getImpl()->nonZeroParam;
-    // }
-
-    // /// Return the integer parameter type.
-    // IntegerType getParameterType() {
-    //     // 'getImpl' returns a pointer to our internal storage instance.
-    //     return getImpl()->integerType;
-    // }
+    static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
+    void print(mlir::DialectAsmPrinter& printer) const;
 };
 
 }

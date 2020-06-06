@@ -17,10 +17,10 @@ namespace esi {
         static StringRef getDialectNamespace() { return "esi"; }
 
         /// Parses a type registered to this dialect
-        // Type parseType(DialectAsmParser &parser) const override;
+        Type parseType(DialectAsmParser &parser) const override;
 
-        // /// Print a type registered to this dialect
-        // void printType(Type type, DialectAsmPrinter &printer) const override;
+        /// Print a type registered to this dialect
+        void printType(Type type, DialectAsmPrinter &printer) const override;
 
         // /// Parse an attribute regustered to this dialect
         // Attribute parseAttribute(DialectAsmParser &parser, Type type) const override;

@@ -4,6 +4,7 @@
 add_mlir_dialect_library(MLIREsi
     EsiDialect.cpp
     EsiOps.cpp
+    EsiTypes.cpp
     ${EsiDialactHeaders}
 
     DEPENDS
