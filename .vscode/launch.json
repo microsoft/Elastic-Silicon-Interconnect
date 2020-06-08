@@ -4,23 +4,6 @@
    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
    "version": "0.2.0",
    "configurations": [
-       {
-           "name": "SVCodeGen",
-           "type": "coreclr",
-           "request": "launch",
-           "preLaunchTask": "build",
-           "program": "${workspaceFolder}/src/core/SVCodeGen/bin/Debug/netcoreapp3.1/SVCodeGen.exe",
-           "args": ["tests/stress_tests/stress1_synth.capnp.bin"],
-           "cwd": "${workspaceFolder}/src/core",
-           "stopAtEntry": false,
-           "console": "internalConsole"
-        },
-        {
-            "name": ".NET Core Attach",
-            "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
-        },
         {
             "name": "CosimTest",
             "type": "cppdbg",
@@ -34,6 +17,18 @@
                 //     "name": "LD_LIBRARY_PATH",
                 //     "value": "/workspace/esi/bin/src/core/cosim/cosim_dpi_server"
                 // }
+            ],
+        },
+        {
+            "name": "tests/mlir/esic",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/esic",
+            "args": ["tests/mlir/esi/dummy.mlir"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+
             ],
         }
     ]
