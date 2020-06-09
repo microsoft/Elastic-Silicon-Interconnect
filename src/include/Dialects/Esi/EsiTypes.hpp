@@ -38,7 +38,7 @@ public:
     static LogicalResult verifyConstructionInvariants(
         Location loc, bool isSigned, unsigned whole, unsigned fractional) {
         if (fractional == 0)
-            return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero";
+            return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero width";
         return success();
     }
 
@@ -61,9 +61,9 @@ public:
     static FloatingPointType get(::mlir::MLIRContext* ctxt, bool isSigned, unsigned whole, unsigned fractional);
 
     static LogicalResult verifyConstructionInvariants(
-        Location loc, bool isSigned, unsigned whole, unsigned fractional) {
-        if (fractional == 0)
-            return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero";
+        Location loc, bool isSigned, unsigned exp, unsigned mantissa) {
+        if (exp == 0)
+            return ::mlir::emitError(loc) << "exponent part of floating point number cannot be zero width";
         return success();
     }
 

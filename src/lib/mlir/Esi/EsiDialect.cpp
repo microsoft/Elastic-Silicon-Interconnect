@@ -12,7 +12,10 @@ namespace esi {
 
 EsiDialect::EsiDialect (MLIRContext *context) :
     Dialect("esi", context) {
-    addTypes<FixedPointType>();
+    addTypes<
+        FixedPointType,
+        FloatingPointType
+      >();
 
     addOperations<
     #define GET_OP_LIST
@@ -28,6 +31,9 @@ Type EsiDialect::parseType(DialectAsmParser &parser) const {
         return Type();
     if (typeKeyword == FixedPointType::getKeyword())
         return FixedPointType::parse(getContext(), parser);
+    if (typeKeyword == FloatingPointType::getKeyword())
+        return FloatingPointType::parse(getContext(), parser);
+    return Type();
 }
 
 /// Print a type registered to this dialect
@@ -36,6 +42,11 @@ void EsiDialect::printType(Type type, DialectAsmPrinter &printer) const {
     {
         case Types::FixedPoint: {
             auto c = type.dyn_cast<FixedPointType>();
+            c.print(printer);
+            break;
+        }
+        case Types::FloatingPoint: {
+            auto c = type.dyn_cast<FloatingPointType>();
             c.print(printer);
             break;
         }
