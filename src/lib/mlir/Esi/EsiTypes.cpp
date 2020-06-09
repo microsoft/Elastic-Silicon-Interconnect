@@ -40,6 +40,32 @@ namespace details {
         unsigned fractional;
     };
 
+    struct EmbeddedTypeStorage: public TypeStorage {
+        EmbeddedTypeStorage(Type type)
+            : TypeStorage(1), type(type) { }
+
+        /// The hash key for this storage is a pair of the integer and type params.
+        using KeyTy = Type;
+
+        /// Define the comparison function for the key type.
+        bool operator==(const KeyTy &key) const {
+            return key == type;
+        }
+
+        // static llvm::hash_code hashKey(const KeyTy &key) {
+        //     return llvm::hash_combine(isSigned, whole, fractional);
+        // }
+
+        /// Define a construction method for creating a new instance of this storage.
+        static EmbeddedTypeStorage *construct(TypeStorageAllocator &allocator,
+                                            const KeyTy &key) {
+            return new (allocator.allocate<EmbeddedTypeStorage>())
+                EmbeddedTypeStorage(key);
+        }
+
+        Type type;
+    };
+
 }
 
 FixedPointType FixedPointType::get(::mlir::MLIRContext* ctxt, bool isSigned, unsigned whole, unsigned fractional) {
@@ -95,6 +121,28 @@ void FloatingPointType::print(mlir::DialectAsmPrinter& printer) const {
         << ( getImpl()->isSigned ? "true" : "false" ) << ","
         << getImpl()->whole << ","
         << getImpl()->fractional << ">";
+}
+
+
+
+// ******
+
+ListType ListType::get(::mlir::MLIRContext* ctxt, Type type) {
+    return Base::get(ctxt, Types::List, type);
+}
+
+Type ListType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+    Type type;
+    if (parser.parseLess()) return Type();
+    parser.parseType(type);
+    if (parser.parseGreater()) return Type();
+    return get(ctxt, type);
+}
+
+void ListType::print(mlir::DialectAsmPrinter& printer) const {
+    printer << getKeyword() << "<";
+    printer.printType(getImpl()->type);
+    printer << ">";
 }
 
 }

@@ -14,11 +14,13 @@ namespace esi {
 
 namespace details {
     struct FractionalTypeStorage;
+    struct EmbeddedTypeStorage;
 }
 
 enum Types {
     FixedPoint = Type::FIRST_PRIVATE_EXPERIMENTAL_6_TYPE,
     FloatingPoint,
+    List,
 };
 
 class FixedPointType : public Type::TypeBase<FixedPointType, Type,
@@ -66,6 +68,31 @@ public:
             return ::mlir::emitError(loc) << "exponent part of floating point number cannot be zero width";
         return success();
     }
+
+    static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
+    void print(mlir::DialectAsmPrinter& printer) const;
+};
+
+class ListType : public Type::TypeBase<ListType, Type,
+                                        details::EmbeddedTypeStorage> {
+public:
+    /// Inherit some necessary constructors from 'TypeBase'.
+    using Base::Base;
+
+    /// This static method is used to support type inquiry through isa, cast,
+    /// and dyn_cast.
+    static bool kindof(unsigned kind) { return kind == Types::List; }
+
+    static StringRef getKeyword() { return "list"; }
+
+    static ListType get(::mlir::MLIRContext* ctxt, Type);
+
+    // static LogicalResult verifyConstructionInvariants(
+    //     Location loc, bool isSigned, unsigned whole, unsigned fractional) {
+    //     if (fractional == 0)
+    //         return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero width";
+    //     return success();
+    // }
 
     static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
     void print(mlir::DialectAsmPrinter& printer) const;

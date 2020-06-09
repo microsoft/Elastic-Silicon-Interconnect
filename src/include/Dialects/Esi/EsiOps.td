@@ -13,7 +13,7 @@ class Esi_Op<string mnemonic, list<OpTrait> traits = []> :
 
 
 def Esi_CastCompound: Esi_Op<"cast_compound", [NoSideEffect]> {
-    let arguments = (ins Esi_FractionalType:$value);
+    let arguments = (ins Esi_FixedType:$value);
     let results = (outs AnyI1:$result);
 }
 
