@@ -12,7 +12,7 @@ namespace esi {
 
 EsiDialect::EsiDialect (MLIRContext *context) :
     Dialect("esi", context) {
-    addTypes<CompoundType>();
+    addTypes<FixedPointType>();
 
     addOperations<
     #define GET_OP_LIST
@@ -26,16 +26,16 @@ Type EsiDialect::parseType(DialectAsmParser &parser) const {
     llvm::StringRef typeKeyword;
     if (parser.parseKeyword(&typeKeyword))
         return Type();
-    if (typeKeyword == CompoundType::getKeyword())
-        return CompoundType::parse(getContext(), parser);
+    if (typeKeyword == FixedPointType::getKeyword())
+        return FixedPointType::parse(getContext(), parser);
 }
 
 /// Print a type registered to this dialect
 void EsiDialect::printType(Type type, DialectAsmPrinter &printer) const {
     switch (type.getKind())
     {
-        case Types::Compound: {
-            auto c = type.dyn_cast<CompoundType>();
+        case Types::FixedPoint: {
+            auto c = type.dyn_cast<FixedPointType>();
             c.print(printer);
             break;
         }
