@@ -179,12 +179,17 @@ void ListType::print(mlir::DialectAsmPrinter& printer) const {
 }
 
 // ****************
-// Method bodies for structs
+// Method bodies for compound types
 
 StructType StructType::get(
         ::mlir::MLIRContext* ctxt,
         ArrayRef<MemberInfo> members) {
     return Base::get(ctxt, Types::Struct, members);
+}
+UnionType UnionType::get(
+        ::mlir::MLIRContext* ctxt,
+        ArrayRef<MemberInfo> members) {
+    return Base::get(ctxt, Types::Union, members);
 }
 
 ParseResult parseMember(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser, MemberInfo& member) {
@@ -199,7 +204,8 @@ ParseResult parseMember(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser,
     return success();
 }
 
-Type StructType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+template<typename ThisType>
+Type parseCompound(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
     SmallVector<MemberInfo, 1> members;
     if (parser.parseLess()) return Type();
     do {
@@ -208,8 +214,17 @@ Type StructType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) 
         members.push_back(member);
     } while(succeeded(parser.parseOptionalComma()));
     if (parser.parseGreater()) return Type();
-    return get(ctxt, members);
+    return ThisType::get(ctxt, members);
 }
+
+Type StructType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+    return parseCompound<StructType>(ctxt, parser);
+}
+
+Type UnionType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+    return parseCompound<UnionType>(ctxt, parser);
+}
+
 void printMember(mlir::DialectAsmPrinter& printer, const MemberInfo& member) {
     printer << "{";
     printer.printType(member.type);
@@ -219,9 +234,8 @@ void printMember(mlir::DialectAsmPrinter& printer, const MemberInfo& member) {
     printer << "}";
 }
 
-void StructType::print(mlir::DialectAsmPrinter& printer) const {
-    printer << getKeyword() << "<";
-    ArrayRef<MemberInfo> members = getImpl()->members;
+void printCompound(mlir::DialectAsmPrinter& printer, StringRef keyword, ArrayRef<MemberInfo> members) {
+    printer << keyword << "<";
     for (size_t i=0; i<members.size(); i++) {
         printMember(printer, members[i]);
         if (i + 1 < members.size()) {
@@ -229,6 +243,14 @@ void StructType::print(mlir::DialectAsmPrinter& printer) const {
         }
     }
     printer << ">";
+}
+
+void StructType::print(mlir::DialectAsmPrinter& printer) const {
+    printCompound(printer, getKeyword(), getImpl()->members);
+}
+
+void UnionType::print(mlir::DialectAsmPrinter& printer) const {
+    printCompound(printer, getKeyword(), getImpl()->members);
 }
 
 }

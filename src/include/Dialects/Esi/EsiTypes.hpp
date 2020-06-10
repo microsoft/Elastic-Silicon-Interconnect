@@ -142,6 +142,31 @@ public:
     void print(mlir::DialectAsmPrinter& printer) const;
 };
 
+class UnionType : public Type::TypeBase<UnionType, Type,
+                                        details::EmbeddedMultiTypeStorage> {
+public:
+    /// Inherit some necessary constructors from 'TypeBase'.
+    using Base::Base;
+
+    /// This static method is used to support type inquiry through isa, cast,
+    /// and dyn_cast.
+    static bool kindof(unsigned kind) { return kind == Types::Union; }
+
+    static StringRef getKeyword() { return "union"; }
+
+    static UnionType get(::mlir::MLIRContext* ctxt, llvm::ArrayRef<MemberInfo> members);
+
+    // static LogicalResult verifyConstructionInvariants(
+    //     Location loc, bool isSigned, unsigned whole, unsigned fractional) {
+    //     if (fractional == 0)
+    //         return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero width";
+    //     return success();
+    // }
+
+    static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
+    void print(mlir::DialectAsmPrinter& printer) const;
+};
+
 
 }
 }
