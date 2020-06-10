@@ -13,6 +13,6 @@ def Esi_Dialect : Dialect {
     let cppNamespace = "esi";
 }
 
-def Esi_CompoundType: Type<CPred<"$_self.isa<CompoundType>()">, "ESI compound type">;
+def Esi_FixedType: Type<CPred<"$_self.isa<FixedPointType>()">, "ESI fixed point type">;
 
 #endif

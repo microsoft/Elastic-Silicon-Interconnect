@@ -24,7 +24,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esic",
-            "args": ["tests/mlir/esi/dummy.mlir"],
+            "args": ["tests/mlir/esi/compound_types.mlir"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [
