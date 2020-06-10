@@ -97,6 +97,33 @@ namespace details {
 
         ArrayRef<MemberInfo> members;
     };
+
+    struct EnumTypeStorage: public TypeStorage {
+        EnumTypeStorage(ArrayRef<std::string> members)
+            : members(members) { }
+
+        /// The hash key for this storage is a pair of the integer and type params.
+        using KeyTy = ArrayRef<std::string>;
+
+        /// Define the comparison function for the key type.
+        bool operator==(const KeyTy &key) const {
+            return key == members;
+        }
+
+        static llvm::hash_code hashKey(const KeyTy &key) {
+            return llvm::hash_value(key);
+        }
+
+        /// Define a construction method for creating a new instance of this storage.
+        static EnumTypeStorage *construct(TypeStorageAllocator &allocator,
+                                            const KeyTy &key) {
+            llvm::ArrayRef<std::string> members = allocator.copyInto(key);
+            return new (allocator.allocate<EnumTypeStorage>())
+                EnumTypeStorage(members);
+        }
+
+        ArrayRef<std::string> members;
+    };
 }
 
 // ***********************
@@ -251,6 +278,37 @@ void StructType::print(mlir::DialectAsmPrinter& printer) const {
 
 void UnionType::print(mlir::DialectAsmPrinter& printer) const {
     printCompound(printer, getKeyword(), getImpl()->members);
+}
+
+// ****************
+// Enum bodies
+
+EnumType EnumType::get(::mlir::MLIRContext* ctxt, ArrayRef<std::string> members) {
+    return Base::get(ctxt, Types::Enum, members);
+}
+
+Type EnumType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+    SmallVector<std::string, 1> members;
+    if (parser.parseLess()) return Type();
+    do {
+        StringAttr sa;
+        if (parser.parseAttribute<StringAttr>(sa)) return Type();
+        members.push_back(sa.getValue().str());
+    } while (succeeded(parser.parseOptionalComma()));
+    if (parser.parseGreater()) return Type();
+    return get(ctxt, members);
+}
+
+void EnumType::print(mlir::DialectAsmPrinter& printer) const {
+    printer << getKeyword() << "<";
+    auto members = getImpl()->members;
+    for (size_t i=0; i<members.size(); i++) {
+        printer << "\"" << members[i] << "\"";
+        if (i + 1 < members.size()) {
+            printer << ",";
+        }
+    }
+    printer << ">";
 }
 
 }

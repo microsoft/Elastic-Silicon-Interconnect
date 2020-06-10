@@ -17,7 +17,8 @@ EsiDialect::EsiDialect (MLIRContext *context) :
         FloatingPointType,
         ListType,
         StructType,
-        UnionType
+        UnionType,
+        EnumType
       >();
 
     addOperations<
@@ -42,6 +43,8 @@ Type EsiDialect::parseType(DialectAsmParser &parser) const {
         return StructType::parse(getContext(), parser);
     if (typeKeyword == UnionType::getKeyword())
         return UnionType::parse(getContext(), parser);
+    if (typeKeyword == EnumType::getKeyword())
+        return EnumType::parse(getContext(), parser);
     return Type();
 }
 
@@ -71,6 +74,11 @@ void EsiDialect::printType(Type type, DialectAsmPrinter &printer) const {
         }
         case Types::Union: {
             auto c = type.dyn_cast<UnionType>();
+            c.print(printer);
+            break;
+        }
+        case Types::Enum: {
+            auto c = type.dyn_cast<EnumType>();
             c.print(printer);
             break;
         }

@@ -19,4 +19,9 @@ module {
     func @union1(%A: !exUnion1) {
         return
     }
+
+    // CHECK-LABEL:  func @enum1(%arg0: !esi.enum<"optionA","doorNumB">)
+    func @enum1(%A: !esi.enum<"optionA", "doorNumB">) {
+        return
+    }
 }
