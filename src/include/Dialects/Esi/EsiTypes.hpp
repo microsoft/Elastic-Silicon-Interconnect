@@ -15,12 +15,15 @@ namespace esi {
 namespace details {
     struct FractionalTypeStorage;
     struct EmbeddedTypeStorage;
+    struct EmbeddedMultiTypeStorage;
 }
 
 enum Types {
     FixedPoint = Type::FIRST_PRIVATE_EXPERIMENTAL_6_TYPE,
     FloatingPoint,
     List,
+    Struct,
+    Union
 };
 
 class FixedPointType : public Type::TypeBase<FixedPointType, Type,
@@ -97,6 +100,48 @@ public:
     static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
     void print(mlir::DialectAsmPrinter& printer) const;
 };
+
+struct MemberInfo {
+public:
+    StringRef name;
+    ::mlir::Type type;
+};
+
+inline bool operator==(const MemberInfo& LHS, const MemberInfo& RHS) {
+    return
+        LHS.name == RHS.name &&
+        LHS.type == RHS.type;
+}
+
+inline llvm::hash_code hash_value(const MemberInfo& member) {
+    return llvm::hash_combine(member.name, member.type);
+}
+
+class StructType : public Type::TypeBase<StructType, Type,
+                                        details::EmbeddedMultiTypeStorage> {
+public:
+    /// Inherit some necessary constructors from 'TypeBase'.
+    using Base::Base;
+
+    /// This static method is used to support type inquiry through isa, cast,
+    /// and dyn_cast.
+    static bool kindof(unsigned kind) { return kind == Types::Struct; }
+
+    static StringRef getKeyword() { return "struct"; }
+
+    static StructType get(::mlir::MLIRContext* ctxt, llvm::ArrayRef<MemberInfo> members);
+
+    // static LogicalResult verifyConstructionInvariants(
+    //     Location loc, bool isSigned, unsigned whole, unsigned fractional) {
+    //     if (fractional == 0)
+    //         return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero width";
+    //     return success();
+    // }
+
+    static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
+    void print(mlir::DialectAsmPrinter& printer) const;
+};
+
 
 }
 }

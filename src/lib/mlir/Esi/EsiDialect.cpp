@@ -15,7 +15,8 @@ EsiDialect::EsiDialect (MLIRContext *context) :
     addTypes<
         FixedPointType,
         FloatingPointType,
-        ListType
+        ListType,
+        StructType
       >();
 
     addOperations<
@@ -36,6 +37,8 @@ Type EsiDialect::parseType(DialectAsmParser &parser) const {
         return FloatingPointType::parse(getContext(), parser);
     if (typeKeyword == ListType::getKeyword())
         return ListType::parse(getContext(), parser);
+    if (typeKeyword == StructType::getKeyword())
+        return StructType::parse(getContext(), parser);
     return Type();
 }
 
@@ -55,6 +58,11 @@ void EsiDialect::printType(Type type, DialectAsmPrinter &printer) const {
         }
         case Types::List: {
             auto c = type.dyn_cast<ListType>();
+            c.print(printer);
+            break;
+        }
+        case Types::Struct: {
+            auto c = type.dyn_cast<StructType>();
             c.print(printer);
             break;
         }

@@ -3,12 +3,17 @@
 
 #include "Dialects/Esi/EsiTypes.hpp"
 #include <mlir/IR/DialectImplementation.h>
+#include <mlir/IR/Attributes.h>
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/ADT/Hashing.h>
 
 using namespace mlir;
 
 namespace mlir {
 namespace esi {
 namespace details {
+    // ********************
+    // Storage structs
 
     struct FractionalTypeStorage : public TypeStorage {
         FractionalTypeStorage(bool isSigned, unsigned whole, unsigned fractional)
@@ -52,9 +57,9 @@ namespace details {
             return key == type;
         }
 
-        // static llvm::hash_code hashKey(const KeyTy &key) {
-        //     return llvm::hash_combine(isSigned, whole, fractional);
-        // }
+        static llvm::hash_code hashKey(const KeyTy &key) {
+            return llvm::hash_combine(key);
+        }
 
         /// Define a construction method for creating a new instance of this storage.
         static EmbeddedTypeStorage *construct(TypeStorageAllocator &allocator,
@@ -66,7 +71,36 @@ namespace details {
         Type type;
     };
 
+    struct EmbeddedMultiTypeStorage: public TypeStorage {
+        EmbeddedMultiTypeStorage(ArrayRef<MemberInfo> members)
+            : members(members) { }
+
+        /// The hash key for this storage is a pair of the integer and type params.
+        using KeyTy = ArrayRef<MemberInfo>;
+
+        /// Define the comparison function for the key type.
+        bool operator==(const KeyTy &key) const {
+            return key == members;
+        }
+
+        static llvm::hash_code hashKey(const KeyTy &key) {
+            return llvm::hash_value(key);
+        }
+
+        /// Define a construction method for creating a new instance of this storage.
+        static EmbeddedMultiTypeStorage *construct(TypeStorageAllocator &allocator,
+                                            const KeyTy &key) {
+            llvm::ArrayRef<MemberInfo> members = allocator.copyInto(key);
+            return new (allocator.allocate<EmbeddedMultiTypeStorage>())
+                EmbeddedMultiTypeStorage(members);
+        }
+
+        ArrayRef<MemberInfo> members;
+    };
 }
+
+// ***********************
+// Method bodies for fractional types
 
 FixedPointType FixedPointType::get(::mlir::MLIRContext* ctxt, bool isSigned, unsigned whole, unsigned fractional) {
     return Base::get(ctxt, Types::FixedPoint, isSigned, whole, fractional);
@@ -123,9 +157,8 @@ void FloatingPointType::print(mlir::DialectAsmPrinter& printer) const {
         << getImpl()->fractional << ">";
 }
 
-
-
-// ******
+// *******************
+// Method bodies for list class
 
 ListType ListType::get(::mlir::MLIRContext* ctxt, Type type) {
     return Base::get(ctxt, Types::List, type);
@@ -142,6 +175,59 @@ Type ListType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
 void ListType::print(mlir::DialectAsmPrinter& printer) const {
     printer << getKeyword() << "<";
     printer.printType(getImpl()->type);
+    printer << ">";
+}
+
+// ****************
+// Method bodies for structs
+
+StructType StructType::get(
+        ::mlir::MLIRContext* ctxt,
+        ArrayRef<MemberInfo> members) {
+    return Base::get(ctxt, Types::Struct, members);
+}
+
+ParseResult parseMember(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser, MemberInfo& member) {
+    if (parser.parseLBrace()) return mlir::failure();
+    if (parser.parseType(member.type)) return mlir::failure();
+    if (succeeded(parser.parseOptionalComma())) {
+        StringAttr a;
+        if (parser.parseAttribute<StringAttr>(a)) return mlir::failure();
+        member.name = a.getValue();
+    }
+    if (parser.parseRBrace()) return mlir::failure();
+    return success();
+}
+
+Type StructType::parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser) {
+    SmallVector<MemberInfo, 1> members;
+    if (parser.parseLess()) return Type();
+    do {
+        MemberInfo member;
+        parseMember(ctxt, parser, member);
+        members.push_back(member);
+    } while(succeeded(parser.parseOptionalComma()));
+    if (parser.parseGreater()) return Type();
+    return get(ctxt, members);
+}
+void printMember(mlir::DialectAsmPrinter& printer, const MemberInfo& member) {
+    printer << "{";
+    printer.printType(member.type);
+    if (member.name.size() > 0) {
+        printer << ",\"" << member.name << "\"";
+    }
+    printer << "}";
+}
+
+void StructType::print(mlir::DialectAsmPrinter& printer) const {
+    printer << getKeyword() << "<";
+    ArrayRef<MemberInfo> members = getImpl()->members;
+    for (size_t i=0; i<members.size(); i++) {
+        printMember(printer, members[i]);
+        if (i + 1 < members.size()) {
+            printer << ",";
+        }
+    }
     printer << ">";
 }
 
