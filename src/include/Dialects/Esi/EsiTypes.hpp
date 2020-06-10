@@ -103,7 +103,7 @@ public:
 
 struct MemberInfo {
 public:
-    StringRef name;
+    std::string name;
     ::mlir::Type type;
 };
 

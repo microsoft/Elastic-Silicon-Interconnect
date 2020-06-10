@@ -193,7 +193,7 @@ ParseResult parseMember(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser,
     if (succeeded(parser.parseOptionalComma())) {
         StringAttr a;
         if (parser.parseAttribute<StringAttr>(a)) return mlir::failure();
-        member.name = a.getValue();
+        member.name = a.getValue().str();
     }
     if (parser.parseRBrace()) return mlir::failure();
     return success();
