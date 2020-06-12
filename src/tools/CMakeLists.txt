@@ -1,5 +1,5 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-add_subdirectory(Dialects)
-add_subdirectory(capnp)
+add_subdirectory(esi)
+add_subdirectory(esi-capnp)

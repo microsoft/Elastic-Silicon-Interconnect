@@ -4,4 +4,4 @@
 add_mlir_dialect(EsiOps esi)
 add_mlir_doc(EsiOps -gen-op-doc esi Dialects/)
 
-set(EsiDialectHeaders EsiOps.hpp EsiTypes.hpp)
+set(EsiDialectHeaders EsiDialect.hpp EsiOps.hpp EsiTypes.hpp)
