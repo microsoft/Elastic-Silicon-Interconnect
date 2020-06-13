@@ -14,8 +14,15 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/FormatVariadic.h"
 
-#include "capnp/schema-parser.h"
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+
+#include <unistd.h>
+#include <fcntl.h>
+
+llvm::ExitOnError ExitOnError;
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
                                                 llvm::cl::desc("<input file>"),
@@ -34,19 +41,44 @@ int main(int argc, char **argv) {
 
   // Parse pass names in main to ensure static initialization completed.
   llvm::cl::ParseCommandLineOptions(argc, argv,
-                                    "ESI-Cap'nProto conversion utility\n");
+                                  "ESI-Cap'nProto conversion utility\n");
   mlir::MLIRContext context;
 
-  // Get the path to the current executable since that's where the Capnp header is
-  auto fs = kj::newDiskFilesystem();
-  auto exePathStr = fs->getRoot().readlink(kj::Path::parse("proc/self/exe"));
-  kj::StringPtr exePathRelRoot = exePathStr.cStr()+1;
-  auto exeDir = fs->getRoot().openSubdir(kj::Path::parse(exePathRelRoot).parent());
+  // Read the CodeGeneratorRequest from the proper place
+  int fd = 0;
+  if (inputFilename != "-") {
+    fd = open(inputFilename.c_str(), O_RDONLY);
+  }
 
-  // Load the input schema
-  capnp::SchemaParser parser;
-  auto schema = parser.parseFromDirectory(fs->getCurrent(),
-      kj::Path::parse(inputFilename), { exeDir });
+  capnp::ReaderOptions options;
+  options.traversalLimitInWords = 1 << 30;  // Don't limit.
+  capnp::StreamFdMessageReader reader(fd, options);
+  auto request = reader.getRoot<capnp::schema::CodeGeneratorRequest>();
+  if (fd != 0)
+  {
+    close(fd);
+  }
+
+  auto capnpVersion = request.getCapnpVersion();
+
+  if (capnpVersion.getMajor() != CAPNP_VERSION_MAJOR ||
+      capnpVersion.getMinor() != CAPNP_VERSION_MINOR ||
+      capnpVersion.getMicro() != CAPNP_VERSION_MICRO) {
+    auto compilerVersion = request.hasCapnpVersion()
+        ? kj::str(capnpVersion.getMajor(), '.', capnpVersion.getMinor(), '.',
+                  capnpVersion.getMicro())
+        : kj::str("pre-0.6");  // pre-0.6 didn't send the version.
+    auto generatorVersion = kj::str(
+        CAPNP_VERSION_MAJOR, '.', CAPNP_VERSION_MINOR, '.', CAPNP_VERSION_MICRO);
+
+    llvm::errs() <<
+        "You appear to be using different versions of 'capnp' (the compiler) and "
+        "'capnpc-c++' (the code generator). This can happen, for example, if you built "
+        "a custom version of 'capnp' but then ran it with '-oc++', which invokes "
+        "'capnpc-c++' from your PATH (i.e. the installed version). To specify an alternate "
+        "'capnpc-c++' executable, try something like '-o/path/to/capnpc-c++' instead."
+        << llvm::formatv("Expected version {}, got {}\n", compilerVersion.cStr(), generatorVersion.cStr());
+  }
 
   // Open the output mlir assembly file
   std::string errorMessage;
@@ -57,7 +89,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<mlir::Type> types;
-  esi::capnp::ConvertToESI(schema, types);
+  ExitOnError(esi::capnp::ConvertToESI(request, types));
 
   llvm::outs() << "Success!\n";
   output->keep();

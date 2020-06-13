@@ -30,14 +30,14 @@ class CapnpParser {
     {
     public:
         uint64_t Id;
-        Node::Reader Node;
+        Node::Reader* Node;
         string File;
         string NodeName;
         string DisplayName;
         list<string> Path;
 
         EsiCapnpLocation(uint64_t id) :
-            Id(id) { }
+            Id(id), Node(nullptr) { }
 
         EsiCapnpLocation AppendField(string field)
         {
@@ -73,28 +73,23 @@ class CapnpParser {
     map<uint64_t, mlir::Type> IDtoType;
 
 public:
-    llvm::Error ConvertTypes(::capnp::ParsedSchema& s, vector<mlir::Type>& types) {
+    llvm::Error ConvertTypes(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes) {
         // First pass: get all the filenames
         map<uint64_t, string> IDtoFile;
-        // for (auto sourceInfo : s.getSourceInfo().getMembers()) {
-        //     sourceInfo.
-        // }
-        // cgr.RequestedFiles.Iterate(file => IDtoFile[file.Id] = file.Filename);
+        for (auto file : cgr.getRequestedFiles())
+            IDtoFile[file.getId()] = file.getFilename();
 
-        // Second pass: get all the node names
-        for (auto n : s.getProto().getNestedNodes())
-        {
-            auto& loc = GetLocation(n.getId());
-            loc.NodeName = n.getName();
+        // Second pass: get all the node names and locations
+        for (auto node : cgr.getNodes()) {
+            for (auto nestedNode : node.getNestedNodes()) {
+                auto& nestedLoc = GetLocation(nestedNode.getId());
+                nestedLoc.NodeName = nestedNode.getName();
+            }
+
+            auto& nodeLoc = GetLocation(node.getId());
+            nodeLoc.Node = &node;
+            nodeLoc.DisplayName = node.getDisplayName();
         }
-
-        for (auto nodeId : )
-    //         // Third pass: get references to each node
-    //         cgr.Nodes.ForEach(n => {
-    //             var loc = GetLocation(n.Id);
-    //             loc.Node = n;
-    //             loc.DisplayName = n.DisplayName;
-    //         });
 
     //         // Fourth pass: Do the actual conversion
     //         var esiObjects = cgr.Nodes.Select(
@@ -108,13 +103,6 @@ public:
     //         // Assemble the esi system
     //         EsiSystem sys = new EsiSystem(esiObjects);
             // sys.ComputeHash(CapnpSchemaID);
-
-        for (auto n : s.getProto().getNestedNodes())
-        {
-            printf("%p: %s\n", n.getId(), n.getName().cStr());
-            // auto node 
-
-        }
         return llvm::Error::success();
     }
 
@@ -539,9 +527,9 @@ public:
 
 };
 
-llvm::Error ConvertToESI(::capnp::ParsedSchema& s, std::vector<mlir::Type>& outputTypes) {
+llvm::Error ConvertToESI(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes) {
     CapnpParser cp;
-    return cp.ConvertTypes(s, outputTypes);
+    return cp.ConvertTypes(cgr, outputTypes);
 }
 
 }

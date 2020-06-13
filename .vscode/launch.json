@@ -24,7 +24,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esi-capnp",
-            "args": ["dotnet_src/core/tests/stress_tests/stress1_synth.capnp"],
+            "args": ["stress1_synth.cgrbin"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [
