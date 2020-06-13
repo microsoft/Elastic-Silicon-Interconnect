@@ -2,14 +2,15 @@
 #define __ESI_CAPNP_CONVERT__
 
 #include <mlir/IR/Types.h>
+#include <llvm/Support/Error.h>
 #include <capnp/schema.h>
+#include <capnp/schema-parser.h>
 #include <vector>
 #include <memory>
 
 namespace esi {
 namespace capnp {
-
-    std::shared_ptr<std::vector<mlir::Type>> ConvertToESI(::capnp::Schema& s);
+    llvm::Error ConvertToESI(::capnp::ParsedSchema& s, std::vector<mlir::Type>& outputTypes);
 }
 }
 #endif

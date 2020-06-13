@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  auto types = esi::capnp::ConvertToESI(schema);
+  std::vector<mlir::Type> types;
+  esi::capnp::ConvertToESI(schema, types);
 
   llvm::outs() << "Success!\n";
   output->keep();
