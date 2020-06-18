@@ -6,5 +6,4 @@
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
     "cmake.sourceDirectory": "${workspaceFolder}",
     "python.pythonPath": "/usr/bin/python3",
-    "cmake.generator": "Unix Makefiles"
 }
