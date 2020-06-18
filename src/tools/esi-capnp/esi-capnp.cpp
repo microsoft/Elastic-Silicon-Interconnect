@@ -89,7 +89,8 @@ int main(int argc, char **argv) {
   }
 
   std::vector<mlir::Type> types;
-  ExitOnError(esi::capnp::ConvertToESI(request, types));
+  mlir::MLIRContext ctxt;
+  ExitOnError(esi::capnp::ConvertToESI(&ctxt, request, types));
 
   llvm::outs() << "Success!\n";
   output->keep();

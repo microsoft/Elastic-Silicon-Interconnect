@@ -17,6 +17,7 @@ namespace details {
     struct EmbeddedTypeStorage;
     struct EmbeddedMultiTypeStorage;
     struct EnumTypeStorage;
+    struct MessagePointerTypeStorage;
 }
 
 enum Types {
@@ -25,7 +26,8 @@ enum Types {
     List,
     Struct,
     Union,
-    Enum
+    Enum,
+    MessagePointer,
 };
 
 class FixedPointType : public Type::TypeBase<FixedPointType, Type,
@@ -105,8 +107,19 @@ public:
 
 struct MemberInfo {
 public:
+    // MemberInfo(const MemberInfo& other) : 
+    //     name(other.name), type(std::make_unique<::mlir::Type>(*other.type)) { }
+    
+    // MemberInfo() :
+    //     name(""), type(nullptr) { }
+
     std::string name;
     ::mlir::Type type;
+
+    template <typename T>
+    void set(const T t) {
+        type = t;
+    }
 };
 
 inline bool operator==(const MemberInfo& LHS, const MemberInfo& RHS) {
@@ -182,6 +195,31 @@ public:
     static StringRef getKeyword() { return "enum"; }
 
     static EnumType get(::mlir::MLIRContext* ctxt, llvm::ArrayRef<std::string> members);
+
+    // static LogicalResult verifyConstructionInvariants(
+    //     Location loc, bool isSigned, unsigned whole, unsigned fractional) {
+    //     if (fractional == 0)
+    //         return ::mlir::emitError(loc) << "fractional part of fixed point number cannot be zero width";
+    //     return success();
+    // }
+
+    static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
+    void print(mlir::DialectAsmPrinter& printer) const;
+};
+
+class MessagePointerType : public Type::TypeBase<MessagePointerType, Type,
+                                        details::MessagePointerTypeStorage> {
+public:
+    /// Inherit some necessary constructors from 'TypeBase'.
+    using Base::Base;
+
+    /// This static method is used to support type inquiry through isa, cast,
+    /// and dyn_cast.
+    static bool kindof(unsigned kind) { return kind == Types::MessagePointer; }
+
+    static StringRef getKeyword() { return "msgptr"; }
+
+    static EnumType get(::mlir::MLIRContext* ctxt, uint64_t id);
 
     // static LogicalResult verifyConstructionInvariants(
     //     Location loc, bool isSigned, unsigned whole, unsigned fractional) {

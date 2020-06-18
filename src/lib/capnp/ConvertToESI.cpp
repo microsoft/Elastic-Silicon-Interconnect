@@ -6,6 +6,7 @@
 #include <llvm/Support/FormatVariadic.h>
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/Error.h>
+#include <mlir/IR/StandardTypes.h>
 
 #include <vector>
 #include <memory>
@@ -13,6 +14,7 @@
 #include <list>
 #include <cstdint>
 #include <printf.h>
+#include <deque>
 
 using namespace std;
 using namespace mlir::esi;
@@ -29,80 +31,92 @@ class CapnpParser {
     struct EsiCapnpLocation
     {
     public:
-        uint64_t Id;
-        Node::Reader* Node;
-        string File;
-        string NodeName;
-        string DisplayName;
-        list<string> Path;
+        Node::Reader& node;
+        mlir::Type type;
+        string nodeName;
+        string file;
+        string displayName;
+        list<string> path;
 
-        EsiCapnpLocation(uint64_t id) :
-            Id(id), Node(nullptr) { }
+        EsiCapnpLocation(Node::Reader& node, string name, string file) :
+            node(node), nodeName(name), file(file), displayName(node.getDisplayName()) { }
 
         EsiCapnpLocation AppendField(string field)
         {
             EsiCapnpLocation ret = *this;
-            ret.Path.push_back(field);
+            ret.path.push_back(field);
             return ret;
         }
 
         string ToString()
         {
             string fileStruct;
-            if (!all_of(DisplayName.begin(), DisplayName.end(), iswspace))
-                fileStruct = DisplayName;
+            if (!all_of(displayName.begin(), displayName.end(), iswspace))
+                fileStruct = displayName;
             else
-                fileStruct = llvm::formatv("{}:{}", File, NodeName);
+                fileStruct = llvm::formatv("{}:{}", file, nodeName);
 
-            if (Path.size() > 0)
-                return llvm::formatv("{}/{}", fileStruct, llvm::join(Path, ","));
+            if (path.size() > 0)
+                return llvm::formatv("{}/{}", fileStruct, llvm::join(path, ","));
             else
                 return fileStruct;
         }
     };
 
-    map<uint64_t, unique_ptr<EsiCapnpLocation>> IDtoNames;
-    EsiCapnpLocation& GetLocation(uint64_t id) {
-        auto locIter = IDtoNames.find(id);
-        if (locIter == IDtoNames.end()) {
-            IDtoNames[id] = make_unique<EsiCapnpLocation>(id);
+    EsiCapnpLocation& GetLocation(Node::Reader& node) {
+        auto id = node.getId();
+        auto locIter = IDtoLoc.find(id);
+        if (locIter == IDtoLoc.end()) {
+            IDtoLoc[id] = make_unique<EsiCapnpLocation>(
+                node, IDtoNames[id], IDtoFile[id]);
+
         }
-        return *IDtoNames[id].get();
+        return *IDtoLoc[id].get();
     }
 
+    std::map<uint64_t, string> IDtoFile;
+    std::map<uint64_t, std::string> IDtoNames;
+    std::map<uint64_t, unique_ptr<EsiCapnpLocation>> IDtoLoc;
     map<uint64_t, mlir::Type> IDtoType;
+    mlir::MLIRContext* ctxt;
 
 public:
+    CapnpParser(mlir::MLIRContext* ctxt) :
+        ctxt(ctxt) { }
+
     llvm::Error ConvertTypes(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes) {
         // First pass: get all the filenames
-        map<uint64_t, string> IDtoFile;
-        for (auto file : cgr.getRequestedFiles())
+        for (auto file : cgr.getRequestedFiles()) {
             IDtoFile[file.getId()] = file.getFilename();
-
-        // Second pass: get all the node names and locations
-        for (auto node : cgr.getNodes()) {
-            for (auto nestedNode : node.getNestedNodes()) {
-                auto& nestedLoc = GetLocation(nestedNode.getId());
-                nestedLoc.NodeName = nestedNode.getName();
-            }
-
-            auto& nodeLoc = GetLocation(node.getId());
-            nodeLoc.Node = &node;
-            nodeLoc.DisplayName = node.getDisplayName();
         }
 
-    //         // Fourth pass: Do the actual conversion
-    //         var esiObjects = cgr.Nodes.Select(
-    //             node => ConvertNode(node) switch {
-    //                 _ when (ESIAnnotations.Contains(node.Id)) => null,
-    //                 EsiReferenceType stRef => stRef.Reference,
-    //                 EsiObject o => o,
-    //                 null => null,
-    //         }).Where(t => t != null).ToList();
+        // Second pass: get all the node names
+        for (auto node : cgr.getNodes()) {
+            for (auto nestedNode : node.getNestedNodes()) {
+                IDtoNames[nestedNode.getId()] = nestedNode.getName();
+            }
+        }
 
-    //         // Assemble the esi system
-    //         EsiSystem sys = new EsiSystem(esiObjects);
-            // sys.ComputeHash(CapnpSchemaID);
+        for (auto node : cgr.getNodes()) {
+            auto& nodeLoc = GetLocation(node);
+
+            if (node.hasParameters() ||
+                node.getIsGeneric())
+            {
+                llvm::outs() << llvm::formatv("Generic types are not (yet?) supported: Node {}", node.getDisplayName());
+                continue;
+            }
+
+            if (node.isStruct()) {
+                auto rc = ConvertStruct(nodeLoc);
+                if (mlir::failed(rc)) {
+                    llvm::errs() << llvm::formatv("Failed to convert '{}' to EsiStruct", node.getDisplayName());
+                }
+            } else {
+                llvm::errs() << llvm::formatv("Unconvertable type (node '{}')", node.getDisplayName());
+            }
+        }
+
         return llvm::Error::success();
     }
 
@@ -118,34 +132,21 @@ public:
     //         return sys;
     //     }
 
-    //     /// <summary>
-    //     /// Convert a top-level node to an EsiType, lazily
-    //     /// </summary>
-    //     /// <param name="node"></param>
-    //     /// <returns></returns>
-    //     protected EsiObject ConvertNode(Node.READER node)
-    //     {
-    //         if (node.Parameters?.Count() > 0 ||
-    //             node.IsGeneric)
-    //         {
-    //             C.Log.Error("Generic types are not (yet?) supported");
-    //             return null;
-    //         }
+    /// <summary>
+    /// Convert a top-level node to an EsiType, lazily
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    mlir::LogicalResult ConvertStruct(EsiCapnpLocation& loc)
+    {
+        auto& node = loc.node;
+        const auto& _struct = node.getStruct();
+        const auto& fields = _struct.getFields();
 
-    //         switch (node.which)
-    //         {
-    //             case Node.WHICH.Struct:
-    //                 return ConvertStructCached(node.Id);
-    //             case Node.WHICH.Interface:
-    //                 return ConvertInterface(node.Id);
-    //             default:
-    //                 C.Log.Warning(
-    //                     "Type {type} not yet supported. ({loc})",
-    //                     Enum.GetName(typeof(Node.WHICH), node.which),
-    //                     IDtoNames[node.Id]);
-    //                 return null;
-    //         }
-    //     }
+        vector<MemberInfo> esiFields;
+        for (auto field : fields) {
+        }
+    }
 
     //     private EsiInterface ConvertInterface(ulong id)
     //     {
@@ -267,83 +268,120 @@ public:
     //         return null;
     //     }
 
-    //     /// <summary>
-    //     /// Convert a struct field which can be either an actual member, "slot", or a group.
-    //     /// </summary>
-    //     private EsiStruct.StructField ConvertField(EsiCapnpLocation structNameFile, Field.READER field)
-    //     {
-    //         switch (field.which)
-    //         {
-    //             case Field.WHICH.Group:
-    //                 return new EsiStruct.StructField(
-    //                     Name: field.Name,
-    //                     Type: AddAnnotations(
-    //                         GetNamedType(field.Group.TypeId),
-    //                         structNameFile.AppendField(field.Name),
-    //                         field.Annotations));
+    /// <summary>
+    /// Convert a struct field which can be either an actual member, "slot", or a group.
+    /// </summary>
+    mlir::LogicalResult ConvertField(EsiCapnpLocation& loc, Field::Reader& field, MemberInfo& mi)
+    {
+        auto fieldLoc = loc.AppendField(field.getName());
+        switch (field.which())
+        {
+            // case Field::Which::GROUP:
+            //     mi = {
+            //         .name = field.getName(),
+            //         .type = AddAnnotations(
+            //             ConvertStruct(fieldLoc),
+            //             field.getAnnotations()
+            //         )
+            //     };
+            //     return mlir::success();
 
-    //             case Field.WHICH.Slot:
-    //                 return new EsiStruct.StructField(
-    //                     Name: field.Name,
-    //                     Type: ConvertType(
-    //                         structNameFile.AppendField(field.Name),
-    //                         field.Slot.Type,
-    //                         field.Annotations));
-    //             default:
-    //                 throw new EsiCapnpConvertException($"Field type undefined is not a valid capnp schema ({structNameFile})");
-    //         }
-    //     }
+            case Field::Which::SLOT:
+                mi.name = field.getName();
+                return ConvertType(fieldLoc, field.getSlot().getType(), field.getAnnotations(), mi);
+            default:
+                return mlir::failure();
+        }
+    }
 
-    //     /// <summary>
-    //     /// Entry point for recursion. Should handle any embeddable type and its annotations.
-    //     /// </summary>
-    //     /// <param name="loc"></param>
-    //     /// <param name="type"></param>
-    //     /// <param name="annotations"></param>
-    //     /// <returns></returns>
-    //     private EsiType ConvertType(
-    //         EsiCapnpLocation loc,
-    //         CapnpGen.Type.READER type,
-    //         IReadOnlyList<Annotation.READER> annotations)
-    //     {
-    //         var esiType = type.which switch {
-    //             CapnpGen.Type.WHICH.Void => (EsiType) EsiPrimitive.Void,
-    //             CapnpGen.Type.WHICH.Bool => EsiPrimitive.Bool,
-    //             CapnpGen.Type.WHICH.Int8 => new EsiInt(8, true),
-    //             CapnpGen.Type.WHICH.Int16 => new EsiInt(16, true),
-    //             CapnpGen.Type.WHICH.Int32 => new EsiInt(32, true),
-    //             CapnpGen.Type.WHICH.Int64 => new EsiInt(64, true),
-    //             CapnpGen.Type.WHICH.Uint8 => new EsiInt(8, false),
-    //             CapnpGen.Type.WHICH.Uint16 => new EsiInt(16, false),
-    //             CapnpGen.Type.WHICH.Uint32 => new EsiInt(32, false),
-    //             CapnpGen.Type.WHICH.Uint64 => new EsiInt(64, false),
-    //             CapnpGen.Type.WHICH.Float32 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
-    //             CapnpGen.Type.WHICH.Float64 => EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-    //             CapnpGen.Type.WHICH.Text => new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
-    //             CapnpGen.Type.WHICH.Data => new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
+    /// <summary>
+    /// Entry point for recursion. Should handle any embeddable type and its annotations.
+    /// </summary>
+    /// <param name="loc"></param>
+    /// <param name="type"></param>
+    /// <param name="annotations"></param>
+    /// <returns></returns>
+    mlir::LogicalResult ConvertType(
+        EsiCapnpLocation loc,
+        Type::Reader type,
+        ::capnp::List< ::capnp::schema::Annotation,  ::capnp::Kind::STRUCT>::Reader annotations,
+        MemberInfo& mi)
+    {
+        switch (type.which()) {
+            case Type::Which::VOID:
+                mi.set(mlir::NoneType::get(ctxt));
+                break;
+            case Type::Which::BOOL:
+                mi.set(mlir::IntegerType::get(1, mlir::IntegerType::SignednessSemantics::Signless, ctxt));
+                break;
+            case Type::Which::INT8:
+                mi.set(mlir::IntegerType::get(8, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
+                break;
+            case Type::Which::INT16:
+                mi.set(mlir::IntegerType::get(16, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
+                break;
+            case Type::Which::INT32:
+                mi.set(mlir::IntegerType::get(32, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
+                break;
+            case Type::Which::INT64:
+                mi.set(mlir::IntegerType::get(64, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
+                break;
+            case Type::Which::UINT8:
+                mi.set(mlir::IntegerType::get(8, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
+                break;
+            case Type::Which::UINT16:
+                mi.set(mlir::IntegerType::get(16, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
+                break;
+            case Type::Which::UINT32:
+                mi.set(mlir::IntegerType::get(32, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
+                break;
+            case Type::Which::UINT64:
+                mi.set(mlir::IntegerType::get(64, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
+                break;
+            // case Type::Which::FLOAT32:
+            //     type = EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
+            //     break;
+            // case Type::Which::FLOAT64:
+            //     type = EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
+            //     break;
+            // case Type::Which::TEXT:
+            //     type = new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
+            //     break;
+            // case Type::Which::DATA:
+            //     type = new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
+            //     break;
+            // case Type::Which::LIST:
+            //     type = new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
+            //     break;
+            // case Type::Which::ENUM:
+            //     type = GetNamedType(type.Enum.TypeId),
+            //     break;
+            // case Type::Which::STRUCT:
+            //     mi.type = type.Struct.TypeId switch {
+            //         break;
+            //     // ---
+            //     // "Special", known structs
+            //     (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
+            //         EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
+            //     (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
+            //         EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
 
-    //             CapnpGen.Type.WHICH.List => new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
-    //             CapnpGen.Type.WHICH.Enum => GetNamedType(type.Enum.TypeId),
-    //             CapnpGen.Type.WHICH.Struct => type.Struct.TypeId switch {
-    //                 // ---
-    //                 // "Special", known structs
-    //                 (ulong)AnnotationIDs.FIXED_POINT_VALUE =>
-    //                     EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFixed, true, 63, 64),
-    //                 (ulong)AnnotationIDs.FLOATING_POINT_VALUE =>
-    //                     EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 63, 64),
+            //     // ---
+            //     // User-specified structs
+            //     _ => GetNamedType(type.Struct.TypeId)
+            // },
 
-    //                 // ---
-    //                 // User-specified structs
-    //                 _ => GetNamedType(type.Struct.TypeId)
-    //             },
+            // CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
+            // CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
 
-    //             CapnpGen.Type.WHICH.Interface => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the Interface type ({loc})", loc) ),
-    //             CapnpGen.Type.WHICH.AnyPointer => new CapnpEsiErrorType( () => C.Log.Error("ESI does not support the AnyPointer type ({loc})", loc) ),
-
-    //             _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
-    //         };
-    //         return AddAnnotations(esiType, loc, annotations);
-    //     }
+            // _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
+            default:
+                llvm::errs() << llvm::formatv("Capnp type number {} not supported (at {})", type.which(), loc.ToString());
+                return mlir::failure();
+        };
+        return mlir::success();
+        // return AddAnnotations(mi, loc, annotations);
+    }
 
 
     //     /// <summary>
@@ -527,8 +565,12 @@ public:
 
 };
 
-llvm::Error ConvertToESI(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes) {
-    CapnpParser cp;
+llvm::Error ConvertToESI(
+    mlir::MLIRContext* ctxt,
+    CodeGeneratorRequest::Reader& cgr,
+    vector<mlir::Type>& outputTypes)
+{
+    CapnpParser cp(ctxt);
     return cp.ConvertTypes(cgr, outputTypes);
 }
 

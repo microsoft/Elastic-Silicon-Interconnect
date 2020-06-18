@@ -11,6 +11,7 @@ using namespace mlir;
 
 namespace mlir {
 namespace esi {
+
 namespace details {
     // ********************
     // Storage structs

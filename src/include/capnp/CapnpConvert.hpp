@@ -10,7 +10,10 @@
 
 namespace esi {
 namespace capnp {
-    llvm::Error ConvertToESI(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes);
+    llvm::Error ConvertToESI(
+        ::mlir::MLIRContext*,
+        ::capnp::schema::CodeGeneratorRequest::Reader& cgr,
+        ::std::vector<mlir::Type>& outputTypes);
 }
 }
 #endif
