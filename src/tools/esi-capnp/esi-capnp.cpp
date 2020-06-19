@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "capnp/CapnpConvert.hpp"
+#include "Dialects/Esi/EsiTypes.hpp"
 #include "Dialects/Esi/EsiDialect.hpp"
 
 #include "mlir/InitAllDialects.h"
@@ -15,6 +16,8 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/FormatVariadic.h"
+#include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/OpImplementation.h"
 
 #include <capnp/message.h>
 #include <capnp/serialize.h>
@@ -32,7 +35,6 @@ static llvm::cl::opt<std::string>
     outputFilename("o", llvm::cl::desc("Output filename"),
                    llvm::cl::value_desc("filename"), llvm::cl::init("-"));
 
-
 int main(int argc, char **argv) {
   mlir::registerAllDialects();
   mlir::registerDialect<mlir::esi::EsiDialect>();
@@ -43,6 +45,7 @@ int main(int argc, char **argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv,
                                   "ESI-Cap'nProto conversion utility\n");
   mlir::MLIRContext context;
+  // mlir::esi::EsiDialect* esiDialect = new mlir::esi::EsiDialect(&context);
 
   // Read the CodeGeneratorRequest from the proper place
   int fd = 0;
@@ -88,9 +91,18 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  // auto fp = mlir::esi::FloatingPointType::get(&context, true, 20, 4);
+  // llvm::outs() << mlir::esi::ListType::get(&context, fp) << "\n";
   std::vector<mlir::Type> types;
-  mlir::MLIRContext ctxt;
-  ExitOnError(esi::capnp::ConvertToESI(&ctxt, request, types));
+  ExitOnError(esi::capnp::ConvertToESI(&context, request, types));
+  // auto module = mlir::ModuleOp();
+  // module.print(llvm::outs);
+  for (auto type : types) {
+    if (type == nullptr)
+      continue;
+    llvm::outs() << type.getKind() << ": " << type << "\n"; 
+    // esiDialect->printType(t, nullptr);
+  }
 
   llvm::outs() << "Success!\n";
   output->keep();

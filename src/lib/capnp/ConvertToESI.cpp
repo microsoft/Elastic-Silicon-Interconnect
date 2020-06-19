@@ -31,15 +31,19 @@ class CapnpParser {
     struct EsiCapnpLocation
     {
     public:
-        Node::Reader& node;
+        Node::Reader* node;
         mlir::Type type;
         string nodeName;
         string file;
         string displayName;
         list<string> path;
 
-        EsiCapnpLocation(Node::Reader& node, string name, string file) :
-            node(node), nodeName(name), file(file), displayName(node.getDisplayName()) { }
+        // EsiCapnpLocation(const EsiCapnpLocation& other) :
+        //     node(other.node), type(other.type), nodeName(other.nodeName), file(other.file), displayName(other.displayName), path(other.path) {
+        // }
+
+        // EsiCapnpLocation(Node::Reader* node, string name, string file) :
+        //     node(node), nodeName(name), file(file), displayName(node->getDisplayName()) { }
 
         EsiCapnpLocation AppendField(string field)
         {
@@ -54,10 +58,10 @@ class CapnpParser {
             if (!all_of(displayName.begin(), displayName.end(), iswspace))
                 fileStruct = displayName;
             else
-                fileStruct = llvm::formatv("{}:{}", file, nodeName);
+                fileStruct = llvm::formatv("{0}:{1}", file, nodeName);
 
             if (path.size() > 0)
-                return llvm::formatv("{}/{}", fileStruct, llvm::join(path, ","));
+                return llvm::formatv("{0}/{1}", fileStruct, llvm::join(path, ","));
             else
                 return fileStruct;
         }
@@ -67,17 +71,21 @@ class CapnpParser {
         auto id = node.getId();
         auto locIter = IDtoLoc.find(id);
         if (locIter == IDtoLoc.end()) {
-            IDtoLoc[id] = make_unique<EsiCapnpLocation>(
-                node, IDtoNames[id], IDtoFile[id]);
-
+            EsiCapnpLocation loc = {
+                .node = &node,
+                .nodeName = IDtoNames[id],
+                .file = IDtoFile[id],
+                .displayName = node.getDisplayName()
+            };
+            // EsiCapnpLocation(&node, IDtoNames[id], IDtoFile[id]);
+            IDtoLoc[id] = loc;
         }
-        return *IDtoLoc[id].get();
+        return IDtoLoc[id];
     }
 
     std::map<uint64_t, string> IDtoFile;
     std::map<uint64_t, std::string> IDtoNames;
-    std::map<uint64_t, unique_ptr<EsiCapnpLocation>> IDtoLoc;
-    map<uint64_t, mlir::Type> IDtoType;
+    std::map<uint64_t, EsiCapnpLocation> IDtoLoc;
     mlir::MLIRContext* ctxt;
 
 public:
@@ -103,18 +111,22 @@ public:
             if (node.hasParameters() ||
                 node.getIsGeneric())
             {
-                llvm::outs() << llvm::formatv("Generic types are not (yet?) supported: Node {}", node.getDisplayName());
+                llvm::errs() << llvm::formatv("Generic types are not (yet?) supported: Node {0}\n", node.getDisplayName());
                 continue;
             }
 
             if (node.isStruct()) {
                 auto rc = ConvertStruct(nodeLoc);
                 if (mlir::failed(rc)) {
-                    llvm::errs() << llvm::formatv("Failed to convert '{}' to EsiStruct", node.getDisplayName());
+                    llvm::errs() << llvm::formatv("Failed to convert '{0}' to EsiStruct\n", node.getDisplayName());
                 }
             } else {
-                llvm::errs() << llvm::formatv("Unconvertable type (node '{}')", node.getDisplayName());
+                llvm::errs() << llvm::formatv("Unconvertable type (node '{0}')\n", node.getDisplayName());
             }
+        }
+
+        for (auto locIdPair : IDtoLoc) {
+            outputTypes.push_back(locIdPair.second.type);
         }
 
         return llvm::Error::success();
@@ -139,13 +151,20 @@ public:
     /// <returns></returns>
     mlir::LogicalResult ConvertStruct(EsiCapnpLocation& loc)
     {
-        auto& node = loc.node;
+        auto& node = *loc.node;
         const auto& _struct = node.getStruct();
         const auto& fields = _struct.getFields();
+        const size_t num = fields.size();
 
-        vector<MemberInfo> esiFields;
-        for (auto field : fields) {
+        vector<MemberInfo> esiFields(num);
+        for (auto i=0; i<num; i++) {
+            auto rc = ConvertField(
+                loc.AppendField(fields[i].getName()),
+                fields[i],
+                esiFields[i]);
         }
+        loc.type = StructType::get(ctxt, esiFields);
+        return mlir::success();
     }
 
     //     private EsiInterface ConvertInterface(ulong id)
@@ -271,7 +290,7 @@ public:
     /// <summary>
     /// Convert a struct field which can be either an actual member, "slot", or a group.
     /// </summary>
-    mlir::LogicalResult ConvertField(EsiCapnpLocation& loc, Field::Reader& field, MemberInfo& mi)
+    mlir::LogicalResult ConvertField(EsiCapnpLocation loc, const Field::Reader& field, MemberInfo& mi)
     {
         auto fieldLoc = loc.AppendField(field.getName());
         switch (field.which())
@@ -376,7 +395,7 @@ public:
 
             // _ => throw new NotImplementedException($"ConvertType({Enum.GetName(typeof(CapnpGen.Type.WHICH), type.which)}) not implemented ({loc})")
             default:
-                llvm::errs() << llvm::formatv("Capnp type number {} not supported (at {})", type.which(), loc.ToString());
+                llvm::errs() << llvm::formatv("Capnp type number {0} not supported (at {1})\n", type.which(), loc.ToString());
                 return mlir::failure();
         };
         return mlir::success();
