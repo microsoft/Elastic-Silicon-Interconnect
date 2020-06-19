@@ -14,27 +14,13 @@ RUN apt-get update && apt-get install -y \
     python \
     git \
     autoconf bc bison flex libfl-dev perl \
-    cmake make ninja-build
+    cmake make ninja-build pkg-config
 
 RUN python3 -m pip install -U pylint
 RUN python3 -m pip install -U pytest
 RUN python3 -m pip install -U cython
 RUN python3 -m pip install -U setuptools
 RUN python3 -m pip install -U pycapnp
-
-
-# Compile vcpkg to get cross-platform C/C++ library management
-RUN cd / && \
-    git clone https://github.com/Microsoft/vcpkg.git && \
-    cd vcpkg && \
-    git checkout d9b4acf02d8c784927f89d23edb677408ec428af
-WORKDIR /vcpkg
-RUN ./bootstrap-vcpkg.sh
-ENV VCPKG_ROOT=/vcpkg
-
-# Install libraries
-RUN ./vcpkg install capnproto:x64-linux
-ENV PATH=/vcpkg/installed/x64-linux/tools/capnproto/:$PATH
 
 # Compile Verilator so that we don't get a 3+ year old version
 WORKDIR /verilator_src

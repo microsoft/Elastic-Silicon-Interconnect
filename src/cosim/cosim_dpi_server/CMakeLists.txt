@@ -12,7 +12,7 @@ set(SOURCES ${CAPNP_SRCS} DpiEntryPoints.cpp Server.cpp EndPoint.cpp)
 add_library(EsiCosimDpiServer SHARED ${CAPNP_HDRS} ${HEADERS} ${SOURCES})
 target_link_libraries(EsiCosimDpiServer PRIVATE
     CapnProto::kj CapnProto::kj-async CapnProto::kj-gzip
-    CapnProto::capnp CapnProto::capnpc CapnProto::capnp-rpc 
+    CapnProto::capnp CapnProto::capnp-rpc 
     MtiPli )
 
 target_include_directories(EsiCosimDpiServer PRIVATE ${CAPNPC_OUTPUT_DIR})

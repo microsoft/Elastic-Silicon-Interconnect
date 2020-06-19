@@ -8,15 +8,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(MLIR_DIR mlir/build/lib/cmake/mlir/)
 
-# Pick up vcpkg toolchain from environment variable
-if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  message( STATUS "Found VCPKG at $ENV{VCPKG_ROOT}")
-  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-      CACHE STRING "")
-else()
-  message( STATUS "Did not find VCPKG_ROOT")
-endif()
-
 if(POLICY CMP0057)
   cmake_policy(SET CMP0057 NEW)
 endif()
