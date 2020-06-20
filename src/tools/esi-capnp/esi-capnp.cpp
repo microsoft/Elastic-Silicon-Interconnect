@@ -54,6 +54,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // for (auto a : esi::capnp::Annotations::idToName) {
+  //   llvm::outs() << llvm::formatv("id: {0} = {1}\n", a.first, a.second);
+  // }
 
   // Set up paths to parse the damn schema
   kj::Path pathEvaler(nullptr);

@@ -24,6 +24,9 @@ using namespace capnp::schema;
 namespace esi {
 namespace capnp {
 
+std::map<uint64_t, std::string> Annotations::idToName;
+bool __garbage = Annotations::__addToNameList<0>();
+
 class CapnpParser {
 
     /// <summary>
@@ -349,25 +352,23 @@ public:
             case ::capnp::schema::Type::Which::UINT64:
                 mi.set(mlir::IntegerType::get(64, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
                 break;
-            // case Type::Which::FLOAT32:
-            //     type = EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 8, 23),
+            case ::capnp::schema::Type::Which::FLOAT32:
+                mi.set(mlir::esi::FloatingPointType::get(ctxt, true, 8, 23));
+                break;
+            case ::capnp::schema::Type::Which::FLOAT64:
+                mi.set(mlir::esi::FloatingPointType::get(ctxt, true, 11, 52));
+                break;
+            case ::capnp::schema::Type::Which::TEXT:
+            case ::capnp::schema::Type::Which::DATA:
+                mi.set(mlir::esi::ListType::get(ctxt, mlir::IntegerType::get(8, mlir::IntegerType::SignednessSemantics::Signless, ctxt)));
+                break;
+            // case ::capnp::schema::Type::Which::LIST:
+            //     mi.set(mlir::esi::MessagePointerType::get(ctxt, )) new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
             //     break;
-            // case Type::Which::FLOAT64:
-            //     type = EsiCompound.SingletonFor(EsiCompound.CompoundType.EsiFloat, true, 11, 52),
-            //     break;
-            // case Type::Which::TEXT:
-            //     type = new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
-            //     break;
-            // case Type::Which::DATA:
-            //     type = new EsiReferenceType(new EsiList(EsiPrimitive.Byte, true)),
-            //     break;
-            // case Type::Which::LIST:
-            //     type = new EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType, null) ) ),
-            //     break;
-            // case Type::Which::ENUM:
+            // case ::capnp::schema::Type::Which::ENUM:
             //     type = GetNamedType(type.Enum.TypeId),
             //     break;
-            // case Type::Which::STRUCT:
+            // case ::capnp::schema::Type::Which::STRUCT:
             //     mi.type = type.Struct.TypeId switch {
             //         break;
             //     // ---
@@ -390,25 +391,30 @@ public:
                 llvm::errs() << llvm::formatv("Capnp type number {0} not supported (at {1})\n", type.which(), loc.ToString());
                 return mlir::failure();
         };
-        return mlir::success();
-        // return AddAnnotations(mi, loc, annotations);
+        return AddAnnotations(loc, annotations, mi);
     }
 
 
-    //     /// <summary>
-    //     /// Return a new type based on the old type and the annotation-based modifiers
-    //     /// </summary>
-    //     /// <param name="esiType">The original type</param>
-    //     /// <param name="loc">The original type's Capnp "location"</param>
-    //     /// <param name="annotations">A list of annotations</param>
-    //     /// <returns>The modified EsiType</returns>
-    //     private EsiType AddAnnotations(
-    //         EsiType esiType,
-    //         EsiCapnpLocation loc,
-    //         IReadOnlyList<Annotation.READER> annotations)
-    //     {
-    //         return annotations?.Aggregate(esiType, (et, a) => AddAnnotation(et, loc, a)) ?? esiType;
-    //     }
+    /// <summary>
+    /// Return a new type based on the old type and the annotation-based modifiers
+    /// </summary>
+    /// <param name="esiType">The original type</param>
+    /// <param name="loc">The original type's Capnp "location"</param>
+    /// <param name="annotations">A list of annotations</param>
+    /// <returns>The modified EsiType</returns>
+    mlir::LogicalResult AddAnnotations(
+        EsiCapnpLocation loc,
+        ::capnp::List< ::capnp::schema::Annotation,  ::capnp::Kind::STRUCT>::Reader annotations,
+        MemberInfo& mi)
+    {
+        for (auto ann : annotations) {
+            // auto rc = AddAnnotation(loc, ann, mi);
+            // if (mlir::failed(rc)) {
+            //     return rc;
+            // }
+        }
+        return mlir::success();
+    }
 
     //     public EsiType AddAnnotation (EsiType esiType, EsiCapnpLocation loc, Annotation.READER a) {
     //         if (!ESIAnnotations.Contains( a.Id ))
