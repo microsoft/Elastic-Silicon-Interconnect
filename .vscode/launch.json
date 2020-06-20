@@ -24,7 +24,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esi-capnp",
-            "args": ["stress1_synth.cgrbin"],
+            "args": ["tests/capnp/stress1_synth.capnp"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [

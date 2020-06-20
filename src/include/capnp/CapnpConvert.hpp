@@ -12,7 +12,7 @@ namespace esi {
 namespace capnp {
     llvm::Error ConvertToESI(
         ::mlir::MLIRContext*,
-        ::capnp::schema::CodeGeneratorRequest::Reader& cgr,
+        ::capnp::ParsedSchema& rootSchema,
         ::std::vector<mlir::Type>& outputTypes);
 }
 }

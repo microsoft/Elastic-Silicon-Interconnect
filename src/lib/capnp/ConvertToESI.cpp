@@ -18,6 +18,7 @@
 
 using namespace std;
 using namespace mlir::esi;
+using namespace capnp;
 using namespace capnp::schema;
 
 namespace esi {
@@ -31,11 +32,10 @@ class CapnpParser {
     struct EsiCapnpLocation
     {
     public:
-        Node::Reader* node;
+        ParsedSchema node;
         mlir::Type type;
-        string nodeName;
+        kj::StringPtr nodeName;
         string file;
-        string displayName;
         list<string> path;
 
         // EsiCapnpLocation(const EsiCapnpLocation& other) :
@@ -55,6 +55,7 @@ class CapnpParser {
         string ToString()
         {
             string fileStruct;
+            auto displayName = node.getProto().getDisplayName();
             if (!all_of(displayName.begin(), displayName.end(), iswspace))
                 fileStruct = displayName;
             else
@@ -67,15 +68,13 @@ class CapnpParser {
         }
     };
 
-    EsiCapnpLocation& GetLocation(Node::Reader& node) {
-        auto id = node.getId();
+    EsiCapnpLocation& GetLocation(ParsedSchema node) {
+        auto id = node.getProto().getId();
         auto locIter = IDtoLoc.find(id);
         if (locIter == IDtoLoc.end()) {
             EsiCapnpLocation loc = {
-                .node = &node,
-                .nodeName = IDtoNames[id],
-                .file = IDtoFile[id],
-                .displayName = node.getDisplayName()
+                .node = node,
+                .nodeName = node.getNodeName(),
             };
             // EsiCapnpLocation(&node, IDtoNames[id], IDtoFile[id]);
             IDtoLoc[id] = loc;
@@ -92,36 +91,29 @@ public:
     CapnpParser(mlir::MLIRContext* ctxt) :
         ctxt(ctxt) { }
 
-    llvm::Error ConvertTypes(::capnp::schema::CodeGeneratorRequest::Reader& cgr, std::vector<mlir::Type>& outputTypes) {
+    llvm::Error ConvertTypes(kj::Array<ParsedSchema> nodes, std::vector<mlir::Type>& outputTypes) {
         // First pass: get all the filenames
-        for (auto file : cgr.getRequestedFiles()) {
-            IDtoFile[file.getId()] = file.getFilename();
-        }
+        // for (auto file : cgr.getRequestedFiles()) {
+            // IDtoFile[file.getId()] = file.getFilename();
+        // }
 
         // Second pass: get all the node names
-        for (auto node : cgr.getNodes()) {
-            for (auto nestedNode : node.getNestedNodes()) {
-                IDtoNames[nestedNode.getId()] = nestedNode.getName();
-            }
-        }
+        // for (auto node : nodes) {
+        //     for (auto nestedNode : node.getNestedNodes()) {
+        //         IDtoNames[nestedNode.getId()] = nestedNode.getName();
+        //     }
+        // }
 
-        for (auto node : cgr.getNodes()) {
+        for (auto node : nodes) {
             auto& nodeLoc = GetLocation(node);
 
-            if (node.hasParameters() ||
-                node.getIsGeneric())
-            {
-                llvm::errs() << llvm::formatv("Generic types are not (yet?) supported: Node {0}\n", node.getDisplayName());
-                continue;
-            }
-
-            if (node.isStruct()) {
+            if (node.getProto().isStruct()) {
                 auto rc = ConvertStruct(nodeLoc);
                 if (mlir::failed(rc)) {
-                    llvm::errs() << llvm::formatv("Failed to convert '{0}' to EsiStruct\n", node.getDisplayName());
+                    llvm::errs() << llvm::formatv("Failed to convert '{0}' to EsiStruct\n", node.getProto().getDisplayName());
                 }
             } else {
-                llvm::errs() << llvm::formatv("Unconvertable type (node '{0}')\n", node.getDisplayName());
+                llvm::errs() << llvm::formatv("Unconvertable type (node '{0}')\n", node.getProto().getDisplayName());
             }
         }
 
@@ -151,19 +143,19 @@ public:
     /// <returns></returns>
     mlir::LogicalResult ConvertStruct(EsiCapnpLocation& loc)
     {
-        auto& node = *loc.node;
-        const auto& _struct = node.getStruct();
+        const auto& node = loc.node;
+        const auto& _struct = node.asStruct();
         const auto& fields = _struct.getFields();
         const size_t num = fields.size();
 
-        vector<MemberInfo> esiFields(num);
-        for (auto i=0; i<num; i++) {
-            auto rc = ConvertField(
-                loc.AppendField(fields[i].getName()),
-                fields[i],
-                esiFields[i]);
-        }
-        loc.type = StructType::get(ctxt, esiFields);
+        // vector<MemberInfo> esiFields(num);
+        // for (auto i=0; i<num; i++) {
+        //     auto rc = ConvertField(
+        //         loc.AppendField(fields[i].getName()),
+        //         fields[i],
+        //         esiFields[i]);
+        // }
+        // loc.type = StructType::get(ctxt, esiFields);
         return mlir::success();
     }
 
@@ -290,28 +282,28 @@ public:
     /// <summary>
     /// Convert a struct field which can be either an actual member, "slot", or a group.
     /// </summary>
-    mlir::LogicalResult ConvertField(EsiCapnpLocation loc, const Field::Reader& field, MemberInfo& mi)
-    {
-        auto fieldLoc = loc.AppendField(field.getName());
-        switch (field.which())
-        {
-            // case Field::Which::GROUP:
-            //     mi = {
-            //         .name = field.getName(),
-            //         .type = AddAnnotations(
-            //             ConvertStruct(fieldLoc),
-            //             field.getAnnotations()
-            //         )
-            //     };
-            //     return mlir::success();
+    // mlir::LogicalResult ConvertField(EsiCapnpLocation loc, const Field::Reader& field, MemberInfo& mi)
+    // {
+        // auto fieldLoc = loc.AppendField(field.getName());
+        // switch (field.which())
+        // {
+        //     // case Field::Which::GROUP:
+        //     //     mi = {
+        //     //         .name = field.getName(),
+        //     //         .type = AddAnnotations(
+        //     //             ConvertStruct(fieldLoc),
+        //     //             field.getAnnotations()
+        //     //         )
+        //     //     };
+        //     //     return mlir::success();
 
-            case Field::Which::SLOT:
-                mi.name = field.getName();
-                return ConvertType(fieldLoc, field.getSlot().getType(), field.getAnnotations(), mi);
-            default:
-                return mlir::failure();
-        }
-    }
+        //     case Field::Which::SLOT:
+        //         mi.name = field.getName();
+        //         return ConvertType(fieldLoc, field.getSlot().getType(), field.getAnnotations(), mi);
+        //     default:
+        //         return mlir::failure();
+        // }
+    // }
 
     /// <summary>
     /// Entry point for recursion. Should handle any embeddable type and its annotations.
@@ -322,39 +314,39 @@ public:
     /// <returns></returns>
     mlir::LogicalResult ConvertType(
         EsiCapnpLocation loc,
-        Type::Reader type,
+        ::capnp::Type type,
         ::capnp::List< ::capnp::schema::Annotation,  ::capnp::Kind::STRUCT>::Reader annotations,
         MemberInfo& mi)
     {
         switch (type.which()) {
-            case Type::Which::VOID:
+            case ::capnp::schema::Type::Which::VOID:
                 mi.set(mlir::NoneType::get(ctxt));
                 break;
-            case Type::Which::BOOL:
+            case ::capnp::schema::Type::Which::BOOL:
                 mi.set(mlir::IntegerType::get(1, mlir::IntegerType::SignednessSemantics::Signless, ctxt));
                 break;
-            case Type::Which::INT8:
+            case ::capnp::schema::Type::Which::INT8:
                 mi.set(mlir::IntegerType::get(8, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
                 break;
-            case Type::Which::INT16:
+            case ::capnp::schema::Type::Which::INT16:
                 mi.set(mlir::IntegerType::get(16, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
                 break;
-            case Type::Which::INT32:
+            case ::capnp::schema::Type::Which::INT32:
                 mi.set(mlir::IntegerType::get(32, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
                 break;
-            case Type::Which::INT64:
+            case ::capnp::schema::Type::Which::INT64:
                 mi.set(mlir::IntegerType::get(64, mlir::IntegerType::SignednessSemantics::Signed, ctxt));
                 break;
-            case Type::Which::UINT8:
+            case ::capnp::schema::Type::Which::UINT8:
                 mi.set(mlir::IntegerType::get(8, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
                 break;
-            case Type::Which::UINT16:
+            case ::capnp::schema::Type::Which::UINT16:
                 mi.set(mlir::IntegerType::get(16, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
                 break;
-            case Type::Which::UINT32:
+            case ::capnp::schema::Type::Which::UINT32:
                 mi.set(mlir::IntegerType::get(32, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
                 break;
-            case Type::Which::UINT64:
+            case ::capnp::schema::Type::Which::UINT64:
                 mi.set(mlir::IntegerType::get(64, mlir::IntegerType::SignednessSemantics::Unsigned, ctxt));
                 break;
             // case Type::Which::FLOAT32:
@@ -586,11 +578,11 @@ public:
 
 llvm::Error ConvertToESI(
     mlir::MLIRContext* ctxt,
-    CodeGeneratorRequest::Reader& cgr,
+    ParsedSchema& rootSchema,
     vector<mlir::Type>& outputTypes)
 {
     CapnpParser cp(ctxt);
-    return cp.ConvertTypes(cgr, outputTypes);
+    return cp.ConvertTypes(rootSchema.getAllNested(), outputTypes);
 }
 
 }

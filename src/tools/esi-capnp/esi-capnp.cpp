@@ -29,7 +29,8 @@
 llvm::ExitOnError ExitOnError;
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
-                                                llvm::cl::desc("<input file>"));
+                                                llvm::cl::ValueRequired,
+                                                llvm::cl::desc("<input file>") );
                                                 
 
 static llvm::cl::opt<std::string>
@@ -46,27 +47,31 @@ int main(int argc, char **argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv,
                                   "ESI-Cap'nProto conversion utility\n");
   mlir::MLIRContext context;
-  // mlir::esi::EsiDialect* esiDialect = new mlir::esi::EsiDialect(&context);
-
-  // Read the CodeGeneratorRequest from the proper place
-  int fd = 0;
-  if (inputFilename != "-") {
-    fd = open(inputFilename.c_str(), O_RDONLY);
-  }
 
   kj::Own<kj::Filesystem> fs = kj::newDiskFilesystem();
-  auto inputPath = kj::Path::parse(inputFilename.getValue());
-  auto& cwd = fs->getCurrent();
-  auto baseDir = cwd.openSubdir(inputPath.parent());
-  auto importPaths = kj::ArrayPtr<const kj::ReadableDirectory*> {
+  if (inputFilename.size() == 0) {
+    llvm::errs() << "Input filename must specified\n";
+    return 1;
+  }
 
-  };
 
+  // Set up paths to parse the damn schema
+  kj::Path pathEvaler(nullptr);
+  kj::Path inputFilenameAbs =
+    (*inputFilename.begin() == '/') ?
+      pathEvaler.evalNative(inputFilename) :
+      fs->getCurrentPath().append(kj::Path::parse(inputFilename));
+
+  auto baseDir = fs->getRoot().openSubdir(inputFilenameAbs.parent());
+  const auto exeFile = fs->getRoot().readlink(kj::Path::parse("proc/self/exe"));
+  auto exeDir = fs->getRoot().openSubdir(pathEvaler.evalNative(exeFile).parent());
+
+  // Parse the damn thing
   capnp::SchemaParser parser;
   auto rootSchema = parser.parseFromDirectory(
     *baseDir,
-    kj::Path::parse(inputFilename.getValue()),
-    importPaths);
+    inputFilenameAbs.basename().clone(),
+    { exeDir.get() });
 
   // Open the output mlir assembly file
   std::string errorMessage;
@@ -79,9 +84,7 @@ int main(int argc, char **argv) {
   // auto fp = mlir::esi::FloatingPointType::get(&context, true, 20, 4);
   // llvm::outs() << mlir::esi::ListType::get(&context, fp) << "\n";
   std::vector<mlir::Type> types;
-  // ExitOnError(esi::capnp::ConvertToESI(&context, request, types));
-  // auto module = mlir::ModuleOp();
-  // module.print(llvm::outs);
+  ExitOnError(esi::capnp::ConvertToESI(&context, rootSchema, types));
   for (auto type : types) {
     if (type == nullptr)
       continue;
