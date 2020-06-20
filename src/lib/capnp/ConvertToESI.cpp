@@ -148,14 +148,14 @@ public:
         const auto& fields = _struct.getFields();
         const size_t num = fields.size();
 
-        // vector<MemberInfo> esiFields(num);
-        // for (auto i=0; i<num; i++) {
-        //     auto rc = ConvertField(
-        //         loc.AppendField(fields[i].getName()),
-        //         fields[i],
-        //         esiFields[i]);
-        // }
-        // loc.type = StructType::get(ctxt, esiFields);
+        vector<MemberInfo> esiFields(num);
+        for (auto i=0; i<num; i++) {
+            auto rc = ConvertField(
+                loc,
+                fields[i],
+                esiFields[i]);
+        }
+        loc.type = StructType::get(ctxt, esiFields);
         return mlir::success();
     }
 
@@ -282,28 +282,28 @@ public:
     /// <summary>
     /// Convert a struct field which can be either an actual member, "slot", or a group.
     /// </summary>
-    // mlir::LogicalResult ConvertField(EsiCapnpLocation loc, const Field::Reader& field, MemberInfo& mi)
-    // {
-        // auto fieldLoc = loc.AppendField(field.getName());
-        // switch (field.which())
-        // {
-        //     // case Field::Which::GROUP:
-        //     //     mi = {
-        //     //         .name = field.getName(),
-        //     //         .type = AddAnnotations(
-        //     //             ConvertStruct(fieldLoc),
-        //     //             field.getAnnotations()
-        //     //         )
-        //     //     };
-        //     //     return mlir::success();
+    mlir::LogicalResult ConvertField(EsiCapnpLocation loc, StructSchema::Field field, MemberInfo& mi)
+    {
+        auto fieldLoc = loc.AppendField(field.getProto().getName());
+        switch (field.getProto().which())
+        {
+            // case Field::Which::GROUP:
+            //     mi = {
+            //         .name = field.getName(),
+            //         .type = AddAnnotations(
+            //             ConvertStruct(fieldLoc),
+            //             field.getAnnotations()
+            //         )
+            //     };
+            //     return mlir::success();
 
-        //     case Field::Which::SLOT:
-        //         mi.name = field.getName();
-        //         return ConvertType(fieldLoc, field.getSlot().getType(), field.getAnnotations(), mi);
-        //     default:
-        //         return mlir::failure();
-        // }
-    // }
+            case Field::Which::SLOT:
+                mi.name = field.getProto().getName();
+                return ConvertType(fieldLoc, field.getType(), field.getProto().getAnnotations(), mi);
+            default:
+                return mlir::failure();
+        }
+    }
 
     /// <summary>
     /// Entry point for recursion. Should handle any embeddable type and its annotations.
