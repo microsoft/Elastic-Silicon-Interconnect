@@ -21,6 +21,7 @@
 
 #include <capnp/message.h>
 #include <capnp/serialize.h>
+#include <capnp/schema-parser.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -28,8 +29,8 @@
 llvm::ExitOnError ExitOnError;
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
-                                                llvm::cl::desc("<input file>"),
-                                                llvm::cl::init("-"));
+                                                llvm::cl::desc("<input file>"));
+                                                
 
 static llvm::cl::opt<std::string>
     outputFilename("o", llvm::cl::desc("Output filename"),
@@ -53,35 +54,19 @@ int main(int argc, char **argv) {
     fd = open(inputFilename.c_str(), O_RDONLY);
   }
 
-  capnp::ReaderOptions options;
-  options.traversalLimitInWords = 1 << 30;  // Don't limit.
-  capnp::StreamFdMessageReader reader(fd, options);
-  auto request = reader.getRoot<capnp::schema::CodeGeneratorRequest>();
-  if (fd != 0)
-  {
-    close(fd);
-  }
+  kj::Own<kj::Filesystem> fs = kj::newDiskFilesystem();
+  auto inputPath = kj::Path::parse(inputFilename.getValue());
+  auto& cwd = fs->getCurrent();
+  auto baseDir = cwd.openSubdir(inputPath.parent());
+  auto importPaths = kj::ArrayPtr<const kj::ReadableDirectory*> {
 
-  auto capnpVersion = request.getCapnpVersion();
+  };
 
-  if (capnpVersion.getMajor() != CAPNP_VERSION_MAJOR ||
-      capnpVersion.getMinor() != CAPNP_VERSION_MINOR ||
-      capnpVersion.getMicro() != CAPNP_VERSION_MICRO) {
-    auto compilerVersion = request.hasCapnpVersion()
-        ? kj::str(capnpVersion.getMajor(), '.', capnpVersion.getMinor(), '.',
-                  capnpVersion.getMicro())
-        : kj::str("pre-0.6");  // pre-0.6 didn't send the version.
-    auto generatorVersion = kj::str(
-        CAPNP_VERSION_MAJOR, '.', CAPNP_VERSION_MINOR, '.', CAPNP_VERSION_MICRO);
-
-    llvm::errs() <<
-        "You appear to be using different versions of 'capnp' (the compiler) and "
-        "'capnpc-c++' (the code generator). This can happen, for example, if you built "
-        "a custom version of 'capnp' but then ran it with '-oc++', which invokes "
-        "'capnpc-c++' from your PATH (i.e. the installed version). To specify an alternate "
-        "'capnpc-c++' executable, try something like '-o/path/to/capnpc-c++' instead."
-        << llvm::formatv("Expected version {}, got {}\n", compilerVersion.cStr(), generatorVersion.cStr());
-  }
+  capnp::SchemaParser parser;
+  auto rootSchema = parser.parseFromDirectory(
+    *baseDir,
+    kj::Path::parse(inputFilename.getValue()),
+    importPaths);
 
   // Open the output mlir assembly file
   std::string errorMessage;
@@ -94,7 +79,7 @@ int main(int argc, char **argv) {
   // auto fp = mlir::esi::FloatingPointType::get(&context, true, 20, 4);
   // llvm::outs() << mlir::esi::ListType::get(&context, fp) << "\n";
   std::vector<mlir::Type> types;
-  ExitOnError(esi::capnp::ConvertToESI(&context, request, types));
+  // ExitOnError(esi::capnp::ConvertToESI(&context, request, types));
   // auto module = mlir::ModuleOp();
   // module.print(llvm::outs);
   for (auto type : types) {
