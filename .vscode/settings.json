@@ -6,4 +6,13 @@
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
     "cmake.sourceDirectory": "${workspaceFolder}",
     "python.pythonPath": "/usr/bin/python3",
+    "files.associations": {
+        "*.cof": "xml",
+        "*.pfg": "xml",
+        "*.proj": "xml",
+        "*.props": "xml",
+        "*.targets": "xml",
+        "*.svh": "systemverilog",
+        "*.inc": "cpp"
+    },
 }

@@ -24,9 +24,6 @@ using namespace capnp::schema;
 namespace esi {
 namespace capnp {
 
-std::map<uint64_t, std::string> Annotations::idToName;
-bool __garbage = Annotations::__addToNameList<0>();
-
 class CapnpParser {
 
     /// <summary>
@@ -35,18 +32,11 @@ class CapnpParser {
     struct EsiCapnpLocation
     {
     public:
-        ParsedSchema node;
+        StructSchema node;
         mlir::Type type;
-        kj::StringPtr nodeName;
+        std::string nodeName;
         string file;
         list<string> path;
-
-        // EsiCapnpLocation(const EsiCapnpLocation& other) :
-        //     node(other.node), type(other.type), nodeName(other.nodeName), file(other.file), displayName(other.displayName), path(other.path) {
-        // }
-
-        // EsiCapnpLocation(Node::Reader* node, string name, string file) :
-        //     node(node), nodeName(name), file(file), displayName(node->getDisplayName()) { }
 
         EsiCapnpLocation AppendField(string field)
         {
@@ -71,23 +61,21 @@ class CapnpParser {
         }
     };
 
-    EsiCapnpLocation& GetLocation(ParsedSchema node) {
+    EsiCapnpLocation& GetLocation(StructSchema node, std::string name="") {
         auto id = node.getProto().getId();
         auto locIter = IDtoLoc.find(id);
         if (locIter == IDtoLoc.end()) {
-            EsiCapnpLocation loc = {
-                .node = node,
-                .nodeName = node.getNodeName(),
-            };
-            // EsiCapnpLocation(&node, IDtoNames[id], IDtoFile[id]);
-            IDtoLoc[id] = loc;
+            EsiCapnpLocation loc;
+            loc.node = node;
+            loc.nodeName = (name.length() == 0) ? node.getProto().getDisplayName().cStr() : name;
+            IDtoLoc[id] = std::make_unique<EsiCapnpLocation>(loc);
         }
-        return IDtoLoc[id];
+        return *IDtoLoc[id];
     }
 
     std::map<uint64_t, string> IDtoFile;
     std::map<uint64_t, std::string> IDtoNames;
-    std::map<uint64_t, EsiCapnpLocation> IDtoLoc;
+    std::map<uint64_t, std::unique_ptr<EsiCapnpLocation>> IDtoLoc;
     mlir::MLIRContext* ctxt;
 
 public:
@@ -95,49 +83,26 @@ public:
         ctxt(ctxt) { }
 
     llvm::Error ConvertTypes(kj::Array<ParsedSchema> nodes, std::vector<mlir::Type>& outputTypes) {
-        // First pass: get all the filenames
-        // for (auto file : cgr.getRequestedFiles()) {
-            // IDtoFile[file.getId()] = file.getFilename();
-        // }
-
-        // Second pass: get all the node names
-        // for (auto node : nodes) {
-        //     for (auto nestedNode : node.getNestedNodes()) {
-        //         IDtoNames[nestedNode.getId()] = nestedNode.getName();
-        //     }
-        // }
-
         for (auto node : nodes) {
-            auto& nodeLoc = GetLocation(node);
-
-            if (node.getProto().isStruct()) {
-                auto rc = ConvertStruct(nodeLoc);
-                if (mlir::failed(rc)) {
-                    llvm::errs() << llvm::formatv("Failed to convert '{0}' to EsiStruct\n", node.getProto().getDisplayName());
-                }
-            } else {
-                llvm::errs() << llvm::formatv("Unconvertable type (node '{0}')\n", node.getProto().getDisplayName());
+            switch (node.getProto().which()) {
+                case ::capnp::schema::Node::Which::STRUCT: 
+                    if (mlir::failed(ConvertStruct(GetLocation(node.asStruct())))) {
+                        llvm::errs() << llvm::formatv("Failed to convert '{0}' to EsiStruct\n", node.getProto().getDisplayName());
+                    }
+                    break;
+                default:
+                    llvm::errs() << llvm::formatv("Unconvertable type (node '{0}')\n", node.getProto().getDisplayName());
+                    break;
             }
         }
 
-        for (auto locIdPair : IDtoLoc) {
-            outputTypes.push_back(locIdPair.second.type);
+        for (auto& locIdPair : IDtoLoc) {
+            outputTypes.push_back(locIdPair.second->type);
         }
 
         return llvm::Error::success();
     }
 
-    //     /// <summary>
-    //     /// Main entry point. Convert a CodeGeneratorRequest to a list of EsiTypes.
-    //     /// </summary>
-    //     /// <param name="cgr"></param>
-    //     /// <returns></returns>
-    //     protected EsiSystem Read(CodeGeneratorRequest.READER cgr)
-    //     {
-    //         ulong CapnpSchemaID = cgr.RequestedFiles.FirstOrDefault().Id;
-
-    //         return sys;
-    //     }
 
     /// <summary>
     /// Convert a top-level node to an EsiType, lazily
@@ -146,9 +111,7 @@ public:
     /// <returns></returns>
     mlir::LogicalResult ConvertStruct(EsiCapnpLocation& loc)
     {
-        const auto& node = loc.node;
-        const auto& _struct = node.asStruct();
-        const auto& fields = _struct.getFields();
+        const auto& fields = loc.node.getFields();
         const size_t num = fields.size();
 
         vector<MemberInfo> esiFields(num);
@@ -288,24 +251,8 @@ public:
     mlir::LogicalResult ConvertField(EsiCapnpLocation loc, StructSchema::Field field, MemberInfo& mi)
     {
         auto fieldLoc = loc.AppendField(field.getProto().getName());
-        switch (field.getProto().which())
-        {
-            // case Field::Which::GROUP:
-            //     mi = {
-            //         .name = field.getName(),
-            //         .type = AddAnnotations(
-            //             ConvertStruct(fieldLoc),
-            //             field.getAnnotations()
-            //         )
-            //     };
-            //     return mlir::success();
-
-            case Field::Which::SLOT:
-                mi.name = field.getProto().getName();
-                return ConvertType(fieldLoc, field.getType(), field.getProto().getAnnotations(), mi);
-            default:
-                return mlir::failure();
-        }
+        mi.name = field.getProto().getName();
+        return ConvertType(fieldLoc, field.getType(), mi);
     }
 
     /// <summary>
@@ -318,7 +265,6 @@ public:
     mlir::LogicalResult ConvertType(
         EsiCapnpLocation loc,
         ::capnp::Type type,
-        ::capnp::List< ::capnp::schema::Annotation,  ::capnp::Kind::STRUCT>::Reader annotations,
         MemberInfo& mi)
     {
         switch (type.which()) {
@@ -368,7 +314,11 @@ public:
             // case ::capnp::schema::Type::Which::ENUM:
             //     type = GetNamedType(type.Enum.TypeId),
             //     break;
-            // case ::capnp::schema::Type::Which::STRUCT:
+            case ::capnp::schema::Type::Which::STRUCT: {
+                type.asStruct();
+                // mi.set(mli)
+                break;
+            }
             //     mi.type = type.Struct.TypeId switch {
             //         break;
             //     // ---
@@ -391,215 +341,8 @@ public:
                 llvm::errs() << llvm::formatv("Capnp type number {0} not supported (at {1})\n", type.which(), loc.ToString());
                 return mlir::failure();
         };
-        return AddAnnotations(loc, annotations, mi);
-    }
-
-
-    /// <summary>
-    /// Return a new type based on the old type and the annotation-based modifiers
-    /// </summary>
-    /// <param name="esiType">The original type</param>
-    /// <param name="loc">The original type's Capnp "location"</param>
-    /// <param name="annotations">A list of annotations</param>
-    /// <returns>The modified EsiType</returns>
-    mlir::LogicalResult AddAnnotations(
-        EsiCapnpLocation loc,
-        ::capnp::List< ::capnp::schema::Annotation,  ::capnp::Kind::STRUCT>::Reader annotations,
-        MemberInfo& mi)
-    {
-        for (auto ann : annotations) {
-            auto rc = AddAnnotation(loc, ann, mi);
-            if (mlir::failed(rc)) {
-                return rc;
-            }
-        }
         return mlir::success();
     }
-
-    mlir::LogicalResult AddAnnotation(
-        EsiCapnpLocation loc,
-        ::capnp::schema::Annotation::Reader a,
-        MemberInfo& mi)
-    {
-        if (!Annotations::contains( a.getId() ))
-            // No-op if we don't recognize the annotation ID
-            return mlir::success();
-
-        switch (a.getId()) {
-            // ---
-            // INLINE annotation
-            case Annotations::INLINE:
-                switch (mi.type.getKind()) {
-                    case mlir::esi::Types::MessagePointer:
-                        llvm::errs() << "Unsupported";
-                        break;
-                    // case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference == null:
-                    //     C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
-                    //     return esiType;
-                    default:
-                        llvm::errs() << "Inline annotation has on effect on type: '" << mi.type << "'\n";
-                        break;
-                }
-            break;
-
-
-
-            // // ---
-            // All annotations on refs apply to the thing they reference
-            // case (EsiReferenceType refType, AnnotationIDs.ARRAY): // ARRAY implies $inline
-            //     return AddAnnotation(refType.Reference, loc, a);
-            // case (EsiReferenceType refType, _): // Default case
-            //     return refType.WithReference(AddAnnotation(refType.Reference, loc, a));
-
-            // ---
-            // BITS annotation
-            case Annotations::BITS: {
-                auto bits = a.getValue().getUint64();
-                switch (mi.type.getKind()) {
-                    case mlir::StandardTypes::Integer:
-                        mi.type = mlir::IntegerType::get(bits, mi.type.cast<mlir::IntegerType>().getSignedness(), ctxt);
-                        break;
-                    case mlir::esi::Types::List: {
-                        auto containedInt = mi.type.cast<ListType>().getContainedType().dyn_cast<mlir::IntegerType>();
-                        if (containedInt != mlir::Type()) {
-                            mi.type = mlir::esi::ListType::get(ctxt,
-                                mlir::IntegerType::get(bits, containedInt.getSignedness(), ctxt));
-                            break;
-                        }
-                    }
-                    default:
-                        llvm::errs() << "$ESI.bits() can only be applied to integer types. " << loc.ToString();
-                        break;
-                }
-                break;
-            }
-
-
-            // case (EsiContainerType containerType, AnnotationIDs.BITS):
-            //     return containerType.WithInner(AddAnnotation(containerType.Inner, loc, a));
-            // case (_, AnnotationIDs.BITS):
-            //     C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
-            //     return esiType;
-
-            // // ---
-            // // ARRAY annotation
-            // case (EsiList list, AnnotationIDs.ARRAY):
-            //     return new EsiArray(list.Inner, a.Value.Uint64);
-            // case (EsiStruct st, AnnotationIDs.ARRAY):
-            //     return EsiStructToArray(st, a.Value.Uint64);
-            // case (_, AnnotationIDs.ARRAY):
-            //     C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
-            //     return esiType;
-
-            // // ---
-            // // C_UNION annotation
-            // case (_, AnnotationIDs.C_UNION):
-            //     C.Log.Error("$cUnion not yet supported");
-            //     return esiType;
-
-            // // ---
-            // // FIXED_LIST annotation
-            // case (EsiList list, AnnotationIDs.FIXED_LIST):
-            //     return new EsiList(list.Inner, true);
-            // case (_, AnnotationIDs.FIXED_LIST):
-            //     C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
-            //     return esiType;
-
-            // // ---
-            // // FIXED annotation
-            // case (EsiCompound esiCompound, AnnotationIDs.FIXED):
-            //     var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
-            //     return EsiCompound.SingletonFor(
-            //         EsiCompound.CompoundType.EsiFixed,
-            //         cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
-            // case (_, AnnotationIDs.FIXED):
-            //     C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
-            //     return esiType;
-
-            // // ---
-            // // FLOAT annotation
-            // case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
-            //     var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
-            //     return EsiCompound.SingletonFor(
-            //         EsiCompound.CompoundType.EsiFloat,
-            //         cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
-            // case (_, AnnotationIDs.FLOAT):
-            //     C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
-            //     return esiType;
-
-            // // ---
-            // // HWOffset annotation
-            // case (_, AnnotationIDs.HWOFFSET):
-            //     C.Log.Error("$hwoffset not yet supported");
-            //     return esiType;
-
-            // case (_, _):
-            //     C.Log.Error("Annotation not recognized (annotationID)", a.Id);
-            //     return esiType;
-        }
-
-        return mlir::success();
-    }
-
-    //     protected EsiType EsiStructToArray(EsiStruct st, ulong length)
-    //     {
-    //         if ((ulong)st.Fields.Length != length)
-    //         {
-    //             C.Log.Error("Groups annotated with $array({n}) need to have a number of elements equal to {n}, not {actual}",
-    //                 length, st.Fields.Length);
-    //             return st;
-    //         }
-    //         if (length == 0)
-    //         {
-    //             // Special case where internal type cannot be determined
-    //             return new EsiArray(EsiPrimitive.Void, 0);
-    //         }
-    //         var inner = st.Fields[0].Type;
-    //         return new EsiArray(inner, length);
-    //     }
-    // }
-
-    // /// <summary>
-    // /// Extend ESI's struct reference to add ref counting (for internal,
-    // /// cpnp-specific accounting)
-    // /// </summary>
-    // public class EsiReferenceCapnp : EsiReferenceType
-    // {
-    //     public long RefCount = 0;
-
-    //     public EsiReferenceCapnp(EsiStruct Reference) : base (Reference)
-    //     {    }
-
-    //     public EsiReferenceCapnp(Func<EsiType> Resolver) : base (Resolver)
-    //     {    }
-    // }
-
-    // /// <summary>
-    // /// Delay an error message until type is used... This may or may not be a good idea.
-    // /// </summary>
-    // public class CapnpEsiErrorType : EsiTypeParent
-    // {
-    //     public Action A { get; }
-
-    //     public CapnpEsiErrorType(Action A)
-    //     {
-    //         this.A = A;
-    //     }
-
-    //     public override void GetDescriptionTree(StringBuilder stringBuilder, uint indent)
-    //     {
-    //         A();
-    //     }
-    // }
-
-    // /// <summary>
-    // /// An exception in the conversion process
-    // /// </summary>
-    // public class EsiCapnpConvertException : Exception
-    // {
-    //     public EsiCapnpConvertException(string msg) : base (msg) { }
-    // }
-
 
 };
 
