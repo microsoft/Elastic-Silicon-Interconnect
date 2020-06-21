@@ -103,6 +103,8 @@ public:
 
     static Type parse(mlir::MLIRContext* ctxt, mlir::DialectAsmParser& parser);
     void print(mlir::DialectAsmPrinter& printer) const;
+
+    mlir::Type getContainedType();
 };
 
 struct MemberInfo {

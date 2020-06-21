@@ -206,6 +206,10 @@ void ListType::print(mlir::DialectAsmPrinter& printer) const {
     printer << ">";
 }
 
+mlir::Type ListType::getContainedType() {
+    return getImpl()->type;
+}
+
 // ****************
 // Method bodies for compound types
 

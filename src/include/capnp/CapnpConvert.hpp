@@ -47,8 +47,15 @@ namespace capnp {
         Annotation(HWOFFSET,                0xf7afdfd9eb5a7d15, 12);
         #undef Annotation
 
-        static bool contains(uint64_t id);
-        static std::string nameof(uint64_t id);
+        static bool contains(uint64_t id) {
+            return idToName.find(id) != idToName.end();
+        }
+        static const std::string& nameof(uint64_t id) {
+            auto nameIter = idToName.find(id);
+            if (nameIter == idToName.end())
+                return "";
+            return nameIter->second;
+        }
     };
 
     llvm::Error ConvertToESI(

@@ -408,117 +408,138 @@ public:
         MemberInfo& mi)
     {
         for (auto ann : annotations) {
-            // auto rc = AddAnnotation(loc, ann, mi);
-            // if (mlir::failed(rc)) {
-            //     return rc;
-            // }
+            auto rc = AddAnnotation(loc, ann, mi);
+            if (mlir::failed(rc)) {
+                return rc;
+            }
         }
         return mlir::success();
     }
 
-    //     public EsiType AddAnnotation (EsiType esiType, EsiCapnpLocation loc, Annotation.READER a) {
-    //         if (!ESIAnnotations.Contains( a.Id ))
-    //             // No-op if we don't recognize the annotation ID
-    //             return esiType;
+    mlir::LogicalResult AddAnnotation(
+        EsiCapnpLocation loc,
+        ::capnp::schema::Annotation::Reader a,
+        MemberInfo& mi)
+    {
+        if (!Annotations::contains( a.getId() ))
+            // No-op if we don't recognize the annotation ID
+            return mlir::success();
 
-    //         switch (esiType, (AnnotationIDs) a.Id)
-    //         {
-    //             // ---
-    //             // INLINE annotation
-    //             case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference != null:
-    //                 return stRef.Reference;
-    //             case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference == null:
-    //                 C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
-    //                 return esiType;
-    //             case (EsiValueType _, AnnotationIDs.INLINE):
-    //                 C.Log.Warning("$inline on value types have no effect ({loc})", loc);
-    //                 return esiType;
-    //             case (_, AnnotationIDs.INLINE):
-    //                 C.Log.Error("$Inline on '{type}' not expected ({loc})", esiType.GetType(), loc);
-    //                 return esiType;
+        switch (a.getId()) {
+            // ---
+            // INLINE annotation
+            case Annotations::INLINE:
+                switch (mi.type.getKind()) {
+                    case mlir::esi::Types::MessagePointer:
+                        llvm::errs() << "Unsupported";
+                        break;
+                    // case (EsiReferenceType stRef, AnnotationIDs.INLINE) when stRef.Reference == null:
+                    //     C.Log.Error("$Inline found a data type cycle not broken by a reference type ({loc})", loc);
+                    //     return esiType;
+                    default:
+                        llvm::errs() << "Inline annotation has on effect on type: '" << mi.type << "'\n";
+                        break;
+                }
+            break;
 
-    //             // ---
-    //             // All annotations on refs apply to the thing they reference
-    //             case (EsiReferenceType refType, AnnotationIDs.ARRAY): // ARRAY implies $inline
-    //                 return AddAnnotation(refType.Reference, loc, a);
-    //             case (EsiReferenceType refType, _): // Default case
-    //                 return refType.WithReference(AddAnnotation(refType.Reference, loc, a));
 
-    //             // ---
-    //             // BITS annotation
-    //             case (EsiInt ei, AnnotationIDs.BITS):
-    //                 if (ei.Bits < a.Value.Uint64)
-    //                 {
-    //                     C.Log.Warning(
-    //                         "Specified bits ({SpecifiedBits}) is wider than host type holds ({HostBits})! ({loc})",
-    //                         a.Value.Uint64,
-    //                         ei.Bits,
-    //                         loc);
-    //                 }
-    //                 return new EsiInt(a.Value.Uint64, ei.Signed);
-    //             case (EsiContainerType containerType, AnnotationIDs.BITS):
-    //                 return containerType.WithInner(AddAnnotation(containerType.Inner, loc, a));
-    //             case (_, AnnotationIDs.BITS):
-    //                 C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
-    //                 return esiType;
 
-    //             // ---
-    //             // ARRAY annotation
-    //             case (EsiList list, AnnotationIDs.ARRAY):
-    //                 return new EsiArray(list.Inner, a.Value.Uint64);
-    //             case (EsiStruct st, AnnotationIDs.ARRAY):
-    //                 return EsiStructToArray(st, a.Value.Uint64);
-    //             case (_, AnnotationIDs.ARRAY):
-    //                 C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
-    //                 return esiType;
+            // // ---
+            // All annotations on refs apply to the thing they reference
+            // case (EsiReferenceType refType, AnnotationIDs.ARRAY): // ARRAY implies $inline
+            //     return AddAnnotation(refType.Reference, loc, a);
+            // case (EsiReferenceType refType, _): // Default case
+            //     return refType.WithReference(AddAnnotation(refType.Reference, loc, a));
 
-    //             // ---
-    //             // C_UNION annotation
-    //             case (_, AnnotationIDs.C_UNION):
-    //                 C.Log.Error("$cUnion not yet supported");
-    //                 return esiType;
+            // ---
+            // BITS annotation
+            case Annotations::BITS: {
+                auto bits = a.getValue().getUint64();
+                switch (mi.type.getKind()) {
+                    case mlir::StandardTypes::Integer:
+                        mi.type = mlir::IntegerType::get(bits, mi.type.cast<mlir::IntegerType>().getSignedness(), ctxt);
+                        break;
+                    case mlir::esi::Types::List: {
+                        auto containedInt = mi.type.cast<ListType>().getContainedType().dyn_cast<mlir::IntegerType>();
+                        if (containedInt != mlir::Type()) {
+                            mi.type = mlir::esi::ListType::get(ctxt,
+                                mlir::IntegerType::get(bits, containedInt.getSignedness(), ctxt));
+                            break;
+                        }
+                    }
+                    default:
+                        llvm::errs() << "$ESI.bits() can only be applied to integer types. " << loc.ToString();
+                        break;
+                }
+                break;
+            }
 
-    //             // ---
-    //             // FIXED_LIST annotation
-    //             case (EsiList list, AnnotationIDs.FIXED_LIST):
-    //                 return new EsiList(list.Inner, true);
-    //             case (_, AnnotationIDs.FIXED_LIST):
-    //                 C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
-    //                 return esiType;
 
-    //             // ---
-    //             // FIXED annotation
-    //             case (EsiCompound esiCompound, AnnotationIDs.FIXED):
-    //                 var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
-    //                 return EsiCompound.SingletonFor(
-    //                     EsiCompound.CompoundType.EsiFixed,
-    //                     cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
-    //             case (_, AnnotationIDs.FIXED):
-    //                 C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
-    //                 return esiType;
+            // case (EsiContainerType containerType, AnnotationIDs.BITS):
+            //     return containerType.WithInner(AddAnnotation(containerType.Inner, loc, a));
+            // case (_, AnnotationIDs.BITS):
+            //     C.Log.Error("$ESI.bits() can only be applied to integer types! ({loc})", loc);
+            //     return esiType;
 
-    //             // ---
-    //             // FLOAT annotation
-    //             case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
-    //                 var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
-    //                 return EsiCompound.SingletonFor(
-    //                     EsiCompound.CompoundType.EsiFloat,
-    //                     cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
-    //             case (_, AnnotationIDs.FLOAT):
-    //                 C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
-    //                 return esiType;
+            // // ---
+            // // ARRAY annotation
+            // case (EsiList list, AnnotationIDs.ARRAY):
+            //     return new EsiArray(list.Inner, a.Value.Uint64);
+            // case (EsiStruct st, AnnotationIDs.ARRAY):
+            //     return EsiStructToArray(st, a.Value.Uint64);
+            // case (_, AnnotationIDs.ARRAY):
+            //     C.Log.Error("$Array on '{type}' not valid ({loc})", esiType.GetType(), loc);
+            //     return esiType;
 
-    //             // ---
-    //             // HWOffset annotation
-    //             case (_, AnnotationIDs.HWOFFSET):
-    //                 C.Log.Error("$hwoffset not yet supported");
-    //                 return esiType;
+            // // ---
+            // // C_UNION annotation
+            // case (_, AnnotationIDs.C_UNION):
+            //     C.Log.Error("$cUnion not yet supported");
+            //     return esiType;
 
-    //             case (_, _):
-    //                 C.Log.Error("Annotation not recognized (annotationID)", a.Id);
-    //                 return esiType;
-    //         }
-    //     }
+            // // ---
+            // // FIXED_LIST annotation
+            // case (EsiList list, AnnotationIDs.FIXED_LIST):
+            //     return new EsiList(list.Inner, true);
+            // case (_, AnnotationIDs.FIXED_LIST):
+            //     C.Log.Error("$FixedList on '{type}' not valid ({loc})", esiType.GetType(), loc);
+            //     return esiType;
+
+            // // ---
+            // // FIXED annotation
+            // case (EsiCompound esiCompound, AnnotationIDs.FIXED):
+            //     var cpnpFixedSpec = new FixedPointSpec.READER(a.Value.Struct);
+            //     return EsiCompound.SingletonFor(
+            //         EsiCompound.CompoundType.EsiFixed,
+            //         cpnpFixedSpec.Signed, cpnpFixedSpec.Whole, cpnpFixedSpec.Fraction);
+            // case (_, AnnotationIDs.FIXED):
+            //     C.Log.Error("$Fixed on '{type}' not valid ({loc})", esiType.GetType(), loc);
+            //     return esiType;
+
+            // // ---
+            // // FLOAT annotation
+            // case (EsiCompound esiCompound, AnnotationIDs.FLOAT):
+            //     var cpnpFloatSpec = new FloatingPointSpec.READER(a.Value.Struct);
+            //     return EsiCompound.SingletonFor(
+            //         EsiCompound.CompoundType.EsiFloat,
+            //         cpnpFloatSpec.Signed, cpnpFloatSpec.Exp, cpnpFloatSpec.Mant);
+            // case (_, AnnotationIDs.FLOAT):
+            //     C.Log.Error("$Float on '{type}' not valid ({loc})", esiType.GetType(), loc);
+            //     return esiType;
+
+            // // ---
+            // // HWOffset annotation
+            // case (_, AnnotationIDs.HWOFFSET):
+            //     C.Log.Error("$hwoffset not yet supported");
+            //     return esiType;
+
+            // case (_, _):
+            //     C.Log.Error("Annotation not recognized (annotationID)", a.Id);
+            //     return esiType;
+        }
+
+        return mlir::success();
+    }
 
     //     protected EsiType EsiStructToArray(EsiStruct st, ulong length)
     //     {
