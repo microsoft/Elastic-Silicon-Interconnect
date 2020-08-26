@@ -35,4 +35,10 @@ interface IPolynomial3ValidReady
         input data
     );
 
+
+    task send(input Polynomial3 _data, output logic success);
+        data = _data;
+        valid = 1;
+        success = ready;
+    endtask
 endinterface

@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
   for (auto type : types) {
     if (type == nullptr)
       continue;
-    llvm::outs() << type.getKind() << ": " << type << "\n"; 
+    llvm::outs() << type << "\n"; 
     // esiDialect->printType(t, nullptr);
   }
 

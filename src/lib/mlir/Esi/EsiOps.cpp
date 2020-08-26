@@ -7,7 +7,7 @@ namespace mlir {
 namespace esi {
 
 #define GET_OP_CLASSES
-#include "Dialects/Esi/EsiOps.cpp.inc"
+#include "Dialects/Esi/EsiDialect.cpp.inc"
 
 }
 }

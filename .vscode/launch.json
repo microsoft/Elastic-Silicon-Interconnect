@@ -36,7 +36,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esic",
-            "args": ["tests/mlir/esi/compound_types.mlir"],
+            "args": ["tests/mlir/esi/all_types.mlir"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [

@@ -8,7 +8,7 @@ add_mlir_dialect_library(MLIREsi
     ${EsiDialactHeaders}
 
     DEPENDS
-    MLIREsiOpsIncGen
+    MLIREsiDialectIncGen
     # MLIREsiIncGen
 
     LINK_COMPONENTS

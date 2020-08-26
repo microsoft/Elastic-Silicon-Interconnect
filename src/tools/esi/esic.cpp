@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   mlir::MLIRContext context;
   if (showDialects) {
     llvm::outs() << "Registered Dialects:\n";
-    for (mlir::Dialect *dialect : context.getRegisteredDialects()) {
+    for (mlir::Dialect *dialect : context.getLoadedDialects()) {
       llvm::outs() << dialect->getNamespace() << "\n";
     }
     return 0;
@@ -97,8 +97,10 @@ int main(int argc, char **argv) {
   }
 
   if (failed(MlirOptMain(output->os(), std::move(file), passPipeline,
+                         context.getDialectRegistry(),
                          splitInputFile, verifyDiagnostics, verifyPasses,
                          allowUnregisteredDialects))) {
+    llvm::errs() << "EsiC FAILED!\n";
     return 1;
   }
   // Keep the output file if the invocation of MlirOptMain was successful.
