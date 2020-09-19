@@ -97,4 +97,7 @@
         "typeindex": "cpp",
         "valarray": "cpp"
     },
+    "search.exclude": {
+        "/mlir": true
+    },
 }

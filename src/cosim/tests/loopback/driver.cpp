@@ -57,5 +57,5 @@ int main(int argc, char **argv) {
 
 void vl_stop(const char *filename, int linenum, const char *hier) VL_MT_UNSAFE {
   Verilated::gotFinish(true);
-  Verilated::flushCall();
+  // Verilated::flushCall();
 }
