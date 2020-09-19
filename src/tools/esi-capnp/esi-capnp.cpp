@@ -30,14 +30,15 @@ llvm::ExitOnError ExitOnError;
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
                                                 llvm::cl::ValueRequired,
-                                                llvm::cl::desc("<input file>") );
-                                                
+                                                llvm::cl::desc("<input file>"));
 
 static llvm::cl::opt<std::string>
     outputFilename("o", llvm::cl::desc("Output filename"),
                    llvm::cl::value_desc("filename"), llvm::cl::init("-"));
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
+  mlir::enableGlobalDialectRegistry(true);
   mlir::registerAllDialects();
   mlir::registerDialect<mlir::esi::EsiDialect>();
 
@@ -45,11 +46,12 @@ int main(int argc, char **argv) {
 
   // Parse pass names in main to ensure static initialization completed.
   llvm::cl::ParseCommandLineOptions(argc, argv,
-                                  "ESI-Cap'nProto conversion utility\n");
+                                    "ESI-Cap'nProto conversion utility\n");
   mlir::MLIRContext context;
 
   kj::Own<kj::Filesystem> fs = kj::newDiskFilesystem();
-  if (inputFilename.size() == 0) {
+  if (inputFilename.size() == 0)
+  {
     llvm::errs() << "Input filename must specified\n";
     return 1;
   }
@@ -61,9 +63,7 @@ int main(int argc, char **argv) {
   // Set up paths to parse the damn schema
   kj::Path pathEvaler(nullptr);
   kj::Path inputFilenameAbs =
-    (*inputFilename.begin() == '/') ?
-      pathEvaler.evalNative(inputFilename) :
-      fs->getCurrentPath().append(kj::Path::parse(inputFilename));
+      (*inputFilename.begin() == '/') ? pathEvaler.evalNative(inputFilename) : fs->getCurrentPath().append(kj::Path::parse(inputFilename));
 
   auto baseDir = fs->getRoot().openSubdir(inputFilenameAbs.parent());
   const auto exeFile = fs->getRoot().readlink(kj::Path::parse("proc/self/exe"));
@@ -72,14 +72,15 @@ int main(int argc, char **argv) {
   // Parse the damn thing
   capnp::SchemaParser parser;
   auto rootSchema = parser.parseFromDirectory(
-    *baseDir,
-    inputFilenameAbs.basename().clone(),
-    { exeDir.get() });
+      *baseDir,
+      inputFilenameAbs.basename().clone(),
+      {exeDir.get()});
 
   // Open the output mlir assembly file
   std::string errorMessage;
   auto output = mlir::openOutputFile(outputFilename, &errorMessage);
-  if (!output) {
+  if (!output)
+  {
     llvm::errs() << errorMessage << "\n";
     exit(1);
   }
@@ -88,10 +89,11 @@ int main(int argc, char **argv) {
   // llvm::outs() << mlir::esi::ListType::get(&context, fp) << "\n";
   std::vector<mlir::Type> types;
   ExitOnError(esi::capnp::ConvertToESI(&context, rootSchema, types));
-  for (auto type : types) {
+  for (auto type : types)
+  {
     if (type == nullptr)
       continue;
-    llvm::outs() << type << "\n"; 
+    llvm::outs() << type << "\n";
     // esiDialect->printType(t, nullptr);
   }
 
