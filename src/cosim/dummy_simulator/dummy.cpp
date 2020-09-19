@@ -1,21 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#include <dpi.hpp>
-#include <thread>
-#include <iostream>
 #include <conio.h>
+#include <dpi.hpp>
+#include <iostream>
+#include <thread>
 
 using namespace std;
 
-int main()
-{
-    cout << "calling init()" << endl;
-    sv2c_cosimserver_init();
+int main() {
+  cout << "calling init()" << endl;
+  sv2c_cosimserver_init();
 
-    sv2c_cosimserver_ep_register(2, 6, 1024);
-    cout << "waiting for newline" << endl;
-    getchar();
-    cout << "exiting" << endl;
-    return 0;
+  sv2c_cosimserver_ep_register(2, 6, 1024);
+  cout << "waiting for newline" << endl;
+  getchar();
+  cout << "exiting" << endl;
+  return 0;
 }

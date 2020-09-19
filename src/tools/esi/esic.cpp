@@ -98,8 +98,8 @@ int main(int argc, char **argv) {
   }
 
   if (failed(MlirOptMain(output->os(), std::move(file), passPipeline,
-                         context.getDialectRegistry(),
-                         splitInputFile, verifyDiagnostics, verifyPasses,
+                         context.getDialectRegistry(), splitInputFile,
+                         verifyDiagnostics, verifyPasses,
                          allowUnregisteredDialects))) {
     llvm::errs() << "EsiC FAILED!\n";
     return 1;
