@@ -57,6 +57,7 @@ static llvm::cl::opt<bool>
                  llvm::cl::init(false));
 
 int main(int argc, char **argv) {
+  mlir::enableGlobalDialectRegistry(true);
   mlir::registerAllDialects();
   mlir::registerAllPasses();
 

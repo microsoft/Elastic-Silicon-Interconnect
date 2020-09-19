@@ -69,7 +69,7 @@ class FieldInfo_Type<string name> : Esi_Type<name> {
       Type type;
       if (parser.parseType(type)) return Type();
       if (parser.parseRBrace()) return Type();
-      parameters.push_back(FieldInfo {.name = name, .type=type});
+      parameters.push_back(FieldInfo(name, type));
       if (parser.parseOptionalComma()) break;
     }
     if (parser.parseGreater()) return Type();
@@ -86,7 +86,7 @@ def UnionType : FieldInfo_Type<"Union"> {
 }
 
 def EnumType : Esi_Type<"Enum"> {
-  let mnemonic = "Enum";
+  let mnemonic = "enum";
 
   let parameters = (
     ins

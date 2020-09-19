@@ -12,16 +12,17 @@
 namespace mlir {
 namespace esi {
 
-  struct FieldInfo {
-  public:
+  struct FieldInfo
+  {
     StringRef name;
     Type type;
 
+  public:
+    FieldInfo(const FieldInfo &fi) : name(fi.name), type(fi.type) {}
+    FieldInfo(StringRef name, Type type) : name(name), type(type) {}
+
     FieldInfo allocateInto(TypeStorageAllocator& alloc) const {
-      return FieldInfo {
-        .name = alloc.copyInto(name),
-        .type = type
-      };
+      return FieldInfo(alloc.copyInto(name), type);
     }
   };
 
