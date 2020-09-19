@@ -33,11 +33,10 @@ namespace esi {
     return llvm::hash_combine(fi.name, fi.type);
   }
 
+} // namespace esi
+} // namespace mlir
+
 #define GET_TYPEDEF_CLASSES
 #include "Dialects/Esi/EsiDialectTypes.h.inc"
-
-
-}
-}
 
 #endif

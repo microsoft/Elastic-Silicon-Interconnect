@@ -9,13 +9,7 @@
 
 #include <mlir/Interfaces/SideEffectInterfaces.h>
 
-namespace mlir {
-namespace esi {
-
 #define GET_OP_CLASSES
 #include "Dialects/Esi/EsiDialect.h.inc"
-
-}
-}
 
 #endif
