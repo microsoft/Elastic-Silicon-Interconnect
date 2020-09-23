@@ -42,6 +42,15 @@ def ListType : Esi_Type<"List"> {
   );
 }
 
+def MessagePointer : Esi_Type<"MessagePointer"> {
+  let mnemonic = "ptr";
+
+  let parameters = (
+    ins
+    "Type": $inner
+  );
+}
+
 class FieldInfo_Type<string name> : Esi_Type<name> {
   let parameters = (
     ins

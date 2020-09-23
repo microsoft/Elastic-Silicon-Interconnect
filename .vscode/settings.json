@@ -95,7 +95,8 @@
         "iomanip": "cpp",
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "*.def": "cpp"
     },
     "search.exclude": {
         "/mlir": true

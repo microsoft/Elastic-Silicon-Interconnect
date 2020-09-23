@@ -1,15 +1,17 @@
 {
-   // Use IntelliSense to find out which attributes exist for C# debugging
-   // Use hover for the description of the existing attributes
-   // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-   "version": "0.2.0",
-   "configurations": [
+    // Use IntelliSense to find out which attributes exist for C# debugging
+    // Use hover for the description of the existing attributes
+    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+    "version": "0.2.0",
+    "configurations": [
         {
             "name": "CosimTest",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/src/core/cosim/rtl/obj_dir/Vcosim_test",
-            "args": ["+trace"],
+            "args": [
+                "+trace"
+            ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -24,24 +26,24 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esi-capnp",
-            "args": ["tests/capnp/stress1_synth.capnp"],
+            "args": [
+                "tests/capnp/stress_tests/stress1_synth.capnp"
+            ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
-            "environment": [
-
-            ],
+            "environment": [],
         },
         {
             "name": "tests/mlir/esic",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esic",
-            "args": ["tests/mlir/esi/all_types.mlir"],
+            "args": [
+                "tests/mlir/esi/all_types.mlir"
+            ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
-            "environment": [
-
-            ],
+            "environment": [],
         }
     ]
 }

@@ -15,12 +15,6 @@ namespace esi {
 EsiDialect::EsiDialect(MLIRContext *context)
     : Dialect("esi", context, TypeID::get<EsiDialect>()) {
   addTypes<
-// FixedPointType,
-// FloatingPointType,
-// ListType,
-// StructType,
-// UnionType,
-// EnumType,
 #define GET_TYPEDEF_LIST
 #include "Dialects/Esi/EsiDialectTypes.cpp.inc"
       >();
@@ -48,42 +42,7 @@ Type EsiDialect::parseType(DialectAsmParser &parser) const {
 void EsiDialect::printType(Type type, DialectAsmPrinter &printer) const {
   if (!generatedTypePrinter(type, printer))
     return;
-  TypeSwitch<Type>(type).Default(
-      [](Type) { llvm_unreachable("unexpected 'esi' type kind"); });
-
-  // switch (type.getKind())
-  // {
-  //     case Types::FixedPoint: {
-  //         auto c = type.dyn_cast<FixedPointType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  //     case Types::FloatingPoint: {
-  //         auto c = type.dyn_cast<FloatingPointType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  //     case Types::List: {
-  //         auto c = type.dyn_cast<ListType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  //     case Types::Struct: {
-  //         auto c = type.dyn_cast<StructType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  //     case Types::Union: {
-  //         auto c = type.dyn_cast<UnionType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  //     case Types::Enum: {
-  //         auto c = type.dyn_cast<EnumType>();
-  //         c.print(printer);
-  //         break;
-  //     }
-  // }
+  llvm_unreachable("unexpected 'esi' type kind");
 }
 
 } // namespace esi

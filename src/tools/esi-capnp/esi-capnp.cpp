@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <map>
+
 llvm::ExitOnError ExitOnError;
 
 static llvm::cl::opt<std::string> inputFilename(llvm::cl::Positional,
@@ -70,6 +72,11 @@ int main(int argc, char **argv) {
   auto exeDir =
       fs->getRoot().openSubdir(pathEvaler.evalNative(exeFile).parent());
 
+  if (!fs->getRoot().exists(inputFilenameAbs)) {
+    llvm::errs() << "Input file does not exist!\n";
+    return 1;
+  }
+
   // Parse the damn thing
   capnp::SchemaParser parser;
   auto rootSchema = parser.parseFromDirectory(
@@ -83,15 +90,18 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  // auto fp = mlir::esi::FloatingPointType::get(&context, true, 20, 4);
-  // llvm::outs() << mlir::esi::ListType::get(&context, fp) << "\n";
-  std::vector<mlir::Type> types;
+  // Do the conversion
+  std::map<std::string, mlir::Type> types;
   ExitOnError(esi::capnp::ConvertToESI(&context, rootSchema, types));
+
+  // Print the output
   for (auto type : types) {
-    if (type == nullptr)
+    if (type.second == nullptr)
       continue;
-    llvm::outs() << type << "\n";
-    // esiDialect->printType(t, nullptr);
+    llvm::outs() << "\n";
+    llvm::outs() << llvm::raw_ostream::CYAN << type.first << ": "
+                 << llvm::raw_ostream::GREEN << type.second << "\n";
+    llvm::outs().resetColor();
   }
 
   llvm::outs() << "Success!\n";
