@@ -33,13 +33,17 @@ def FloatingPoint : Esi_Type<"FloatingPoint"> {
     );
 }
 
-def ListType : Esi_Type<"List"> {
+def List : Esi_Type<"List"> {
   let mnemonic = "list";
 
   let parameters = (
     ins
     "Type": $inner
   );
+}
+
+def String : Esi_Type<"String"> {
+  let mnemonic = "string";
 }
 
 def MessagePointer : Esi_Type<"MessagePointer"> {

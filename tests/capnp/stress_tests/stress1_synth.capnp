@@ -63,6 +63,8 @@ struct All {
     j @9 :UInt64;
     k @10 :Float32;
     l @11 :Float64;
+    m @12 :Text;
+    n @13 :List(UInt8);
 }
 
 interface ShapeQuery {

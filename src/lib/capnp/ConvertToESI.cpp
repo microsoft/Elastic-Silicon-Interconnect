@@ -282,8 +282,12 @@ public:
   mlir::LogicalResult ConvertField(EsiCapnpLocation &loc,
                                    StructSchema::Field field, FieldInfo &fi) {
     auto fieldLoc = loc.AppendField(field.getProto().getName());
-    return ConvertType(fieldLoc, field.getType(),
-                       field.getProto().getName().cStr(), fi);
+    std::string name = field.getProto().getName().cStr();
+    auto mlirType = ConvertType(fieldLoc, field.getType());
+    if (mlirType == mlir::Type())
+      return mlir::failure();
+    fi = FieldInfo(name, mlirType);
+    return mlir::success();
   }
 
   /// <summary>
@@ -294,13 +298,13 @@ public:
   /// <param name="type"></param>
   /// <param name="annotations"></param>
   /// <returns></returns>
-  mlir::LogicalResult ConvertType(EsiCapnpLocation &loc, ::capnp::Type type,
-                                  llvm::StringRef name, FieldInfo &fi) {
-    mlir::LogicalResult ret = mlir::success();
+  mlir::Type ConvertType(EsiCapnpLocation &loc, ::capnp::Type type) {
     mlir::Type mlirType;
+
     switch (type.which()) {
     case ::capnp::schema::Type::Which::VOID:
       mlirType = mlir::NoneType::get(ctxt);
+      break;
     case ::capnp::schema::Type::Which::BOOL:
       mlirType = mlir::IntegerType::get(
           1, mlir::IntegerType::SignednessSemantics::Signless, ctxt);
@@ -344,21 +348,31 @@ public:
       mlirType = mlir::esi::FloatingPointType::get(ctxt, true, 11, 52);
       break;
     case ::capnp::schema::Type::Which::TEXT:
-    case ::capnp::schema::Type::Which::DATA:
-      mlirType = mlir::esi::ListType::get(
-          ctxt, mlir::IntegerType::get(
-                    8, mlir::IntegerType::SignednessSemantics::Signless, ctxt));
+      mlirType = mlir::esi::MessagePointerType::get(
+          ctxt, mlir::esi::StringType::get(ctxt));
       break;
-    // case ::capnp::schema::Type::Which::LIST:
-    //     mi.set(mlir::esi::MessagePointerType::get(ctxt, )) new
-    //     EsiReferenceType(new EsiList( ConvertType(loc, type.List.ElementType,
-    //     null) ) ), break;
+    case ::capnp::schema::Type::Which::DATA:
+      mlirType = mlir::esi::MessagePointerType::get(
+          ctxt,
+          mlir::esi::ListType::get(
+              ctxt,
+              mlir::IntegerType::get(
+                  8, mlir::IntegerType::SignednessSemantics::Signless, ctxt)));
+      break;
+    case ::capnp::schema::Type::Which::LIST: {
+      auto capnpInner = type.asList().getElementType();
+      mlir::Type inner = ConvertType(loc, capnpInner);
+      mlirType = mlir::esi::MessagePointerType::get(
+          ctxt, mlir::esi::ListType::get(ctxt, inner));
+    } break;
     // case ::capnp::schema::Type::Which::ENUM:
     //     mlirType = GetNamedType(type.Enum.TypeId),
     //     break;
     case ::capnp::schema::Type::Which::STRUCT: {
       auto &loc = GetLocation(type.asStruct());
-      ret = ConvertStruct(loc);
+      if (mlir::failed(ConvertStruct(loc))) {
+        return mlir::Type();
+      }
       mlirType = mlir::esi::MessagePointerType::get(ctxt, loc.type);
     } break;
 
@@ -390,10 +404,10 @@ public:
       llvm::errs() << llvm::formatv(
           "Capnp type number {0} not supported (at {1})\n", type.which(),
           loc.ToString());
-      ret = mlir::failure();
-    };
-    fi = FieldInfo(name, mlirType);
-    return ret;
+      return mlir::Type();
+    }
+
+    return mlirType;
   }
 }; // namespace capnp
 
