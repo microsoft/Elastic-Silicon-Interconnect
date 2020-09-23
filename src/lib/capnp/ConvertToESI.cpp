@@ -44,7 +44,7 @@ class CapnpParser {
     bool beingParsed;
 
     EsiCapnpLocation(StructSchema node, std::string nodeName)
-        : node(node), nodeName(nodeName) {}
+        : node(node), nodeName(nodeName), beingParsed(false) {}
 
     EsiCapnpLocation AppendField(std::string field) {
       EsiCapnpLocation ret = *this;
@@ -134,7 +134,7 @@ public:
     const size_t num = fields.size();
 
     std::vector<FieldInfo> esiFields(num, FieldInfo("", nullptr));
-    for (auto i = 0; i < num; i++) {
+    for (size_t i = 0; i < num; i++) {
       auto rc = ConvertField(loc, fields[i], esiFields[i]);
     }
     loc.type = StructType::get(ctxt, esiFields);
@@ -280,9 +280,12 @@ public:
   /// group.
   /// </summary>
   mlir::LogicalResult ConvertField(EsiCapnpLocation &loc,
-                                   StructSchema::Field field, FieldInfo &fi) {
-    auto fieldLoc = loc.AppendField(field.getProto().getName());
-    std::string name = field.getProto().getName().cStr();
+                                   const StructSchema::Field &field,
+                                   FieldInfo &fi) {
+    llvm::StringRef name = field.getProto().hasName()
+                               ? field.getProto().getName().cStr()
+                               : "anonymous";
+    auto fieldLoc = loc.AppendField(std::string(name));
     auto mlirType = ConvertType(fieldLoc, field.getType());
     if (mlirType == mlir::Type())
       return mlir::failure();

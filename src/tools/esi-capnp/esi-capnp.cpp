@@ -38,6 +38,10 @@ static llvm::cl::opt<std::string>
     outputFilename("o", llvm::cl::desc("Output filename"),
                    llvm::cl::value_desc("filename"), llvm::cl::init("-"));
 
+static llvm::cl::list<std::string>
+    capnpIncludeDirs("I", llvm::cl::desc("Capnp include path"),
+                     llvm::cl::value_desc("directory"));
+
 int main(int argc, char **argv) {
   mlir::enableGlobalDialectRegistry(true);
   mlir::registerAllDialects();
@@ -68,19 +72,30 @@ int main(int argc, char **argv) {
           : fs->getCurrentPath().append(kj::Path::parse(inputFilename));
 
   auto baseDir = fs->getRoot().openSubdir(inputFilenameAbs.parent());
-  const auto exeFile = fs->getRoot().readlink(kj::Path::parse("proc/self/exe"));
-  auto exeDir =
-      fs->getRoot().openSubdir(pathEvaler.evalNative(exeFile).parent());
 
   if (!fs->getRoot().exists(inputFilenameAbs)) {
     llvm::errs() << "Input file does not exist!\n";
     return 1;
   }
 
+  // Marshall the include dirs
+  std::vector<kj::Own<const kj::ReadableDirectory>> incDirsOwned;
+  std::vector<const kj::ReadableDirectory *> incDirs;
+  for (auto incDirStr : capnpIncludeDirs) {
+    kj::Path incDirAbs =
+        (*incDirStr.begin() == '/')
+            ? pathEvaler.evalNative(incDirStr)
+            : fs->getCurrentPath().append(kj::Path::parse(incDirStr));
+    incDirsOwned.emplace_back(fs->getRoot().openSubdir(incDirAbs));
+    incDirs.push_back(incDirsOwned.back().get());
+  }
+
   // Parse the damn thing
   capnp::SchemaParser parser;
   auto rootSchema = parser.parseFromDirectory(
-      *baseDir, inputFilenameAbs.basename().clone(), {exeDir.get()});
+      *baseDir, inputFilenameAbs.basename().clone(),
+      kj::ArrayPtr<const kj::ReadableDirectory *const>(incDirs.data(),
+                                                       incDirs.size()));
 
   // Open the output mlir assembly file
   std::string errorMessage;

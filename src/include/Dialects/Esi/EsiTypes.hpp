@@ -12,27 +12,26 @@
 namespace mlir {
 namespace esi {
 
-  struct FieldInfo
-  {
-    StringRef name;
-    Type type;
+struct FieldInfo {
+  llvm::StringRef name;
+  Type type;
 
-  public:
-    FieldInfo(const FieldInfo &fi) : name(fi.name), type(fi.type) {}
-    FieldInfo(StringRef name, Type type) : name(name), type(type) {}
+public:
+  FieldInfo(StringRef name, Type type) : name(name), type(type) {}
 
-    FieldInfo allocateInto(TypeStorageAllocator& alloc) const {
-      return FieldInfo(alloc.copyInto(name), type);
-    }
-  };
-
-  static bool operator==(const FieldInfo& a, const FieldInfo& b) {
-    return a.name == b.name && a.type == b.type;
+  FieldInfo allocateInto(::mlir::TypeStorageAllocator &alloc) const {
+    StringRef nameCopy = alloc.copyInto(name);
+    return FieldInfo(nameCopy, type);
   }
+};
 
-  static llvm::hash_code hash_value(const FieldInfo& fi) {
-    return llvm::hash_combine(fi.name, fi.type);
-  }
+static bool operator==(const FieldInfo &a, const FieldInfo &b) {
+  return a.name == b.name && a.type == b.type;
+}
+
+static llvm::hash_code hash_value(const FieldInfo &fi) {
+  return llvm::hash_combine(fi.name, fi.type);
+}
 
 } // namespace esi
 } // namespace mlir

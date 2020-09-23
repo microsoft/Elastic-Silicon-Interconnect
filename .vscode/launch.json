@@ -27,6 +27,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/bin/esi-capnp",
             "args": [
+                "-I",
+                "~/esi/build/bin/",
                 "tests/capnp/stress_tests/stress1_synth.capnp"
             ],
             "stopAtEntry": true,
