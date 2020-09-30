@@ -1,3 +1,6 @@
+# Moving to CIRCT
+
+ESI is in the process of becoming part of the [CIRCT project](circt.org)!
 
 # The Elastic Silicon Interconnect Project
 
